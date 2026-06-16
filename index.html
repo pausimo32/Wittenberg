@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Wittenberg — Identification visuelle de fréquences sonores par motifs de Chladni et apprentissage automatique.">
+  <title>Wittenberg — Motifs de Chladni &amp; Fréquences Sonores</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/isotype.svg" type="image/svg+xml">
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════════════════════════ -->
+  <nav class="nav" role="navigation" aria-label="Navigation principale">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo" aria-label="Wittenberg — Accueil">
+        <svg class="isotype" viewBox="0 0 1760.68 1712" fill="none" xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true">
+          <path fill="currentColor"
+            d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62ZM1563.62,713.11c16.01-228.27-90.33-386.8-341.98-478.39-251.65-91.58-506.5-25.89-569.41,146.7-62.77,172.59,126.1,345.74,335.44,499.82,109.54,80.87,300.37,214.35,410.74,185.54,102.86-27,158.67-261.95,165.21-353.67ZM1120.03,1293.66c9.19-113.58-155.47-278.37-254.02-372.32-188.18-179.27-391.39-335.3-550.48-243.44-159.09,91.86-179.55,354.37-45.65,586.26,133.9,231.89,308.44,309.13,530.58,253.6,89.08-22.13,310.8-118.03,319.57-224.09Z" />
+        </svg>
+        <svg class="logotext" viewBox="0 0 1892 359.78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+          style="fill:currentColor;stroke:currentColor;stroke-miterlimit:10">
+          <path
+            d="M89.85,55.45l5.98,108.76c.19,3.37,4.66,4.4,6.3,1.45l61.31-110.21h-24.37l8.55-37.93h87.96l-8.88,37.93h-21.95l6.38,108.23c.21,3.54,4.92,4.62,6.64,1.52l61.05-109.75h-24.37l8.55-37.93h95.54l-8.55,37.93h-22.59l-110.54,198.48c-2.89,5.2-8.37,8.42-14.32,8.42h-27.53c-6.5,0-11.87-5.06-12.26-11.55l-5.1-85.33c-.19-3.24-4.49-4.22-6.07-1.39l-50.98,91.43c-2.35,4.22-6.81,6.84-11.64,6.84h-30.75c-5.44,0-9.94-4.23-10.28-9.66l-12.31-197.23H11.41h0c5.1-22.2,24.86-37.93,47.63-37.93h61.14s-8.55,37.93-8.55,37.93h-21.79Z" />
+          <path
+            d="M412.84,232.95l-4.46,19.49c-1.11,4.85-5.42,8.29-10.4,8.29h-77.55c-3.71,0-6.48-3.43-5.68-7.06l4.88-22.23c.86-3.91,4.32-6.7,8.33-6.7h12.03l22.43-97.15h-22.76l8.23-36.47h74.72l-30.66,133.63h14.34c4.31,0,7.5,4.01,6.54,8.21ZM435.53,41.25c0,7.75-2.8,14.42-8.39,20.01-5.6,5.6-12.37,8.39-20.33,8.39s-14.36-2.8-19.85-8.39c-5.49-5.59-8.23-12.26-8.23-20.01s2.69-14.69,8.07-20.17c5.38-5.49,12.05-8.23,20.01-8.23s15.01,2.74,20.5,8.23c5.49,5.49,8.23,12.21,8.23,20.17Z" />
+          <path
+            d="M565.45,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.54,0,9.93-1.31,16.17-3.94,3.61-1.52,7.43,1.66,6.53,5.47l-5.71,24.13c-.77,3.24-3.05,5.91-6.12,7.19-13.03,5.43-25.8,8.15-38.31,8.15-11.3,0-20.31-3.09-27.03-9.28-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z" />
+          <path
+            d="M688.42,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.04,0,8.76-1.04,14.16-3.13,4.5-1.74,9.12,2.24,8.01,6.94l-4.55,19.23c-1.19,5.05-4.85,9.12-9.69,10.99-12.01,4.64-23.8,6.96-35.37,6.96s-20.31-3.09-27.03-9.28c-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z" />
+          <path
+            d="M861.43,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,11.92,0,21.94-5.04,30.06-15.13,3.08-3.83,8.45-4.96,12.94-2.96l19.79,8.81c5.56,2.48,7.04,9.61,3.05,14.2-7.19,8.28-15.58,14.73-25.16,19.36-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM812.85,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z" />
+          <path
+            d="M1071.23,128.88c0,3.34-.32,6.81-.97,10.41-.65,3.61-1.78,8.74-3.39,15.41l-16.14,70.04h23.08l-6.36,27.81c-1.09,4.78-5.35,8.18-10.26,8.18h-53.41c-6.77,0-11.78-6.3-10.25-12.9l21.86-94.26c.86-4.41,1.29-7.48,1.29-9.2,0-4.41-1.05-7.93-3.15-10.57-2.1-2.64-5.25-3.95-9.44-3.95-8.61,0-21.46,6.29-38.57,18.88l-17.59,76.01h21.46l-6.27,27.42c-1.15,5.02-5.61,8.57-10.75,8.57h-69.2c-7.09,0-12.33-6.58-10.75-13.49l5.15-22.5h18.56l22.43-97.15h-25.5,0c4.81-21.33,23.76-36.47,45.62-36.47h40.08s-5,21.14-5,21.14c11.62-8.72,21.89-14.74,30.82-18.08,8.93-3.33,19.26-5,30.99-5,10.76,0,19.39,3.63,25.9,10.89,6.51,7.26,9.76,16.86,9.76,28.81Z" />
+          <path
+            d="M1192.27,110.32c13.88-15.6,30.07-23.4,48.58-23.4s32.49,6.67,43.25,20.01c10.76,13.34,16.14,30.66,16.14,51.97,0,17.43-3.63,34.19-10.89,50.27-7.26,16.09-17.62,29.08-31.07,38.97-13.45,9.9-29,14.85-46.64,14.85-19.58,0-35.88-9.47-48.9-28.4l-5.97,26.14h-70.36l8.55-35.99h18.56l39.38-170.91h-22.76,0c4.81-21.24,23.69-36.31,45.46-36.31h37.49l-21.63,92.15.81.65ZM1202.11,222.65c9.25,0,17.24-3.07,23.97-9.2,6.72-6.13,11.78-14.04,15.17-23.72,3.39-9.68,5.08-19.96,5.08-30.82,0-9.9-2.18-17.7-6.54-23.4-4.36-5.7-10.63-8.55-18.8-8.55-9.25,0-17.51,3.53-24.77,10.57-7.26,7.05-12.67,15.63-16.22,25.74-3.55,10.11-5.33,19.69-5.33,28.73s2.47,16.14,7.42,21.95c4.95,5.81,11.62,8.71,20.01,8.71Z" />
+          <path
+            d="M1493.41,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,14.31,0,25.88-7.26,34.7-21.79l38.41,17.11c-8.61,13.02-19.42,22.67-32.44,28.97-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM1444.84,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z" />
+          <path
+            d="M1670.78,91.12l-10.17,45.35c-5.7-1.29-11.03-1.94-15.98-1.94-28.19,0-46.21,18.4-54.06,55.19l-8.07,35.02h26.47l-8.23,35.99h-98.77l8.23-35.99h20.5l22.43-97.15h-23.08,0c4.81-21.33,23.76-36.47,45.62-36.47h31.68l-11.62,49.38.65.65c10.01-19.26,19.47-32.68,28.4-40.27,8.93-7.59,19.42-11.38,31.47-11.38,3.76,0,8.61.54,14.52,1.61Z" />
+          <path
+            d="M1797.78,119.2h0c3.88-16.45,18.56-28.08,35.47-28.08h42.81l-8.23,36.47h-18.72l-29.86,127.82c-13.02,56.7-48.15,85.05-105.38,85.05-30.45,0-56.32-5.54-77.63-16.62l15.82-37.6c20.98,9.68,39.48,14.52,55.52,14.52,13.66,0,24.4-1.94,32.2-5.81,7.8-3.87,13.96-9.92,18.48-18.16s8.44-19.77,11.78-34.62l-.65-.97c-14.74,13.88-30.07,20.82-45.99,20.82-19.8,0-34.89-6.32-45.27-18.96-10.38-12.64-15.57-29.67-15.57-51.08,0-17.64,3.77-34.29,11.3-49.95,7.53-15.65,18.02-28.32,31.47-38.01,13.45-9.68,28.62-14.52,45.51-14.52,20.12,0,35.77,9.9,46.96,29.69ZM1743.56,222.32c9.47,0,17.45-3.17,23.97-9.52,6.51-6.35,11.38-14.2,14.61-23.56,3.23-9.36,4.84-18.66,4.84-27.92s-2.5-16.81-7.5-22.68c-5-5.86-11.65-8.8-19.93-8.8-9.04,0-16.92,3.36-23.64,10.09-6.72,6.73-11.86,14.88-15.41,24.45-3.55,9.58-5.33,18.67-5.33,27.27,0,9.25,2.47,16.68,7.42,22.27,4.95,5.6,11.94,8.39,20.98,8.39Z" />
+        </svg>
+      </a>
+
+      <div class="nav-links" role="menubar">
+        <a href="index.html" class="nav-link" role="menuitem" data-i18n="nav.home">Accueil</a>
+        <a href="analyseur.html" class="nav-link" role="menuitem" data-i18n="nav.analyser">Analyseur</a>
+        <a href="experience.html" class="nav-link" role="menuitem" data-i18n="nav.experience">Expérience</a>
+        <a href="donnees.html" class="nav-link" role="menuitem" data-i18n="nav.data">Données</a>
+        <a href="apropos.html" class="nav-link" role="menuitem" data-i18n="nav.about">À propos</a>
+      </div>
+
+      <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+        <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+        <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+        <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+      </div>
+
+      <a href="analyseur.html" class="nav-cta" data-i18n="nav.cta">Analyser un motif →</a>
+
+      <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false"
+        aria-controls="nav-mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="nav-mobile-menu" id="nav-mobile-menu" role="menu">
+    <a href="index.html" role="menuitem" data-i18n="nav.home">Accueil</a>
+    <a href="analyseur.html" role="menuitem" data-i18n="nav.analyser">Analyseur</a>
+    <a href="experience.html" role="menuitem" data-i18n="nav.experience">Expérience</a>
+    <a href="donnees.html" role="menuitem" data-i18n="nav.data">Données</a>
+    <a href="apropos.html" role="menuitem" data-i18n="nav.about">À propos</a>
+    <a href="analyseur.html" class="btn btn-primary btn-sm" style="margin-top:.75rem;display:inline-flex;"
+      role="menuitem" data-i18n="nav.cta">Analyser un motif →</a>
+    <div class="lang-selector-mobile">
+      <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+        <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+        <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+        <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════════ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-bg-grid" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+
+    <!-- Motif de Chladni décoratif -->
+    <div class="hero-chladni" aria-hidden="true">
+      <canvas id="hero-canvas" width="520" height="520"></canvas>
+    </div>
+
+    <div class="hero-content container">
+      <div class="fade-in">
+        <div class="hero-eyebrow" data-i18n="index.hero.eyebrow">Projet TDR — Physique &amp; Informatique</div>
+
+        <h1 class="hero-title" id="hero-title" data-i18n-html="index.hero.title">
+          Identifier les fréquences<br>
+          à travers les <span>motifs de Chladni</span>
+        </h1>
+
+        <p class="hero-desc" data-i18n="index.hero.desc">
+          Wittenberg est un outil de recherche visuelle qui analyse la structure
+          géométrique des motifs formés par les grains sur une plaque vibrante
+          et propose une estimation de la fréquence sonore à l'origine du phénomène.
+        </p>
+
+        <div class="hero-actions">
+          <a href="analyseur.html" class="btn btn-accent btn-lg">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <span data-i18n="index.hero.btn_analyse">Analyser un motif</span>
+          </a>
+          <a href="#comment-ca-fonctionne" class="btn btn-outline-white btn-lg" data-i18n="index.hero.btn_how">Comment
+            ça fonctionne</a>
+        </div>
+
+        <div class="hero-stats">
+          <div>
+            <span class="hero-stat-value">13</span>
+            <span class="hero-stat-label" data-i18n="index.hero.stat_classes">Classes de fréquences</span>
+          </div>
+          <div>
+            <span class="hero-stat-value">CNN</span>
+            <span class="hero-stat-label" data-i18n="index.hero.stat_arch">Architecture cible</span>
+          </div>
+          <div>
+            <span class="hero-stat-value">224×</span>
+            <span class="hero-stat-label" data-i18n="index.hero.stat_res">Résolution d'entrée (px)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel visuel hero -->
+      <div class="hero-visual" aria-hidden="true">
+        <div style="position:relative;">
+          <div class="chladni-visual" style="width:360px;height:360px;">
+            <div class="wave-bg"></div>
+            <canvas id="hero-canvas-2" width="280" height="280" style="position:relative;z-index:1;"></canvas>
+            <!-- Badge -->
+            <div
+              style="position:absolute;bottom:1.25rem;left:50%;transform:translateX(-50%);display:flex;gap:.5rem;white-space:nowrap;">
+              <span class="badge badge-accent" style="font-size:.7rem;">Mode (2,3) — 660 Hz</span>
+            </div>
+          </div>
+          <!-- Annotations -->
+          <div
+            style="position:absolute;top:1rem;right:-4.5rem;background:rgba(18,62,77,.9);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.625rem .875rem;backdrop-filter:blur(8px);">
+            <div
+              style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:.25rem;"
+              data-i18n="index.hero.nodes_label">Nœuds</div>
+            <div style="font-size:1.25rem;font-weight:700;font-family:var(--font-serif);color:#fff;">8</div>
+          </div>
+          <div
+            style="position:absolute;bottom:3rem;right:-4.5rem;background:rgba(18,62,77,.9);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.625rem .875rem;backdrop-filter:blur(8px);">
+            <div
+              style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:.25rem;"
+              data-i18n="index.hero.conf_label">Confiance</div>
+            <div style="font-size:1.25rem;font-weight:700;font-family:var(--font-serif);color:var(--c-accent);">87%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     BANDE D'INTRODUCTION
+════════════════════════════════════════════════════════════════ -->
+  <section class="section-sm" style="background:var(--c-primary);" aria-label="Présentation du projet">
+    <div class="container">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <p style="color:rgba(255,255,255,.85);font-size:1rem;max-width:600px;line-height:1.6;"
+          data-i18n-html="index.intro.text">
+          <strong style="color:#fff;">Ernst Chladni</strong> (1756–1827), physicien né à Wittenberg, a mis en évidence
+          que la vibration d'une plaque produit des figures géométriques caractéristiques. Ce projet utilise la vision
+          par ordinateur et l'apprentissage automatique pour inverser ce processus.
+        </p>
+        <div class="flex gap-3 flex-wrap">
+          <span class="badge badge-dark" data-i18n="index.intro.badge1">Physique des ondes</span>
+          <span class="badge badge-dark" data-i18n="index.intro.badge2">Vision par ordinateur</span>
+          <span class="badge badge-dark" data-i18n="index.intro.badge3">Apprentissage automatique</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     COMMENT ÇA FONCTIONNE
+════════════════════════════════════════════════════════════════ -->
+  <section class="section" id="comment-ca-fonctionne" aria-labelledby="howto-title">
+    <div class="container">
+      <div class="text-center" style="max-width:640px;margin:0 auto 4rem;">
+        <div class="section-eyebrow justify-center" style="justify-content:center;" data-i18n="index.howto.eyebrow">
+          Comment ça fonctionne</div>
+        <h2 class="section-title" id="howto-title" data-i18n="index.howto.title">Du son au motif, du motif à la
+          fréquence</h2>
+        <p class="section-subtitle mx-auto" data-i18n="index.howto.subtitle">
+          Wittenberg inverse le processus physique : là où Chladni observait les motifs produits par un son connu,
+          l'application prédit la fréquence à partir d'un motif observé.
+        </p>
+      </div>
+
+      <!-- Steps -->
+      <div style="max-width:680px;margin:0 auto;">
+        <div class="flex gap-4 slide-up">
+          <div>
+            <div class="step-number">1</div>
+            <div class="step-connector"></div>
+          </div>
+          <div style="padding-bottom:2rem;">
+            <h3 style="font-family:var(--font-serif);font-size:1.25rem;color:var(--c-dark);margin-bottom:.5rem;"
+              data-i18n="index.howto.s1_title">Expérience physique</h3>
+            <p style="color:var(--c-text-muted);line-height:1.7;" data-i18n="index.howto.s1_desc">Une fréquence sonore
+              est appliquée à une plaque vibrante couverte de sel fin. Les grains migrent vers les lignes nodales (zones
+              de vibration nulle) et forment un motif géométrique caractéristique.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 slide-up delay-1">
+          <div>
+            <div class="step-number">2</div>
+            <div class="step-connector"></div>
+          </div>
+          <div style="padding-bottom:2rem;">
+            <h3 style="font-family:var(--font-serif);font-size:1.25rem;color:var(--c-dark);margin-bottom:.5rem;"
+              data-i18n="index.howto.s2_title">Capture de l'image</h3>
+            <p style="color:var(--c-text-muted);line-height:1.7;" data-i18n="index.howto.s2_desc">Une photo du motif est
+              prise sous des conditions contrôlées : caméra fixe, éclairage constant, quantité de sel identique. La
+              reproductibilité est essentielle pour l'entraînement du modèle.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 slide-up delay-2">
+          <div>
+            <div class="step-number">3</div>
+            <div class="step-connector"></div>
+          </div>
+          <div style="padding-bottom:2rem;">
+            <h3 style="font-family:var(--font-serif);font-size:1.25rem;color:var(--c-dark);margin-bottom:.5rem;"
+              data-i18n="index.howto.s3_title">Prétraitement de l'image</h3>
+            <p style="color:var(--c-text-muted);line-height:1.7;" data-i18n="index.howto.s3_desc">L'image est
+              redimensionnée, convertie en niveaux de gris et normalisée en contraste. Cette étape standardise l'entrée
+              du modèle et élimine les variations d'éclairage mineures.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 slide-up delay-3">
+          <div>
+            <div class="step-number">4</div>
+            <div class="step-connector"></div>
+          </div>
+          <div style="padding-bottom:2rem;">
+            <h3 style="font-family:var(--font-serif);font-size:1.25rem;color:var(--c-dark);margin-bottom:.5rem;"
+              data-i18n="index.howto.s4_title">Inférence par réseau de neurones</h3>
+            <p style="color:var(--c-text-muted);line-height:1.7;" data-i18n="index.howto.s4_desc">Un réseau de neurones
+              convolutif (CNN), entraîné sur la base de données d'images étiquetées, classifie le motif et produit un
+              vecteur de probabilités par classe de fréquence.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 slide-up delay-4">
+          <div>
+            <div class="step-number">5</div>
+          </div>
+          <div>
+            <h3 style="font-family:var(--font-serif);font-size:1.25rem;color:var(--c-dark);margin-bottom:.5rem;"
+              data-i18n="index.howto.s5_title">Affichage du résultat</h3>
+            <p style="color:var(--c-text-muted);line-height:1.7;" data-i18n="index.howto.s5_desc">La fréquence estimée
+              s'affiche avec son niveau de confiance. Si la confiance est faible, le système signale l'ambiguïté et
+              présente les trois hypothèses les plus probables.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     CONCEPTS SCIENTIFIQUES
+════════════════════════════════════════════════════════════════ -->
+  <section class="section section-alt" aria-labelledby="concepts-title">
+    <div class="container">
+      <div class="text-center" style="max-width:640px;margin:0 auto 3rem;">
+        <div class="section-eyebrow" style="justify-content:center;" data-i18n="index.concepts.eyebrow">Fondements
+          scientifiques</div>
+        <h2 class="section-title" id="concepts-title" data-i18n="index.concepts.title">Concepts clés</h2>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6">
+        <!-- Fréquence -->
+        <div class="card slide-up">
+          <div class="concept-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <path d="M2 12h2l3-9 4 18 3-12 2 6h6" />
+            </svg>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;"
+            data-i18n="index.concepts.freq_title">Fréquence sonore</h3>
+          <p style="font-size:.9375rem;color:var(--c-text-muted);line-height:1.7;" data-i18n="index.concepts.freq_desc">
+            Nombre d'oscillations par seconde (Hz). Détermine la hauteur du son et, sur une plaque vibrante, la
+            géométrie du motif formé.</p>
+        </div>
+
+        <!-- Résonance -->
+        <div class="card slide-up delay-1">
+          <div class="concept-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <circle cx="12" cy="12" r="7" />
+              <circle cx="12" cy="12" r="11" />
+            </svg>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;"
+            data-i18n="index.concepts.res_title">Résonance</h3>
+          <p style="font-size:.9375rem;color:var(--c-text-muted);line-height:1.7;" data-i18n="index.concepts.res_desc">
+            Phénomène par lequel un objet vibre avec une amplitude maximale à certaines fréquences naturelles. Chaque
+            fréquence propre génère un mode de vibration distinct.</p>
+        </div>
+
+        <!-- Ondes stationnaires -->
+        <div class="card slide-up delay-2">
+          <div class="concept-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <path d="M2 12c2-6 4-6 6 0s4 6 6 0 4-6 6 0" />
+            </svg>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;"
+            data-i18n="index.concepts.waves_title">Ondes stationnaires</h3>
+          <p style="font-size:.9375rem;color:var(--c-text-muted);line-height:1.7;"
+            data-i18n="index.concepts.waves_desc">Superposition de deux ondes progressives de même fréquence et
+            amplitude se propageant en sens opposés. Produit des zones fixes d'amplitude nulle (nœuds) et maximale
+            (ventres).</p>
+        </div>
+
+        <!-- Nœuds -->
+        <div class="card slide-up delay-1">
+          <div class="concept-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <path d="M12 2v20M2 12h20" />
+              <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+            </svg>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;"
+            data-i18n="index.concepts.nodes_title">Nœuds &amp; ventres</h3>
+          <p style="font-size:.9375rem;color:var(--c-text-muted);line-height:1.7;"
+            data-i18n-html="index.concepts.nodes_desc">Les <strong>nœuds</strong> sont les points de vibration nulle où
+            les grains s'accumulent. Les <strong>ventres</strong> sont les zones d'amplitude maximale, d'où les grains
+            sont expulsés.</p>
+        </div>
+
+        <!-- Figures de Chladni -->
+        <div class="card slide-up delay-2">
+          <div class="concept-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="1" />
+              <path d="M3 12h18M12 3v18M6 6l12 12M18 6 6 18" />
+            </svg>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;"
+            data-i18n="index.concepts.chladni_title">Figures de Chladni</h3>
+          <p style="font-size:.9375rem;color:var(--c-text-muted);line-height:1.7;"
+            data-i18n="index.concepts.chladni_desc">Motifs visibles formés par les grains sur une plaque vibrante.
+            Chaque mode (m,n) produit une figure unique dépendant de la géométrie de la plaque et de la fréquence
+            appliquée.</p>
+        </div>
+
+        <!-- CNN -->
+        <div class="card slide-up delay-3">
+          <div class="concept-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+              aria-hidden="true">
+              <rect x="2" y="7" width="4" height="10" rx="1" />
+              <rect x="10" y="4" width="4" height="16" rx="1" />
+              <rect x="18" y="7" width="4" height="10" rx="1" />
+              <path d="M6 10h4M6 14h4M14 10h4M14 14h4" />
+            </svg>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;"
+            data-i18n="index.concepts.cnn_title">Réseau convolutif (CNN)</h3>
+          <p style="font-size:.9375rem;color:var(--c-text-muted);line-height:1.7;" data-i18n="index.concepts.cnn_desc">
+            Architecture d'apprentissage profond spécialisée dans l'analyse d'images. Elle extrait automatiquement les
+            caractéristiques visuelles des motifs pour les classifier selon la fréquence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     SECTION ML / APPRENTISSAGE AUTOMATIQUE
+════════════════════════════════════════════════════════════════ -->
+  <section class="section section-dark" aria-labelledby="ml-title">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;">
+        <div class="slide-up">
+          <div class="section-eyebrow" style="color:var(--c-accent);"><span
+              style="width:24px;height:1px;background:var(--c-accent);display:inline-block;vertical-align:middle;margin-right:.5rem;"></span><span
+              data-i18n="index.ml.eyebrow">Apprentissage automatique</span></div>
+          <h2 class="section-title section-title-white" id="ml-title" data-i18n="index.ml.title">Un modèle supervisé
+            pour décoder les motifs</h2>
+          <p class="section-subtitle section-subtitle-white" style="margin-bottom:2rem;" data-i18n="index.ml.subtitle">
+            L'approche repose sur un apprentissage supervisé : chaque image est étiquetée avec la fréquence
+            correspondante. Le modèle apprend à associer les caractéristiques visuelles d'un motif à sa classe de
+            fréquence.
+          </p>
+
+          <div class="flex flex-col gap-3">
+            <div class="flex items-start gap-3">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(207,169,106,.15);border:1px solid rgba(207,169,106,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.125rem;">
+                <span style="color:var(--c-accent);font-size:.875rem;font-weight:700;">1</span>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;margin-bottom:.25rem;font-size:.9375rem;"
+                  data-i18n="index.ml.s1_title">Collecte &amp; étiquetage</div>
+                <div style="color:rgba(255,255,255,.6);font-size:.875rem;line-height:1.6;" data-i18n="index.ml.s1_desc">
+                  Images capturées pour chaque fréquence connue, stockées avec leur label.</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(207,169,106,.15);border:1px solid rgba(207,169,106,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.125rem;">
+                <span style="color:var(--c-accent);font-size:.875rem;font-weight:700;">2</span>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;margin-bottom:.25rem;font-size:.9375rem;"
+                  data-i18n="index.ml.s2_title">Entraînement du CNN</div>
+                <div style="color:rgba(255,255,255,.6);font-size:.875rem;line-height:1.6;" data-i18n="index.ml.s2_desc">
+                  Le réseau apprend les caractéristiques visuelles distinctives de chaque motif.</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(207,169,106,.15);border:1px solid rgba(207,169,106,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.125rem;">
+                <span style="color:var(--c-accent);font-size:.875rem;font-weight:700;">3</span>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;margin-bottom:.25rem;font-size:.9375rem;"
+                  data-i18n="index.ml.s3_title">Validation &amp; test</div>
+                <div style="color:rgba(255,255,255,.6);font-size:.875rem;line-height:1.6;" data-i18n="index.ml.s3_desc">
+                  Évaluation sur un jeu de données non vu pour mesurer la précision réelle.</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(207,169,106,.15);border:1px solid rgba(207,169,106,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.125rem;">
+                <span style="color:var(--c-accent);font-size:.875rem;font-weight:700;">4</span>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;margin-bottom:.25rem;font-size:.9375rem;"
+                  data-i18n="index.ml.s4_title">Déploiement dans l'interface</div>
+                <div style="color:rgba(255,255,255,.6);font-size:.875rem;line-height:1.6;" data-i18n="index.ml.s4_desc">
+                  Le modèle exporté (TensorFlow.js / ONNX) est intégré directement dans le navigateur.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pipeline diagram -->
+        <div class="slide-up delay-2" aria-hidden="true">
+          <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <!-- Node 1 -->
+            <div class="card card-dark" style="display:flex;align-items:center;gap:1rem;">
+              <div
+                style="width:40px;height:40px;background:rgba(32,95,117,.4);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--c-accent);">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+                  <path d="M3 15l6-6 4 4 4-4 4 4" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;font-size:.875rem;" data-i18n="index.ml.node1_title">Image
+                  d'entrée (224×224 px)</div>
+                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node1_sub">JPEG / PNG —
+                  niveaux de gris</div>
+              </div>
+            </div>
+            <!-- Arrow -->
+            <div style="text-align:center;color:rgba(255,255,255,.2);font-size:1.25rem;">↓</div>
+            <!-- Node 2 -->
+            <div class="card card-dark" style="display:flex;align-items:center;gap:1rem;">
+              <div
+                style="width:40px;height:40px;background:rgba(32,95,117,.4);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--c-accent);">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                  <path d="M12 2a10 10 0 0 1 0 20A10 10 0 0 1 12 2z" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;font-size:.875rem;" data-i18n="index.ml.node2_title">
+                  Prétraitement</div>
+                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node2_sub">
+                  Redimensionnement, normalisation, détection de contours</div>
+              </div>
+            </div>
+            <div style="text-align:center;color:rgba(255,255,255,.2);font-size:1.25rem;">↓</div>
+            <!-- Node 3 -->
+            <div class="card card-dark"
+              style="display:flex;align-items:center;gap:1rem;border-color:rgba(207,169,106,.3);">
+              <div
+                style="width:40px;height:40px;background:rgba(207,169,106,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--c-accent);">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                  <rect x="2" y="7" width="4" height="10" rx="1" />
+                  <rect x="10" y="4" width="4" height="16" rx="1" />
+                  <rect x="18" y="7" width="4" height="10" rx="1" />
+                  <path d="M6 10h4M6 14h4M14 10h4M14 14h4" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:600;color:var(--c-accent);font-size:.875rem;" data-i18n="index.ml.node3_title">
+                  Réseau CNN (inférence)</div>
+                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node3_sub">TensorFlow.js
+                  / ONNX — local ou API</div>
+              </div>
+            </div>
+            <div style="text-align:center;color:rgba(255,255,255,.2);font-size:1.25rem;">↓</div>
+            <!-- Node 4 -->
+            <div class="card card-dark" style="display:flex;align-items:center;gap:1rem;">
+              <div
+                style="width:40px;height:40px;background:rgba(32,95,117,.4);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--c-accent);">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:600;color:#fff;font-size:.875rem;" data-i18n="index.ml.node4_title">Résultat :
+                  fréquence + confiance</div>
+                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node4_sub">Ex. : 660 Hz —
+                  confiance 87 %</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     LIMITATIONS
+════════════════════════════════════════════════════════════════ -->
+  <section class="section" aria-labelledby="limites-title">
+    <div class="container">
+      <div class="text-center" style="max-width:600px;margin:0 auto 3rem;">
+        <div class="section-eyebrow" style="justify-content:center;" data-i18n="index.limits.eyebrow">Honnêteté
+          scientifique</div>
+        <h2 class="section-title" id="limites-title" data-i18n="index.limits.title">Limites &amp; conditions</h2>
+        <p class="section-subtitle mx-auto" data-i18n="index.limits.subtitle">Identifier correctement une fréquence à
+          partir d'un motif exige des conditions expérimentales très strictes.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 slide-up" style="max-width:900px;margin:0 auto;">
+        <div class="warn-box flex items-start gap-3">
+          <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+          <div>
+            <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);"
+              data-i18n="index.limits.w1_title">Éclairage variable</strong>
+            <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="index.limits.w1_desc">Un éclairage non
+              uniforme modifie l'apparence du motif et peut induire des erreurs de classification.</span>
+          </div>
+        </div>
+        <div class="warn-box flex items-start gap-3">
+          <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+          <div>
+            <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);"
+              data-i18n="index.limits.w2_title">Quantité de matériau</strong>
+            <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="index.limits.w2_desc">La densité des
+              grains influence la netteté du motif. Une quantité trop faible ou trop élevée déforme les lignes
+              nodales.</span>
+          </div>
+        </div>
+        <div class="warn-box flex items-start gap-3">
+          <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+          <div>
+            <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);"
+              data-i18n="index.limits.w3_title">Similarité entre motifs</strong>
+            <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="index.limits.w3_desc">Certaines
+              fréquences proches produisent des motifs visuellement similaires, rendant la classification ambiguë même
+              pour un humain.</span>
+          </div>
+        </div>
+        <div class="warn-box flex items-start gap-3">
+          <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+          <div>
+            <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);"
+              data-i18n="index.limits.w4_title">Données d'entraînement</strong>
+            <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="index.limits.w4_desc">Un modèle entraîné
+              sur peu d'images par classe risque le sur-apprentissage et une faible généralisation.</span>
+          </div>
+        </div>
+        <div class="warn-box flex items-start gap-3">
+          <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+          <div>
+            <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);"
+              data-i18n="index.limits.w5_title">Angle de caméra</strong>
+            <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="index.limits.w5_desc">Un léger angle
+              modifie la perspective du motif. La caméra doit être strictement perpendiculaire à la plaque.</span>
+          </div>
+        </div>
+        <div class="warn-box flex items-start gap-3">
+          <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+          <div>
+            <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);"
+              data-i18n="index.limits.w6_title">Stabilité de la fréquence</strong>
+            <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="index.limits.w6_desc">La fréquence doit
+              rester stable pendant la durée d'exposition pour que les grains atteignent leur position
+              d'équilibre.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     CTA FINAL
+════════════════════════════════════════════════════════════════ -->
+  <section class="section section-alt" aria-label="Appel à l'action">
+    <div class="container text-center">
+      <div style="max-width:580px;margin:0 auto;" class="slide-up">
+        <div
+          style="width:60px;height:60px;border-radius:50%;background:var(--c-primary);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;color:#fff;">
+          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"
+            aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+        </div>
+        <h2 class="section-title" style="margin-bottom:1rem;" data-i18n="index.cta.title">Prêt à analyser un
+          motif&nbsp;?</h2>
+        <p class="section-subtitle mx-auto" style="margin-bottom:2rem;" data-i18n="index.cta.desc">
+          Capturez ou importez une image d'un motif de Chladni et obtenez une estimation de fréquence.
+          Le modèle est actuellement en phase de simulation — la connexion au modèle réel sera disponible après
+          entraînement.
+        </p>
+        <div class="flex gap-3 justify-center flex-wrap">
+          <a href="analyseur.html" class="btn btn-primary btn-lg" data-i18n="index.cta.btn_open">Ouvrir l'analyseur</a>
+          <a href="experience.html" class="btn btn-outline btn-lg" data-i18n="index.cta.btn_exp">Voir l'expérience</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════════ -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="grid grid-cols-4 gap-8">
+        <!-- Brand -->
+        <div style="grid-column:span 2;">
+          <div class="footer-logo">
+            <svg class="isotype" viewBox="0 0 1760.68 1712" fill="none" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true">
+              <path fill="currentColor"
+                d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62ZM1563.62,713.11c16.01-228.27-90.33-386.8-341.98-478.39-251.65-91.58-506.5-25.89-569.41,146.7-62.77,172.59,126.1,345.74,335.44,499.82,109.54,80.87,300.37,214.35,410.74,185.54,102.86-27,158.67-261.95,165.21-353.67ZM1120.03,1293.66c9.19-113.58-155.47-278.37-254.02-372.32-188.18-179.27-391.39-335.3-550.48-243.44-159.09,91.86-179.55,354.37-45.65,586.26,133.9,231.89,308.44,309.13,530.58,253.6,89.08-22.13,310.8-118.03,319.57-224.09Z" />
+            </svg>
+            <svg class="logotext" viewBox="0 0 1892 359.78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+              style="fill:currentColor;stroke:currentColor;stroke-miterlimit:10">
+              <path
+                d="M89.85,55.45l5.98,108.76c.19,3.37,4.66,4.4,6.3,1.45l61.31-110.21h-24.37l8.55-37.93h87.96l-8.88,37.93h-21.95l6.38,108.23c.21,3.54,4.92,4.62,6.64,1.52l61.05-109.75h-24.37l8.55-37.93h95.54l-8.55,37.93h-22.59l-110.54,198.48c-2.89,5.2-8.37,8.42-14.32,8.42h-27.53c-6.5,0-11.87-5.06-12.26-11.55l-5.1-85.33c-.19-3.24-4.49-4.22-6.07-1.39l-50.98,91.43c-2.35,4.22-6.81,6.84-11.64,6.84h-30.75c-5.44,0-9.94-4.23-10.28-9.66l-12.31-197.23H11.41h0c5.1-22.2,24.86-37.93,47.63-37.93h61.14s-8.55,37.93-8.55,37.93h-21.79Z" />
+              <path
+                d="M412.84,232.95l-4.46,19.49c-1.11,4.85-5.42,8.29-10.4,8.29h-77.55c-3.71,0-6.48-3.43-5.68-7.06l4.88-22.23c.86-3.91,4.32-6.7,8.33-6.7h12.03l22.43-97.15h-22.76l8.23-36.47h74.72l-30.66,133.63h14.34c4.31,0,7.5,4.01,6.54,8.21ZM435.53,41.25c0,7.75-2.8,14.42-8.39,20.01-5.6,5.6-12.37,8.39-20.33,8.39s-14.36-2.8-19.85-8.39c-5.49-5.59-8.23-12.26-8.23-20.01s2.69-14.69,8.07-20.17c5.38-5.49,12.05-8.23,20.01-8.23s15.01,2.74,20.5,8.23c5.49,5.49,8.23,12.21,8.23,20.17Z" />
+              <path
+                d="M565.45,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.54,0,9.93-1.31,16.17-3.94,3.61-1.52,7.43,1.66,6.53,5.47l-5.71,24.13c-.77,3.24-3.05,5.91-6.12,7.19-13.03,5.43-25.8,8.15-38.31,8.15-11.3,0-20.31-3.09-27.03-9.28-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z" />
+              <path
+                d="M688.42,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.04,0,8.76-1.04,14.16-3.13,4.5-1.74,9.12,2.24,8.01,6.94l-4.55,19.23c-1.19,5.05-4.85,9.12-9.69,10.99-12.01,4.64-23.8,6.96-35.37,6.96s-20.31-3.09-27.03-9.28c-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z" />
+              <path
+                d="M861.43,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,11.92,0,21.94-5.04,30.06-15.13,3.08-3.83,8.45-4.96,12.94-2.96l19.79,8.81c5.56,2.48,7.04,9.61,3.05,14.2-7.19,8.28-15.58,14.73-25.16,19.36-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM812.85,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z" />
+              <path
+                d="M1071.23,128.88c0,3.34-.32,6.81-.97,10.41-.65,3.61-1.78,8.74-3.39,15.41l-16.14,70.04h23.08l-6.36,27.81c-1.09,4.78-5.35,8.18-10.26,8.18h-53.41c-6.77,0-11.78-6.3-10.25-12.9l21.86-94.26c.86-4.41,1.29-7.48,1.29-9.2,0-4.41-1.05-7.93-3.15-10.57-2.1-2.64-5.25-3.95-9.44-3.95-8.61,0-21.46,6.29-38.57,18.88l-17.59,76.01h21.46l-6.27,27.42c-1.15,5.02-5.61,8.57-10.75,8.57h-69.2c-7.09,0-12.33-6.58-10.75-13.49l5.15-22.5h18.56l22.43-97.15h-25.5,0c4.81-21.33,23.76-36.47,45.62-36.47h40.08s-5,21.14-5,21.14c11.62-8.72,21.89-14.74,30.82-18.08,8.93-3.33,19.26-5,30.99-5,10.76,0,19.39,3.63,25.9,10.89,6.51,7.26,9.76,16.86,9.76,28.81Z" />
+              <path
+                d="M1192.27,110.32c13.88-15.6,30.07-23.4,48.58-23.4s32.49,6.67,43.25,20.01c10.76,13.34,16.14,30.66,16.14,51.97,0,17.43-3.63,34.19-10.89,50.27-7.26,16.09-17.62,29.08-31.07,38.97-13.45,9.9-29,14.85-46.64,14.85-19.58,0-35.88-9.47-48.9-28.4l-5.97,26.14h-70.36l8.55-35.99h18.56l39.38-170.91h-22.76,0c4.81-21.24,23.69-36.31,45.46-36.31h37.49l-21.63,92.15.81.65ZM1202.11,222.65c9.25,0,17.24-3.07,23.97-9.2,6.72-6.13,11.78-14.04,15.17-23.72,3.39-9.68,5.08-19.96,5.08-30.82,0-9.9-2.18-17.7-6.54-23.4-4.36-5.7-10.63-8.55-18.8-8.55-9.25,0-17.51,3.53-24.77,10.57-7.26,7.05-12.67,15.63-16.22,25.74-3.55,10.11-5.33,19.69-5.33,28.73s2.47,16.14,7.42,21.95c4.95,5.81,11.62,8.71,20.01,8.71Z" />
+              <path
+                d="M1493.41,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,14.31,0,25.88-7.26,34.7-21.79l38.41,17.11c-8.61,13.02-19.42,22.67-32.44,28.97-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM1444.84,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z" />
+              <path
+                d="M1670.78,91.12l-10.17,45.35c-5.7-1.29-11.03-1.94-15.98-1.94-28.19,0-46.21,18.4-54.06,55.19l-8.07,35.02h26.47l-8.23,35.99h-98.77l8.23-35.99h20.5l22.43-97.15h-23.08,0c4.81-21.33,23.76-36.47,45.62-36.47h31.68l-11.62,49.38.65.65c10.01-19.26,19.47-32.68,28.4-40.27,8.93-7.59,19.42-11.38,31.47-11.38,3.76,0,8.61.54,14.52,1.61Z" />
+              <path
+                d="M1797.78,119.2h0c3.88-16.45,18.56-28.08,35.47-28.08h42.81l-8.23,36.47h-18.72l-29.86,127.82c-13.02,56.7-48.15,85.05-105.38,85.05-30.45,0-56.32-5.54-77.63-16.62l15.82-37.6c20.98,9.68,39.48,14.52,55.52,14.52,13.66,0,24.4-1.94,32.2-5.81,7.8-3.87,13.96-9.92,18.48-18.16s8.44-19.77,11.78-34.62l-.65-.97c-14.74,13.88-30.07,20.82-45.99,20.82-19.8,0-34.89-6.32-45.27-18.96-10.38-12.64-15.57-29.67-15.57-51.08,0-17.64,3.77-34.29,11.3-49.95,7.53-15.65,18.02-28.32,31.47-38.01,13.45-9.68,28.62-14.52,45.51-14.52,20.12,0,35.77,9.9,46.96,29.69ZM1743.56,222.32c9.47,0,17.45-3.17,23.97-9.52,6.51-6.35,11.38-14.2,14.61-23.56,3.23-9.36,4.84-18.66,4.84-27.92s-2.5-16.81-7.5-22.68c-5-5.86-11.65-8.8-19.93-8.8-9.04,0-16.92,3.36-23.64,10.09-6.72,6.73-11.86,14.88-15.41,24.45-3.55,9.58-5.33,18.67-5.33,27.27,0,9.25,2.47,16.68,7.42,22.27,4.95,5.6,11.94,8.39,20.98,8.39Z" />
+            </svg>
+          </div>
+          <p class="footer-desc" data-i18n="footer.desc">
+            Outil de recherche pour l'identification visuelle de fréquences sonores par analyse de motifs de Chladni et
+            apprentissage automatique.
+          </p>
+          <span class="footer-tdr" data-i18n="footer.tdr">Projet TDR — Lycée, 2025–2026</span>
+        </div>
+
+        <!-- Navigation -->
+        <div class="footer-links">
+          <h4 data-i18n="footer.nav_title">Navigation</h4>
+          <a href="index.html" data-i18n="nav.home">Accueil</a>
+          <a href="analyseur.html" data-i18n="nav.analyser">Analyseur</a>
+          <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+          <a href="donnees.html" data-i18n="nav.data">Données</a>
+          <a href="apropos.html" data-i18n="nav.about">À propos</a>
+        </div>
+
+        <!-- Concepts -->
+        <div class="footer-links">
+          <h4 data-i18n="index.foot_concepts">Concepts</h4>
+          <a href="experience.html" data-i18n="index.foot_link1">Motifs de Chladni</a>
+          <a href="experience.html" data-i18n="index.foot_link2">Résonance</a>
+          <a href="donnees.html" data-i18n="index.foot_link3">Base de données</a>
+          <a href="apropos.html" data-i18n="index.foot_link4">Méthode CNN</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span data-i18n="footer.bottom_copy">© 2026 Wittenberg — Projet de recherche éducative</span>
+        <span data-i18n="footer.bottom_ref">Ernst Chladni (1756–1827) — Wittenberg, Saxe</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/frequencies.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Dessiner les motifs de Chladni décoratifs dans le hero
+    (function () {
+      function drawHeroChladni(canvasId, m, n, color, alpha) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        const step = 3;
+        const threshold = 0.06;
+        ctx.clearRect(0, 0, W, H);
+        for (let px = 0; px < W; px += step) {
+          for (let py = 0; py < H; py += step) {
+            const x = (px / W) * Math.PI;
+            const y = (py / H) * Math.PI;
+            const z = Math.cos(m * x) * Math.cos(n * y) - Math.cos(n * x) * Math.cos(m * y);
+            if (Math.abs(z) < threshold) {
+              ctx.globalAlpha = alpha;
+              ctx.fillStyle = color;
+              ctx.fillRect(px, py, step, step);
+            }
+          }
+        }
+      }
+
+      drawHeroChladni('hero-canvas', 3, 4, '#205f75', 0.6);
+      drawHeroChladni('hero-canvas-2', 2, 3, '#CFA96A', 0.85);
+    })();
+  </script>
+</body>
+
+</html>

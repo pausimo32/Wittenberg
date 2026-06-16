@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Wittenberg — À propos du projet de recherche : fondements, méthode et perspective éducative.">
+  <title>À propos — Wittenberg</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/isotype.svg" type="image/svg+xml">
+  <style>
+    .about-section {
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--c-bg2);
+    }
+    .about-section:last-child { border-bottom: none; }
+
+    .quote-block {
+      border-left: 4px solid var(--c-accent);
+      padding: 1rem 1.5rem;
+      background: rgba(207,169,106,.06);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-family: var(--font-serif);
+      font-size: 1.0625rem;
+      color: var(--c-dark);
+      line-height: 1.8;
+      font-style: italic;
+      margin: 1.5rem 0;
+    }
+    .quote-block cite {
+      display: block;
+      margin-top: .75rem;
+      font-size: .8125rem;
+      font-style: normal;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      color: var(--c-text-muted);
+      letter-spacing: .02em;
+    }
+
+    .team-card {
+      background: #fff;
+      border: 1px solid var(--c-bg2);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--c-bg2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-family: var(--font-serif);
+      font-size: 1.75rem;
+      color: var(--c-primary);
+      font-weight: 600;
+    }
+
+    .toc {
+      background: #fff;
+      border: 1px solid var(--c-bg2);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      position: sticky;
+      top: 80px;
+    }
+    .toc a {
+      display: block;
+      font-size: .875rem;
+      color: var(--c-text-muted);
+      padding: .4rem 0;
+      border-left: 2px solid transparent;
+      padding-left: .75rem;
+      margin-left: -.75rem;
+      transition: var(--transition);
+    }
+    .toc a:hover { color: var(--c-primary); border-left-color: var(--c-primary); }
+    .toc-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--c-text-muted); margin-bottom: .75rem; }
+
+    .about-layout { display: grid; grid-template-columns: 240px 1fr; gap: 3rem; align-items: start; }
+    @media(max-width: 900px){ .about-layout { grid-template-columns: 1fr; } .toc { display: none; } }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" role="navigation" aria-label="Navigation principale">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="Wittenberg — Accueil">
+      <svg class="isotype" viewBox="0 0 1760.68 1712" fill="none" aria-hidden="true">
+        <path fill="currentColor" d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62ZM1563.62,713.11c16.01-228.27-90.33-386.8-341.98-478.39-251.65-91.58-506.5-25.89-569.41,146.7-62.77,172.59,126.1,345.74,335.44,499.82,109.54,80.87,300.37,214.35,410.74,185.54,102.86-27,158.67-261.95,165.21-353.67ZM1120.03,1293.66c9.19-113.58-155.47-278.37-254.02-372.32-188.18-179.27-391.39-335.3-550.48-243.44-159.09,91.86-179.55,354.37-45.65,586.26,133.9,231.89,308.44,309.13,530.58,253.6,89.08-22.13,310.8-118.03,319.57-224.09Z"/>
+      </svg>
+      <svg class="logotext" viewBox="0 0 1892 359.78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="fill:currentColor;stroke:currentColor;stroke-miterlimit:10"><path d="M89.85,55.45l5.98,108.76c.19,3.37,4.66,4.4,6.3,1.45l61.31-110.21h-24.37l8.55-37.93h87.96l-8.88,37.93h-21.95l6.38,108.23c.21,3.54,4.92,4.62,6.64,1.52l61.05-109.75h-24.37l8.55-37.93h95.54l-8.55,37.93h-22.59l-110.54,198.48c-2.89,5.2-8.37,8.42-14.32,8.42h-27.53c-6.5,0-11.87-5.06-12.26-11.55l-5.1-85.33c-.19-3.24-4.49-4.22-6.07-1.39l-50.98,91.43c-2.35,4.22-6.81,6.84-11.64,6.84h-30.75c-5.44,0-9.94-4.23-10.28-9.66l-12.31-197.23H11.41h0c5.1-22.2,24.86-37.93,47.63-37.93h61.14s-8.55,37.93-8.55,37.93h-21.79Z"/><path d="M412.84,232.95l-4.46,19.49c-1.11,4.85-5.42,8.29-10.4,8.29h-77.55c-3.71,0-6.48-3.43-5.68-7.06l4.88-22.23c.86-3.91,4.32-6.7,8.33-6.7h12.03l22.43-97.15h-22.76l8.23-36.47h74.72l-30.66,133.63h14.34c4.31,0,7.5,4.01,6.54,8.21ZM435.53,41.25c0,7.75-2.8,14.42-8.39,20.01-5.6,5.6-12.37,8.39-20.33,8.39s-14.36-2.8-19.85-8.39c-5.49-5.59-8.23-12.26-8.23-20.01s2.69-14.69,8.07-20.17c5.38-5.49,12.05-8.23,20.01-8.23s15.01,2.74,20.5,8.23c5.49,5.49,8.23,12.21,8.23,20.17Z"/><path d="M565.45,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.54,0,9.93-1.31,16.17-3.94,3.61-1.52,7.43,1.66,6.53,5.47l-5.71,24.13c-.77,3.24-3.05,5.91-6.12,7.19-13.03,5.43-25.8,8.15-38.31,8.15-11.3,0-20.31-3.09-27.03-9.28-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M688.42,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.04,0,8.76-1.04,14.16-3.13,4.5-1.74,9.12,2.24,8.01,6.94l-4.55,19.23c-1.19,5.05-4.85,9.12-9.69,10.99-12.01,4.64-23.8,6.96-35.37,6.96s-20.31-3.09-27.03-9.28c-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M861.43,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,11.92,0,21.94-5.04,30.06-15.13,3.08-3.83,8.45-4.96,12.94-2.96l19.79,8.81c5.56,2.48,7.04,9.61,3.05,14.2-7.19,8.28-15.58,14.73-25.16,19.36-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM812.85,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1071.23,128.88c0,3.34-.32,6.81-.97,10.41-.65,3.61-1.78,8.74-3.39,15.41l-16.14,70.04h23.08l-6.36,27.81c-1.09,4.78-5.35,8.18-10.26,8.18h-53.41c-6.77,0-11.78-6.3-10.25-12.9l21.86-94.26c.86-4.41,1.29-7.48,1.29-9.2,0-4.41-1.05-7.93-3.15-10.57-2.1-2.64-5.25-3.95-9.44-3.95-8.61,0-21.46,6.29-38.57,18.88l-17.59,76.01h21.46l-6.27,27.42c-1.15,5.02-5.61,8.57-10.75,8.57h-69.2c-7.09,0-12.33-6.58-10.75-13.49l5.15-22.5h18.56l22.43-97.15h-25.5,0c4.81-21.33,23.76-36.47,45.62-36.47h40.08s-5,21.14-5,21.14c11.62-8.72,21.89-14.74,30.82-18.08,8.93-3.33,19.26-5,30.99-5,10.76,0,19.39,3.63,25.9,10.89,6.51,7.26,9.76,16.86,9.76,28.81Z"/><path d="M1192.27,110.32c13.88-15.6,30.07-23.4,48.58-23.4s32.49,6.67,43.25,20.01c10.76,13.34,16.14,30.66,16.14,51.97,0,17.43-3.63,34.19-10.89,50.27-7.26,16.09-17.62,29.08-31.07,38.97-13.45,9.9-29,14.85-46.64,14.85-19.58,0-35.88-9.47-48.9-28.4l-5.97,26.14h-70.36l8.55-35.99h18.56l39.38-170.91h-22.76,0c4.81-21.24,23.69-36.31,45.46-36.31h37.49l-21.63,92.15.81.65ZM1202.11,222.65c9.25,0,17.24-3.07,23.97-9.2,6.72-6.13,11.78-14.04,15.17-23.72,3.39-9.68,5.08-19.96,5.08-30.82,0-9.9-2.18-17.7-6.54-23.4-4.36-5.7-10.63-8.55-18.8-8.55-9.25,0-17.51,3.53-24.77,10.57-7.26,7.05-12.67,15.63-16.22,25.74-3.55,10.11-5.33,19.69-5.33,28.73s2.47,16.14,7.42,21.95c4.95,5.81,11.62,8.71,20.01,8.71Z"/><path d="M1493.41,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,14.31,0,25.88-7.26,34.7-21.79l38.41,17.11c-8.61,13.02-19.42,22.67-32.44,28.97-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM1444.84,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1670.78,91.12l-10.17,45.35c-5.7-1.29-11.03-1.94-15.98-1.94-28.19,0-46.21,18.4-54.06,55.19l-8.07,35.02h26.47l-8.23,35.99h-98.77l8.23-35.99h20.5l22.43-97.15h-23.08,0c4.81-21.33,23.76-36.47,45.62-36.47h31.68l-11.62,49.38.65.65c10.01-19.26,19.47-32.68,28.4-40.27,8.93-7.59,19.42-11.38,31.47-11.38,3.76,0,8.61.54,14.52,1.61Z"/><path d="M1797.78,119.2h0c3.88-16.45,18.56-28.08,35.47-28.08h42.81l-8.23,36.47h-18.72l-29.86,127.82c-13.02,56.7-48.15,85.05-105.38,85.05-30.45,0-56.32-5.54-77.63-16.62l15.82-37.6c20.98,9.68,39.48,14.52,55.52,14.52,13.66,0,24.4-1.94,32.2-5.81,7.8-3.87,13.96-9.92,18.48-18.16s8.44-19.77,11.78-34.62l-.65-.97c-14.74,13.88-30.07,20.82-45.99,20.82-19.8,0-34.89-6.32-45.27-18.96-10.38-12.64-15.57-29.67-15.57-51.08,0-17.64,3.77-34.29,11.3-49.95,7.53-15.65,18.02-28.32,31.47-38.01,13.45-9.68,28.62-14.52,45.51-14.52,20.12,0,35.77,9.9,46.96,29.69ZM1743.56,222.32c9.47,0,17.45-3.17,23.97-9.52,6.51-6.35,11.38-14.2,14.61-23.56,3.23-9.36,4.84-18.66,4.84-27.92s-2.5-16.81-7.5-22.68c-5-5.86-11.65-8.8-19.93-8.8-9.04,0-16.92,3.36-23.64,10.09-6.72,6.73-11.86,14.88-15.41,24.45-3.55,9.58-5.33,18.67-5.33,27.27,0,9.25,2.47,16.68,7.42,22.27,4.95,5.6,11.94,8.39,20.98,8.39Z"/></svg>
+    </a>
+    <div class="nav-links">
+      <a href="index.html"      class="nav-link" data-i18n="nav.home">Accueil</a>
+      <a href="analyseur.html"  class="nav-link" data-i18n="nav.analyser">Analyseur</a>
+      <a href="experience.html" class="nav-link" data-i18n="nav.experience">Expérience</a>
+      <a href="donnees.html"    class="nav-link" data-i18n="nav.data">Données</a>
+      <a href="apropos.html"    class="nav-link" data-i18n="nav.about">À propos</a>
+    </div>
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+    <a href="analyseur.html" class="nav-cta" data-i18n="nav.cta">Analyser un motif →</a>
+    <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile-menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <a href="index.html"      data-i18n="nav.home">Accueil</a>
+  <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
+  <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+  <a href="donnees.html"    data-i18n="nav.data">Données</a>
+  <a href="apropos.html"    data-i18n="nav.about">À propos</a>
+  <div class="lang-selector-mobile">
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<header class="page-header">
+  <div class="page-header-grid" aria-hidden="true"></div>
+  <div class="page-header-glow" aria-hidden="true"></div>
+  <div class="container page-header-content">
+    <div class="page-header-eyebrow" data-i18n="about.page_eyebrow">Projet de recherche — TDR</div>
+    <h1 class="page-header-title" data-i18n="about.page_title">À propos de Wittenberg</h1>
+    <p class="page-header-desc" data-i18n="about.page_desc">
+      Objectifs, fondements scientifiques, méthode et perspective éducative de ce projet de travail de recherche.
+    </p>
+  </div>
+</header>
+
+<main style="padding:2.5rem 0 5rem;" role="main">
+  <div class="container">
+    <div class="about-layout">
+
+      <!-- TABLE OF CONTENTS (sticky sidebar) -->
+      <aside aria-label="Table des matières">
+        <nav class="toc" aria-label="Navigation dans la page">
+          <div class="toc-title" data-i18n="about.toc_title">Table des matières</div>
+          <a href="#objectifs"          data-i18n="about.toc_obj">Objectifs du projet</a>
+          <a href="#fondements-physiques" data-i18n="about.toc_phys">Fondements physiques</a>
+          <a href="#fondements-info"    data-i18n="about.toc_info">Fondements informatiques</a>
+          <a href="#ernst-chladni"      data-i18n="about.toc_chladni">Ernst Chladni</a>
+          <a href="#limitations"        data-i18n="about.toc_limits">Limites reconnues</a>
+          <a href="#applications"       data-i18n="about.toc_apps">Applications éducatives</a>
+          <a href="#prototype"          data-i18n="about.toc_proto">Statut du prototype</a>
+        </nav>
+
+        <!-- Meta box -->
+        <div class="card" style="margin-top:1.25rem;">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:1rem;" data-i18n="about.meta_title">Informations du projet</div>
+          <div style="font-size:.875rem;color:var(--c-text);line-height:2;">
+            <div><strong data-i18n="about.meta_type">Type :</strong> <span data-i18n="about.meta_type_v">TDR (Travail de Recherche)</span></div>
+            <div><strong data-i18n="about.meta_year">Année :</strong> 2025 – 2026</div>
+            <div><strong data-i18n="about.meta_level">Niveau :</strong> <span data-i18n="about.meta_level_v">Lycée</span></div>
+            <div><strong data-i18n="about.meta_domains">Domaines :</strong> <span data-i18n="about.meta_dom_v">Physique, Informatique</span></div>
+            <div style="margin-top:.75rem;"><span class="badge badge-warn">Prototype — en cours</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <article>
+
+        <!-- OBJECTIFS -->
+        <section id="objectifs" class="about-section slide-up" aria-labelledby="obj-title">
+          <div class="section-eyebrow" data-i18n="about.obj_eyebrow">1. Objectifs</div>
+          <h2 id="obj-title" class="section-title" data-i18n="about.obj_title">Objectifs du projet</h2>
+          <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1rem;">
+            Le projet <strong>Wittenberg</strong> est un travail de recherche interdisciplinaire qui associe la physique des ondes et l'informatique. Son objectif principal est de démontrer qu'un système d'apprentissage automatique supervisé est capable d'identifier une fréquence sonore à partir de l'image du motif de Chladni qu'elle produit sur une plaque vibrante.
+          </p>
+          <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1rem;">
+            Les objectifs secondaires incluent :
+          </p>
+          <ul style="color:var(--c-text-muted);line-height:2;padding-left:1.25rem;list-style:disc;margin-bottom:1rem;">
+            <li>Concevoir un dispositif expérimental reproductible permettant la collecte d'images étiquetées.</li>
+            <li>Construire une base de données d'images organisée par classe de fréquence.</li>
+            <li>Entraîner et évaluer un réseau de neurones convolutif (CNN) sur cette base de données.</li>
+            <li>Développer une interface web permettant à un utilisateur de soumettre une image et d'obtenir une prédiction.</li>
+            <li>Documenter les limites et conditions de validité de la méthode.</li>
+          </ul>
+
+          <div class="quote-block">
+            « L'objectif n'est pas de remplacer la mesure directe de la fréquence, mais d'explorer si les motifs visuels contiennent suffisamment d'information pour une classification automatique fiable. »
+            <cite>— Wittenberg, Note de projet, 2025</cite>
+          </div>
+        </section>
+
+        <!-- FONDEMENTS PHYSIQUES -->
+        <section id="fondements-physiques" class="about-section slide-up" aria-labelledby="phys-title">
+          <div class="section-eyebrow" data-i18n="about.phys_eyebrow">2. Physique</div>
+          <h2 id="phys-title" class="section-title" data-i18n="about.phys_title">Fondements physiques</h2>
+
+          <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1rem;">
+            La physique sous-jacente relève de la <strong>mécanique des milieux continus</strong> et de la <strong>théorie des ondes</strong>. Une plaque rigide, lorsqu'elle est soumise à une excitation périodique, entre dans des états vibratoires caractéristiques appelés <em>modes propres</em>.
+          </p>
+
+          <div class="grid grid-cols-2 gap-4" style="margin-bottom:1.5rem;">
+            <div class="card card-alt">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.625rem;">Ondes et vibrations</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">L'équation de vibration d'une plaque mince fait intervenir l'opérateur biharmonique. Les solutions en régime stationnaire sont des combinaisons de fonctions trigonométriques qui définissent les géométries des motifs.</p>
+            </div>
+            <div class="card card-alt">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.625rem;">Acoustique et résonance</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Les fréquences propres dépendent du matériau (module d'Young, densité), de l'épaisseur et des dimensions de la plaque, ainsi que des conditions aux limites (bords libres ou encastrés).</p>
+            </div>
+          </div>
+
+          <p style="color:var(--c-text-muted);line-height:1.8;">
+            Les <strong>motifs de Chladni</strong> sont les projections bidimensionnelles de ces modes propres. Chaque mode est identifié par deux entiers (m, n) qui comptent le nombre de lignes nodales dans chaque direction. Un motif (m, n) donné est caractéristique d'une fréquence précise pour un système physique donné, à condition que celui-ci reste inchangé entre les mesures.
+          </p>
+        </section>
+
+        <!-- FONDEMENTS INFORMATIQUES -->
+        <section id="fondements-info" class="about-section slide-up" aria-labelledby="info-title">
+          <div class="section-eyebrow" data-i18n="about.info_eyebrow">3. Informatique</div>
+          <h2 id="info-title" class="section-title" data-i18n="about.info_title">Fondements informatiques</h2>
+
+          <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1.25rem;">
+            La partie informatique du projet repose sur trois domaines complémentaires.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:1.5rem;">
+            <div class="setup-item">
+              <div class="setup-icon" aria-hidden="true">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><path d="M3 15l6-6 4 4 4-4 4 4"/></svg>
+              </div>
+              <div>
+                <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;">Vision par ordinateur</h3>
+                <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Le prétraitement des images (redimensionnement, niveaux de gris, normalisation, augmentation de données) vise à standardiser l'entrée du modèle et à augmenter la robustesse aux variations expérimentales mineures.</p>
+              </div>
+            </div>
+
+            <div class="setup-item">
+              <div class="setup-icon" aria-hidden="true">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><rect x="2" y="7" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="18" y="7" width="4" height="10" rx="1"/><path d="M6 10h4M6 14h4M14 10h4M14 14h4"/></svg>
+              </div>
+              <div>
+                <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;">Apprentissage profond (CNN)</h3>
+                <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Un réseau de neurones convolutif extrait automatiquement des caractéristiques hiérarchiques de l'image : bords, textures, formes. Les couches de convolution capturent les structures locales des motifs sans intervention humaine.</p>
+              </div>
+            </div>
+
+            <div class="setup-item">
+              <div class="setup-icon" aria-hidden="true">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </div>
+              <div>
+                <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;">Interface web (HTML / JS)</h3>
+                <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">L'interface permet une utilisation dans un navigateur sans installation. Le modèle entraîné sera exporté en TensorFlow.js ou ONNX pour une inférence côté client, ce qui garantit la confidentialité des données et l'indépendance vis-à-vis d'un serveur.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ERNST CHLADNI -->
+        <section id="ernst-chladni" class="about-section slide-up" aria-labelledby="chladni-title">
+          <div class="section-eyebrow" data-i18n="about.hist_eyebrow">4. Contexte historique</div>
+          <h2 id="chladni-title" class="section-title" data-i18n="about.hist_title">Ernst Chladni (1756–1827)</h2>
+
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:2rem;align-items:start;">
+            <div style="text-align:center;">
+              <!-- Decorative portrait placeholder -->
+              <div style="width:140px;height:140px;border-radius:50%;background:var(--c-dark);margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;border:3px solid var(--c-accent);" aria-hidden="true">
+                <svg viewBox="0 0 1760.68 1712" fill="none" style="width:72px;height:72px;color:var(--c-accent);">
+                  <path fill="currentColor" d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62Z"/>
+                </svg>
+              </div>
+              <div style="font-family:var(--font-serif);font-size:1rem;font-weight:600;color:var(--c-dark);">Ernst F. F. Chladni</div>
+              <div style="font-size:.8125rem;color:var(--c-text-muted);">Wittenberg, Saxe — 1756</div>
+            </div>
+
+            <div>
+              <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1rem;">
+                Physicien et musicien allemand, Ernst Chladni est considéré comme le <strong>fondateur de l'acoustique moderne</strong>. Né à Wittenberg en 1756, il découvre en 1787 que le fait de frotter un archet sur le bord d'une plaque recouverte de sable produit des figures géométriques régulières. Il publie ses observations dans <em>Entdeckungen über die Theorie des Klanges</em> (1787).
+              </p>
+              <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1rem;">
+                Napoléon Bonaparte, fasciné par la démonstration de Chladni en 1808, offrit un prix pour la meilleure explication mathématique du phénomène. C'est Sophie Germain qui finit par résoudre le problème après plusieurs tentatives, posant les bases de la théorie des plaques élastiques.
+              </p>
+              <div class="quote-block">
+                « Les figures que forme le sable sur les plaques sonores sont les premières représentations visibles du son. »
+                <cite>— Ernst Chladni, <em>Entdeckungen über die Theorie des Klanges</em>, 1787</cite>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- LIMITATIONS -->
+        <section id="limitations" class="about-section slide-up" aria-labelledby="limits-title">
+          <div class="section-eyebrow" data-i18n="about.lim_eyebrow">5. Limites</div>
+          <h2 id="limits-title" class="section-title" data-i18n="about.lim_title">Limites reconnues du projet</h2>
+
+          <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1.5rem;">
+            Ce projet est présenté honnêtement comme un prototype de recherche scolaire. Les limites suivantes sont reconnues et documentées.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <div class="card card-accent" style="border-left-color:var(--c-primary);">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l1_title">Taille limitée de la base de données</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Un entraînement sur peu d'images par classe peut conduire à un sur-apprentissage. Le modèle peut ne pas généraliser à des images prises dans des conditions légèrement différentes.</p>
+            </div>
+            <div class="card card-accent" style="border-left-color:var(--c-primary);">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l2_title">Dépendance au dispositif</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Un modèle entraîné sur un dispositif précis (plaque A, caméra B, éclairage C) peut être peu fiable sur un autre dispositif même nominalement identique.</p>
+            </div>
+            <div class="card card-accent" style="border-left-color:var(--c-primary);">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l3_title">Ambiguïté entre modes proches</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Certaines fréquences adjacentes produisent des motifs visuellement très similaires. La précision de classification sera naturellement plus faible dans ces zones du spectre.</p>
+            </div>
+            <div class="card card-accent" style="border-left-color:var(--c-primary);">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l4_title">Absence d'interprétabilité</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Un CNN classique ne fournit pas d'explication de sa décision. Il sera difficile de savoir quelles zones du motif influencent la prédiction. Des méthodes comme Grad-CAM pourraient être explorées dans une version future.</p>
+            </div>
+            <div class="card card-accent" style="border-left-color:var(--c-primary);">
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l5_title">Modèle non encore entraîné</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">À ce stade du projet, le modèle réel n'existe pas encore. L'interface utilise une simulation qui valide le flux applicatif mais ne fournit aucune prédiction physiquement significative.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- APPLICATIONS -->
+        <section id="applications" class="about-section slide-up" aria-labelledby="apps-title">
+          <div class="section-eyebrow" data-i18n="about.apps_eyebrow">6. Perspective</div>
+          <h2 id="apps-title" class="section-title" data-i18n="about.apps_title">Applications éducatives potentielles</h2>
+
+          <p style="color:var(--c-text-muted);line-height:1.8;margin-bottom:1.5rem;">
+            Si le projet aboutit à un modèle fiable, plusieurs applications éducatives peuvent être envisagées.
+          </p>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="card">
+              <div class="concept-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              </div>
+              <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.5rem;" data-i18n="about.a1_title">Outil pédagogique</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Permettre aux élèves d'associer visuellement une fréquence à un motif, rendant concrète une notion abstraite de physique des ondes.</p>
+            </div>
+
+            <div class="card">
+              <div class="concept-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.5rem;" data-i18n="about.a2_title">Vérification qualitative</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Vérifier qu'un générateur de signal produit bien la fréquence attendue en comparant le motif observé à celui prédit pour la fréquence affichée.</p>
+            </div>
+
+            <div class="card">
+              <div class="concept-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.5rem;" data-i18n="about.a3_title">Introduction à l'IA</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Illustrer concrètement le cycle collecte → étiquetage → entraînement → déploiement d'un modèle supervisé dans un contexte physique tangible.</p>
+            </div>
+
+            <div class="card">
+              <div class="concept-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+              </div>
+              <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.5rem;" data-i18n="about.a4_title">Caractérisation de matériaux</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Extension possible : classifier le type de matériau d'une plaque à partir de ses motifs de résonance, sans mesure invasive.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROTOTYPE STATUS -->
+        <section id="prototype" class="about-section slide-up" aria-labelledby="proto-title">
+          <div class="section-eyebrow" data-i18n="about.proto_eyebrow">7. Statut actuel</div>
+          <h2 id="proto-title" class="section-title" data-i18n="about.proto_title">Statut du prototype</h2>
+
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);" data-i18n="about.proto_done1">Interface web complète (accueil, analyseur, données, expérience, à propos)</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);" data-i18n="about.proto_done2">Pipeline de prédiction modulaire (import image, caméra, prétraitement, résultat)</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);" data-i18n="about.proto_done3">Service de prédiction simulé (mock) avec architecture réelle documentée</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);" data-i18n="about.proto_done4">Visualisation mathématique des motifs de Chladni (canvas)</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend1">Collecte d'images expérimentales</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend2">Entraînement du modèle CNN</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span style="width:24px;height:24px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </span>
+              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend3">Intégration TensorFlow.js / ONNX dans l'analyseur</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
+            </div>
+          </div>
+        </section>
+
+      </article>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="grid grid-cols-4 gap-8">
+      <div style="grid-column:span 2;">
+        <div class="footer-logo">
+          <svg class="isotype" viewBox="0 0 1760.68 1712" fill="none" aria-hidden="true">
+            <path fill="currentColor" d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62ZM1563.62,713.11c16.01-228.27-90.33-386.8-341.98-478.39-251.65-91.58-506.5-25.89-569.41,146.7-62.77,172.59,126.1,345.74,335.44,499.82,109.54,80.87,300.37,214.35,410.74,185.54,102.86-27,158.67-261.95,165.21-353.67ZM1120.03,1293.66c9.19-113.58-155.47-278.37-254.02-372.32-188.18-179.27-391.39-335.3-550.48-243.44-159.09,91.86-179.55,354.37-45.65,586.26,133.9,231.89,308.44,309.13,530.58,253.6,89.08-22.13,310.8-118.03,319.57-224.09Z"/>
+          </svg>
+          <svg class="logotext" viewBox="0 0 1892 359.78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="fill:currentColor;stroke:currentColor;stroke-miterlimit:10"><path d="M89.85,55.45l5.98,108.76c.19,3.37,4.66,4.4,6.3,1.45l61.31-110.21h-24.37l8.55-37.93h87.96l-8.88,37.93h-21.95l6.38,108.23c.21,3.54,4.92,4.62,6.64,1.52l61.05-109.75h-24.37l8.55-37.93h95.54l-8.55,37.93h-22.59l-110.54,198.48c-2.89,5.2-8.37,8.42-14.32,8.42h-27.53c-6.5,0-11.87-5.06-12.26-11.55l-5.1-85.33c-.19-3.24-4.49-4.22-6.07-1.39l-50.98,91.43c-2.35,4.22-6.81,6.84-11.64,6.84h-30.75c-5.44,0-9.94-4.23-10.28-9.66l-12.31-197.23H11.41h0c5.1-22.2,24.86-37.93,47.63-37.93h61.14s-8.55,37.93-8.55,37.93h-21.79Z"/><path d="M412.84,232.95l-4.46,19.49c-1.11,4.85-5.42,8.29-10.4,8.29h-77.55c-3.71,0-6.48-3.43-5.68-7.06l4.88-22.23c.86-3.91,4.32-6.7,8.33-6.7h12.03l22.43-97.15h-22.76l8.23-36.47h74.72l-30.66,133.63h14.34c4.31,0,7.5,4.01,6.54,8.21ZM435.53,41.25c0,7.75-2.8,14.42-8.39,20.01-5.6,5.6-12.37,8.39-20.33,8.39s-14.36-2.8-19.85-8.39c-5.49-5.59-8.23-12.26-8.23-20.01s2.69-14.69,8.07-20.17c5.38-5.49,12.05-8.23,20.01-8.23s15.01,2.74,20.5,8.23c5.49,5.49,8.23,12.21,8.23,20.17Z"/><path d="M565.45,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.54,0,9.93-1.31,16.17-3.94,3.61-1.52,7.43,1.66,6.53,5.47l-5.71,24.13c-.77,3.24-3.05,5.91-6.12,7.19-13.03,5.43-25.8,8.15-38.31,8.15-11.3,0-20.31-3.09-27.03-9.28-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M688.42,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.04,0,8.76-1.04,14.16-3.13,4.5-1.74,9.12,2.24,8.01,6.94l-4.55,19.23c-1.19,5.05-4.85,9.12-9.69,10.99-12.01,4.64-23.8,6.96-35.37,6.96s-20.31-3.09-27.03-9.28c-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M861.43,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,11.92,0,21.94-5.04,30.06-15.13,3.08-3.83,8.45-4.96,12.94-2.96l19.79,8.81c5.56,2.48,7.04,9.61,3.05,14.2-7.19,8.28-15.58,14.73-25.16,19.36-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM812.85,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1071.23,128.88c0,3.34-.32,6.81-.97,10.41-.65,3.61-1.78,8.74-3.39,15.41l-16.14,70.04h23.08l-6.36,27.81c-1.09,4.78-5.35,8.18-10.26,8.18h-53.41c-6.77,0-11.78-6.3-10.25-12.9l21.86-94.26c.86-4.41,1.29-7.48,1.29-9.2,0-4.41-1.05-7.93-3.15-10.57-2.1-2.64-5.25-3.95-9.44-3.95-8.61,0-21.46,6.29-38.57,18.88l-17.59,76.01h21.46l-6.27,27.42c-1.15,5.02-5.61,8.57-10.75,8.57h-69.2c-7.09,0-12.33-6.58-10.75-13.49l5.15-22.5h18.56l22.43-97.15h-25.5,0c4.81-21.33,23.76-36.47,45.62-36.47h40.08s-5,21.14-5,21.14c11.62-8.72,21.89-14.74,30.82-18.08,8.93-3.33,19.26-5,30.99-5,10.76,0,19.39,3.63,25.9,10.89,6.51,7.26,9.76,16.86,9.76,28.81Z"/><path d="M1192.27,110.32c13.88-15.6,30.07-23.4,48.58-23.4s32.49,6.67,43.25,20.01c10.76,13.34,16.14,30.66,16.14,51.97,0,17.43-3.63,34.19-10.89,50.27-7.26,16.09-17.62,29.08-31.07,38.97-13.45,9.9-29,14.85-46.64,14.85-19.58,0-35.88-9.47-48.9-28.4l-5.97,26.14h-70.36l8.55-35.99h18.56l39.38-170.91h-22.76,0c4.81-21.24,23.69-36.31,45.46-36.31h37.49l-21.63,92.15.81.65ZM1202.11,222.65c9.25,0,17.24-3.07,23.97-9.2,6.72-6.13,11.78-14.04,15.17-23.72,3.39-9.68,5.08-19.96,5.08-30.82,0-9.9-2.18-17.7-6.54-23.4-4.36-5.7-10.63-8.55-18.8-8.55-9.25,0-17.51,3.53-24.77,10.57-7.26,7.05-12.67,15.63-16.22,25.74-3.55,10.11-5.33,19.69-5.33,28.73s2.47,16.14,7.42,21.95c4.95,5.81,11.62,8.71,20.01,8.71Z"/><path d="M1493.41,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,14.31,0,25.88-7.26,34.7-21.79l38.41,17.11c-8.61,13.02-19.42,22.67-32.44,28.97-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM1444.84,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1670.78,91.12l-10.17,45.35c-5.7-1.29-11.03-1.94-15.98-1.94-28.19,0-46.21,18.4-54.06,55.19l-8.07,35.02h26.47l-8.23,35.99h-98.77l8.23-35.99h20.5l22.43-97.15h-23.08,0c4.81-21.33,23.76-36.47,45.62-36.47h31.68l-11.62,49.38.65.65c10.01-19.26,19.47-32.68,28.4-40.27,8.93-7.59,19.42-11.38,31.47-11.38,3.76,0,8.61.54,14.52,1.61Z"/><path d="M1797.78,119.2h0c3.88-16.45,18.56-28.08,35.47-28.08h42.81l-8.23,36.47h-18.72l-29.86,127.82c-13.02,56.7-48.15,85.05-105.38,85.05-30.45,0-56.32-5.54-77.63-16.62l15.82-37.6c20.98,9.68,39.48,14.52,55.52,14.52,13.66,0,24.4-1.94,32.2-5.81,7.8-3.87,13.96-9.92,18.48-18.16s8.44-19.77,11.78-34.62l-.65-.97c-14.74,13.88-30.07,20.82-45.99,20.82-19.8,0-34.89-6.32-45.27-18.96-10.38-12.64-15.57-29.67-15.57-51.08,0-17.64,3.77-34.29,11.3-49.95,7.53-15.65,18.02-28.32,31.47-38.01,13.45-9.68,28.62-14.52,45.51-14.52,20.12,0,35.77,9.9,46.96,29.69ZM1743.56,222.32c9.47,0,17.45-3.17,23.97-9.52,6.51-6.35,11.38-14.2,14.61-23.56,3.23-9.36,4.84-18.66,4.84-27.92s-2.5-16.81-7.5-22.68c-5-5.86-11.65-8.8-19.93-8.8-9.04,0-16.92,3.36-23.64,10.09-6.72,6.73-11.86,14.88-15.41,24.45-3.55,9.58-5.33,18.67-5.33,27.27,0,9.25,2.47,16.68,7.42,22.27,4.95,5.6,11.94,8.39,20.98,8.39Z"/></svg>
+        </div>
+        <p class="footer-desc" data-i18n="footer.desc">Outil de recherche pour l'identification visuelle de fréquences sonores par analyse de motifs de Chladni.</p>
+        <span class="footer-tdr" data-i18n="footer.tdr">Projet TDR — Lycée, 2025–2026</span>
+      </div>
+      <div class="footer-links">
+        <h4 data-i18n="footer.nav_title">Navigation</h4>
+        <a href="index.html"      data-i18n="nav.home">Accueil</a>
+        <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
+        <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+        <a href="donnees.html"    data-i18n="nav.data">Données</a>
+        <a href="apropos.html"    data-i18n="nav.about">À propos</a>
+      </div>
+      <div class="footer-links">
+        <h4 data-i18n="about.footer_title">À propos</h4>
+        <a href="apropos.html#objectifs"    data-i18n="about.foot_link1">Objectifs</a>
+        <a href="apropos.html#ernst-chladni" data-i18n="about.foot_link2">Ernst Chladni</a>
+        <a href="apropos.html#limitations"  data-i18n="about.foot_link3">Limites</a>
+        <a href="apropos.html#prototype"    data-i18n="about.foot_link4">Statut</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer.bottom_copy">© 2026 Wittenberg — Projet de recherche éducative</span>
+      <span data-i18n="footer.bottom_ref">Ernst Chladni (1756–1827) — Wittenberg, Saxe</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/frequencies.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Wittenberg Analyseur — Identifiez une fréquence sonore à partir d'un motif de Chladni.">
+  <title>Analyseur — Wittenberg</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/isotype.svg" type="image/svg+xml">
+  <style>
+    .analyzer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    @media (max-width: 900px) { .analyzer-grid { grid-template-columns: 1fr; } }
+
+    .result-card {
+      border-radius: var(--radius-lg);
+      background: #fff;
+      border: 1px solid var(--c-bg2);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .result-header {
+      background: var(--c-dark);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .result-body { padding: 1.75rem; }
+
+    #result-section { display: none; }
+    #result-section.visible { display: block; }
+
+    .freq-big {
+      font-family: var(--font-serif);
+      font-size: 4rem;
+      font-weight: 600;
+      color: var(--c-accent);
+      line-height: 1;
+    }
+
+    .top-pred-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .75rem 0;
+      border-bottom: 1px solid var(--c-bg2);
+    }
+    .top-pred-item:last-child { border-bottom: none; }
+
+    .top-pred-bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: var(--c-bg2);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .top-pred-bar {
+      height: 100%;
+      border-radius: 9999px;
+      background: var(--c-primary);
+      transition: width .8s cubic-bezier(.4,0,.2,1) .3s;
+    }
+
+    .tab-source { display: none; }
+    .tab-source.active { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" role="navigation" aria-label="Navigation principale">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="Wittenberg — Accueil">
+      <svg class="isotype" viewBox="0 0 1760.68 1712" fill="none" aria-hidden="true">
+        <path fill="currentColor" d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62ZM1563.62,713.11c16.01-228.27-90.33-386.8-341.98-478.39-251.65-91.58-506.5-25.89-569.41,146.7-62.77,172.59,126.1,345.74,335.44,499.82,109.54,80.87,300.37,214.35,410.74,185.54,102.86-27,158.67-261.95,165.21-353.67ZM1120.03,1293.66c9.19-113.58-155.47-278.37-254.02-372.32-188.18-179.27-391.39-335.3-550.48-243.44-159.09,91.86-179.55,354.37-45.65,586.26,133.9,231.89,308.44,309.13,530.58,253.6,89.08-22.13,310.8-118.03,319.57-224.09Z"/>
+      </svg>
+      <svg class="logotext" viewBox="0 0 1892 359.78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="fill:currentColor;stroke:currentColor;stroke-miterlimit:10"><path d="M89.85,55.45l5.98,108.76c.19,3.37,4.66,4.4,6.3,1.45l61.31-110.21h-24.37l8.55-37.93h87.96l-8.88,37.93h-21.95l6.38,108.23c.21,3.54,4.92,4.62,6.64,1.52l61.05-109.75h-24.37l8.55-37.93h95.54l-8.55,37.93h-22.59l-110.54,198.48c-2.89,5.2-8.37,8.42-14.32,8.42h-27.53c-6.5,0-11.87-5.06-12.26-11.55l-5.1-85.33c-.19-3.24-4.49-4.22-6.07-1.39l-50.98,91.43c-2.35,4.22-6.81,6.84-11.64,6.84h-30.75c-5.44,0-9.94-4.23-10.28-9.66l-12.31-197.23H11.41h0c5.1-22.2,24.86-37.93,47.63-37.93h61.14s-8.55,37.93-8.55,37.93h-21.79Z"/><path d="M412.84,232.95l-4.46,19.49c-1.11,4.85-5.42,8.29-10.4,8.29h-77.55c-3.71,0-6.48-3.43-5.68-7.06l4.88-22.23c.86-3.91,4.32-6.7,8.33-6.7h12.03l22.43-97.15h-22.76l8.23-36.47h74.72l-30.66,133.63h14.34c4.31,0,7.5,4.01,6.54,8.21ZM435.53,41.25c0,7.75-2.8,14.42-8.39,20.01-5.6,5.6-12.37,8.39-20.33,8.39s-14.36-2.8-19.85-8.39c-5.49-5.59-8.23-12.26-8.23-20.01s2.69-14.69,8.07-20.17c5.38-5.49,12.05-8.23,20.01-8.23s15.01,2.74,20.5,8.23c5.49,5.49,8.23,12.21,8.23,20.17Z"/><path d="M565.45,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.54,0,9.93-1.31,16.17-3.94,3.61-1.52,7.43,1.66,6.53,5.47l-5.71,24.13c-.77,3.24-3.05,5.91-6.12,7.19-13.03,5.43-25.8,8.15-38.31,8.15-11.3,0-20.31-3.09-27.03-9.28-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M688.42,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.04,0,8.76-1.04,14.16-3.13,4.5-1.74,9.12,2.24,8.01,6.94l-4.55,19.23c-1.19,5.05-4.85,9.12-9.69,10.99-12.01,4.64-23.8,6.96-35.37,6.96s-20.31-3.09-27.03-9.28c-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M861.43,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,11.92,0,21.94-5.04,30.06-15.13,3.08-3.83,8.45-4.96,12.94-2.96l19.79,8.81c5.56,2.48,7.04,9.61,3.05,14.2-7.19,8.28-15.58,14.73-25.16,19.36-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM812.85,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1071.23,128.88c0,3.34-.32,6.81-.97,10.41-.65,3.61-1.78,8.74-3.39,15.41l-16.14,70.04h23.08l-6.36,27.81c-1.09,4.78-5.35,8.18-10.26,8.18h-53.41c-6.77,0-11.78-6.3-10.25-12.9l21.86-94.26c.86-4.41,1.29-7.48,1.29-9.2,0-4.41-1.05-7.93-3.15-10.57-2.1-2.64-5.25-3.95-9.44-3.95-8.61,0-21.46,6.29-38.57,18.88l-17.59,76.01h21.46l-6.27,27.42c-1.15,5.02-5.61,8.57-10.75,8.57h-69.2c-7.09,0-12.33-6.58-10.75-13.49l5.15-22.5h18.56l22.43-97.15h-25.5,0c4.81-21.33,23.76-36.47,45.62-36.47h40.08s-5,21.14-5,21.14c11.62-8.72,21.89-14.74,30.82-18.08,8.93-3.33,19.26-5,30.99-5,10.76,0,19.39,3.63,25.9,10.89,6.51,7.26,9.76,16.86,9.76,28.81Z"/><path d="M1192.27,110.32c13.88-15.6,30.07-23.4,48.58-23.4s32.49,6.67,43.25,20.01c10.76,13.34,16.14,30.66,16.14,51.97,0,17.43-3.63,34.19-10.89,50.27-7.26,16.09-17.62,29.08-31.07,38.97-13.45,9.9-29,14.85-46.64,14.85-19.58,0-35.88-9.47-48.9-28.4l-5.97,26.14h-70.36l8.55-35.99h18.56l39.38-170.91h-22.76,0c4.81-21.24,23.69-36.31,45.46-36.31h37.49l-21.63,92.15.81.65ZM1202.11,222.65c9.25,0,17.24-3.07,23.97-9.2,6.72-6.13,11.78-14.04,15.17-23.72,3.39-9.68,5.08-19.96,5.08-30.82,0-9.9-2.18-17.7-6.54-23.4-4.36-5.7-10.63-8.55-18.8-8.55-9.25,0-17.51,3.53-24.77,10.57-7.26,7.05-12.67,15.63-16.22,25.74-3.55,10.11-5.33,19.69-5.33,28.73s2.47,16.14,7.42,21.95c4.95,5.81,11.62,8.71,20.01,8.71Z"/><path d="M1493.41,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,14.31,0,25.88-7.26,34.7-21.79l38.41,17.11c-8.61,13.02-19.42,22.67-32.44,28.97-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM1444.84,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1670.78,91.12l-10.17,45.35c-5.7-1.29-11.03-1.94-15.98-1.94-28.19,0-46.21,18.4-54.06,55.19l-8.07,35.02h26.47l-8.23,35.99h-98.77l8.23-35.99h20.5l22.43-97.15h-23.08,0c4.81-21.33,23.76-36.47,45.62-36.47h31.68l-11.62,49.38.65.65c10.01-19.26,19.47-32.68,28.4-40.27,8.93-7.59,19.42-11.38,31.47-11.38,3.76,0,8.61.54,14.52,1.61Z"/><path d="M1797.78,119.2h0c3.88-16.45,18.56-28.08,35.47-28.08h42.81l-8.23,36.47h-18.72l-29.86,127.82c-13.02,56.7-48.15,85.05-105.38,85.05-30.45,0-56.32-5.54-77.63-16.62l15.82-37.6c20.98,9.68,39.48,14.52,55.52,14.52,13.66,0,24.4-1.94,32.2-5.81,7.8-3.87,13.96-9.92,18.48-18.16s8.44-19.77,11.78-34.62l-.65-.97c-14.74,13.88-30.07,20.82-45.99,20.82-19.8,0-34.89-6.32-45.27-18.96-10.38-12.64-15.57-29.67-15.57-51.08,0-17.64,3.77-34.29,11.3-49.95,7.53-15.65,18.02-28.32,31.47-38.01,13.45-9.68,28.62-14.52,45.51-14.52,20.12,0,35.77,9.9,46.96,29.69ZM1743.56,222.32c9.47,0,17.45-3.17,23.97-9.52,6.51-6.35,11.38-14.2,14.61-23.56,3.23-9.36,4.84-18.66,4.84-27.92s-2.5-16.81-7.5-22.68c-5-5.86-11.65-8.8-19.93-8.8-9.04,0-16.92,3.36-23.64,10.09-6.72,6.73-11.86,14.88-15.41,24.45-3.55,9.58-5.33,18.67-5.33,27.27,0,9.25,2.47,16.68,7.42,22.27,4.95,5.6,11.94,8.39,20.98,8.39Z"/></svg>
+    </a>
+    <div class="nav-links">
+      <a href="index.html"      class="nav-link" data-i18n="nav.home">Accueil</a>
+      <a href="analyseur.html"  class="nav-link" data-i18n="nav.analyser">Analyseur</a>
+      <a href="experience.html" class="nav-link" data-i18n="nav.experience">Expérience</a>
+      <a href="donnees.html"    class="nav-link" data-i18n="nav.data">Données</a>
+      <a href="apropos.html"    class="nav-link" data-i18n="nav.about">À propos</a>
+    </div>
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+    <a href="analyseur.html" class="nav-cta" data-i18n="nav.cta">Analyser un motif →</a>
+    <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile-menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <a href="index.html"      data-i18n="nav.home">Accueil</a>
+  <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
+  <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+  <a href="donnees.html"    data-i18n="nav.data">Données</a>
+  <a href="apropos.html"    data-i18n="nav.about">À propos</a>
+  <div class="lang-selector-mobile">
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<header class="page-header">
+  <div class="page-header-grid" aria-hidden="true"></div>
+  <div class="page-header-glow" aria-hidden="true"></div>
+  <div class="container page-header-content">
+    <div class="page-header-eyebrow" data-i18n="analyser.page_eyebrow">Outil principal</div>
+    <h1 class="page-header-title" data-i18n="analyser.page_title">Analyseur de motifs de Chladni</h1>
+    <p class="page-header-desc" data-i18n="analyser.page_desc">
+      Capturez ou importez une image du motif formé sur la plaque vibrante.
+      Le système analysera la structure visuelle et proposera une fréquence estimée.
+    </p>
+
+    <!-- Status bar -->
+    <div style="margin-top:1.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <div class="status-indicator" id="global-status">
+        <span class="status-dot status-dot-idle" id="status-dot"></span>
+        <span id="status-text" style="color:rgba(255,255,255,.6);font-size:.875rem;">En attente d'une image</span>
+      </div>
+      <span class="badge badge-warn" title="Le modèle entraîné n'est pas encore connecté">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"/></svg>
+        <span data-i18n="badge.simulation">Simulation — modèle non connecté</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main style="padding:2.5rem 0 4rem;" role="main">
+  <div class="container">
+
+    <div class="analyzer-grid">
+      <!-- ── LEFT : INPUT ── -->
+      <section aria-labelledby="input-title">
+        <h2 id="input-title" class="text-xl font-semibold" style="color:var(--c-dark);margin-bottom:1.25rem;" data-i18n="analyser.input_title">Source d'image</h2>
+
+        <!-- Source tabs -->
+        <div class="tabs" role="tablist" aria-label="Source de l'image" style="margin-bottom:1.5rem;">
+          <button class="tab active" data-source="upload" role="tab" aria-selected="true" id="tab-upload" aria-controls="panel-upload">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;vertical-align:middle;margin-right:.375rem;" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            <span data-i18n="analyser.tab_upload">Importer</span>
+          </button>
+          <button class="tab" data-source="camera" role="tab" aria-selected="false" id="tab-camera" aria-controls="panel-camera">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;vertical-align:middle;margin-right:.375rem;" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span data-i18n="analyser.tab_camera">Caméra</span>
+          </button>
+        </div>
+
+        <!-- Upload panel -->
+        <div id="panel-upload" class="tab-source active" role="tabpanel" aria-labelledby="tab-upload">
+          <div class="upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Cliquer ou déposer une image pour l'importer">
+            <input type="file" id="file-input" accept="image/*" aria-label="Sélectionner un fichier image">
+            <div id="upload-placeholder">
+              <div class="upload-icon" aria-hidden="true">
+                <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+              </div>
+              <p style="font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="analyser.upload_title">Déposez une image ici</p>
+              <p style="font-size:.875rem;color:var(--c-text-muted);" data-i18n="analyser.upload_sub">ou cliquez pour parcourir vos fichiers</p>
+              <p style="font-size:.75rem;color:var(--c-text-muted);margin-top:.75rem;" data-i18n="analyser.upload_types">JPEG, PNG, WebP — max 10 Mo</p>
+            </div>
+            <div id="upload-preview" style="display:none;">
+              <img id="preview-img" class="preview-img" alt="Aperçu du motif de Chladni importé" src="">
+              <div style="margin-top:.875rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+                <div class="status-indicator">
+                  <span class="status-dot status-dot-ready"></span>
+                  <span style="font-size:.875rem;color:var(--c-text-muted);" id="upload-filename">image.jpg</span>
+                </div>
+                <button id="clear-btn" class="btn btn-sm" style="background:var(--c-bg2);color:var(--c-text-muted);font-size:.8125rem;" aria-label="Supprimer l'image">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera panel -->
+        <div id="panel-camera" class="tab-source" role="tabpanel" aria-labelledby="tab-camera">
+          <div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--c-bg2);background:#000;position:relative;">
+            <video id="camera-feed" autoplay playsinline muted aria-label="Flux caméra en direct" style="width:100%;max-height:300px;object-fit:cover;display:block;"></video>
+            <div id="camera-placeholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem;color:rgba(255,255,255,.5);">
+              <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:1rem;opacity:.5;" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <p style="font-size:.9375rem;font-weight:500;margin-bottom:.5rem;" data-i18n="analyser.cam_idle">Caméra non activée</p>
+              <p style="font-size:.8125rem;text-align:center;" data-i18n="analyser.cam_idle_sub">Cliquez sur « Activer la caméra » pour démarrer le flux vidéo.</p>
+            </div>
+          </div>
+          <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+            <button id="start-camera-btn" class="btn btn-primary btn-sm">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span data-i18n="analyser.cam_start">Activer la caméra</span>
+            </button>
+            <button id="capture-btn" class="btn btn-sm" style="background:var(--c-bg2);color:var(--c-dark);" disabled aria-disabled="true">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
+              <span data-i18n="analyser.cam_capture">Capturer</span>
+            </button>
+            <button id="stop-camera-btn" class="btn btn-sm" style="background:var(--c-bg2);color:var(--c-text-muted);" disabled aria-disabled="true" data-i18n="analyser.cam_stop">Arrêter</button>
+          </div>
+          <canvas id="capture-canvas" style="display:none;" aria-hidden="true"></canvas>
+        </div>
+
+        <!-- Conditions card -->
+        <div class="info-box" style="margin-top:1.25rem;">
+          <strong style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;color:var(--c-primary);font-size:.875rem;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span data-i18n="analyser.conditions_title">Conditions expérimentales requises</span>
+          </strong>
+          <ul style="font-size:.875rem;color:var(--c-text-muted);line-height:1.9;list-style:disc;padding-left:1.25rem;">
+            <li data-i18n="analyser.cond1">Caméra perpendiculaire à la plaque, position fixe</li>
+            <li data-i18n="analyser.cond2">Éclairage uniforme et constant</li>
+            <li data-i18n="analyser.cond3">Quantité de sel identique à chaque mesure</li>
+            <li data-i18n="analyser.cond4">Fréquence stable pendant la durée d'exposition</li>
+          </ul>
+        </div>
+
+        <!-- Analyse button -->
+        <button id="analyze-btn" class="btn btn-primary w-full btn-lg" style="margin-top:1.5rem;" disabled aria-disabled="true">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span data-i18n="analyser.btn_analyse">Analyser le motif</span>
+        </button>
+      </section>
+
+      <!-- ── RIGHT : RESULTS ── -->
+      <section aria-labelledby="result-title">
+        <h2 id="result-title" class="text-xl font-semibold" style="color:var(--c-dark);margin-bottom:1.25rem;" data-i18n="analyser.result_title">Résultat de l'analyse</h2>
+
+        <!-- Empty state -->
+        <div id="empty-state" style="border:2px dashed var(--c-bg2);border-radius:var(--radius-lg);padding:3.5rem 2rem;text-align:center;">
+          <div aria-hidden="true" style="width:64px;height:64px;border-radius:50%;background:var(--c-bg2);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
+            <canvas data-chladni data-m="2" data-n="3" data-color="#205f75" width="44" height="44"></canvas>
+          </div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;" data-i18n="analyser.empty_title">Aucune analyse en cours</h3>
+          <p style="font-size:.9rem;color:var(--c-text-muted);max-width:300px;margin:0 auto;line-height:1.6;" data-i18n="analyser.empty_desc">Importez ou capturez une image d'un motif de Chladni, puis lancez l'analyse.</p>
+        </div>
+
+        <!-- Loading state -->
+        <div id="loading-state" style="display:none;border:1px solid var(--c-bg2);border-radius:var(--radius-lg);padding:3rem 2rem;text-align:center;background:#fff;">
+          <div class="status-loading-ring" style="margin:0 auto 1.25rem;" aria-hidden="true"></div>
+          <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;" id="loading-title" data-i18n="analyser.loading_title">Analyse en cours…</h3>
+          <p style="font-size:.875rem;color:var(--c-text-muted);" id="loading-msg" data-i18n="analyser.loading_prep">Préparation de l'image…</p>
+          <div class="progress-bar" style="margin:1.5rem auto 0;max-width:200px;" role="progressbar" aria-label="Progression de l'analyse">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Result state -->
+        <div id="result-section">
+          <div class="result-card" role="region" aria-label="Résultats de l'analyse de fréquence">
+            <div class="result-header">
+              <div class="flex items-center gap-2">
+                <div class="status-dot status-dot-result" aria-hidden="true"></div>
+                <span style="font-size:.875rem;font-weight:600;color:#fff;" data-i18n="analyser.freq_label">Fréquence estimée</span>
+              </div>
+              <span class="badge badge-dark" id="result-model-badge">Simulation</span>
+            </div>
+            <div class="result-body">
+              <!-- Frequency big number -->
+              <div style="margin-bottom:1.5rem;">
+                <div class="flex items-end gap-2 flex-wrap" style="margin-bottom:.5rem;">
+                  <span class="freq-big" id="result-freq">—</span>
+                  <span style="font-size:1.5rem;font-weight:300;color:var(--c-text-muted);padding-bottom:.5rem;">Hz</span>
+                </div>
+                <p style="font-size:.875rem;color:var(--c-text-muted);" id="result-mode"></p>
+              </div>
+
+              <!-- Confidence -->
+              <div style="margin-bottom:1.75rem;">
+                <div class="flex justify-between items-center" style="margin-bottom:.5rem;">
+                  <span style="font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);" data-i18n="analyser.conf_label">Confiance du modèle</span>
+                  <div style="display:flex;align-items:center;gap:.5rem;">
+                    <span style="font-size:1.125rem;font-weight:700;color:var(--c-dark);" id="result-conf-pct">0 %</span>
+                    <span class="badge" id="result-conf-badge"></span>
+                  </div>
+                </div>
+                <div class="confidence-bar" role="progressbar" id="conf-bar-aria" aria-label="Niveau de confiance">
+                  <div class="confidence-fill" id="conf-bar" style="width:0%;"></div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="card card-alt" style="margin-bottom:1.5rem;">
+                <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:.5rem;" data-i18n="analyser.desc_label">Description du motif</div>
+                <p style="font-size:.9375rem;color:var(--c-text);line-height:1.7;" id="result-desc">—</p>
+              </div>
+
+              <!-- Top 3 predictions -->
+              <div>
+                <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:.75rem;" data-i18n="analyser.alts_label">Hypothèses alternatives</div>
+                <div id="top-predictions"></div>
+              </div>
+
+              <!-- Warning if mock -->
+              <div id="mock-warning" class="warn-box" style="margin-top:1.25rem;display:none;">
+                <div style="display:flex;gap:.625rem;align-items:flex-start;">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:.125rem;color:#b45309;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="white" stroke-width="2"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="white" stroke-width="2"/></svg>
+                  <p style="font-size:.875rem;color:#92400e;line-height:1.6;" id="mock-warning-text" data-i18n="analyser.mock_warn">
+                    Aucun modèle entraîné n'est encore connecté à cette version. Cette estimation est une simulation destinée à valider l'interface.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Low confidence warning -->
+              <div id="low-conf-warning" class="warn-box" style="margin-top:.75rem;display:none;">
+                <p style="font-size:.875rem;color:#92400e;line-height:1.6;" data-i18n="analyser.low_conf_warn">
+                  Le niveau de confiance est faible. Le motif peut être ambigu ou les conditions expérimentales ont pu varier. Vérifiez l'éclairage et la position de la caméra.
+                </p>
+              </div>
+
+              <!-- Reset -->
+              <button id="reset-btn" class="btn btn-outline w-full" style="margin-top:1.5rem;" data-i18n="analyser.btn_reset">
+                Nouvelle analyse
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- HOW TO USE -->
+    <section style="margin-top:4rem;padding-top:3rem;border-top:1px solid var(--c-bg2);" aria-labelledby="howto-a-title">
+      <h2 id="howto-a-title" style="font-family:var(--font-serif);font-size:1.5rem;color:var(--c-dark);margin-bottom:2rem;" data-i18n="analyser.guide_title">Guide d'utilisation</h2>
+      <div class="grid grid-cols-4 gap-4">
+        <div class="card text-center">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--c-dark);color:var(--c-accent);font-family:var(--font-serif);font-size:1.25rem;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto .875rem;">1</div>
+          <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="analyser.guide1_title">Préparer l'expérience</h3>
+          <p style="font-size:.8125rem;color:var(--c-text-muted);line-height:1.6;" data-i18n="analyser.guide1_desc">Versez du sel fin sur la plaque, allumez le générateur de fréquences et attendez la stabilisation du motif.</p>
+        </div>
+        <div class="card text-center">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--c-dark);color:var(--c-accent);font-family:var(--font-serif);font-size:1.25rem;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto .875rem;">2</div>
+          <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="analyser.guide2_title">Capturer l'image</h3>
+          <p style="font-size:.8125rem;color:var(--c-text-muted);line-height:1.6;" data-i18n="analyser.guide2_desc">Utilisez l'onglet « Caméra » pour capturer en direct ou « Importer » pour charger une photo existante.</p>
+        </div>
+        <div class="card text-center">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--c-dark);color:var(--c-accent);font-family:var(--font-serif);font-size:1.25rem;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto .875rem;">3</div>
+          <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="analyser.guide3_title">Lancer l'analyse</h3>
+          <p style="font-size:.8125rem;color:var(--c-text-muted);line-height:1.6;" data-i18n="analyser.guide3_desc">Cliquez sur « Analyser le motif ». Le système prétraite l'image et produit une estimation de fréquence.</p>
+        </div>
+        <div class="card text-center">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--c-dark);color:var(--c-accent);font-family:var(--font-serif);font-size:1.25rem;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto .875rem;">4</div>
+          <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="analyser.guide4_title">Interpréter le résultat</h3>
+          <p style="font-size:.8125rem;color:var(--c-text-muted);line-height:1.6;" data-i18n="analyser.guide4_desc">Consultez la fréquence estimée, le niveau de confiance et les hypothèses alternatives du modèle.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="grid grid-cols-4 gap-8">
+      <div style="grid-column:span 2;">
+        <div class="footer-logo">
+          <svg class="isotype" viewBox="0 0 1760.68 1712" fill="none" aria-hidden="true">
+            <path fill="currentColor" d="M1585.61,1407.1c49.83,110.24,144.34,239.96,122.35,258.05-17.68,14.61-181.5-136.26-289.37-172.45-56.51-19.07-121.23-18.09-172.87,11.83l-.84.42c-434.26,250.68-948.84,172.45-1149.41-174.82C-27.57,1116.76-3.63,851.61,133.75,620.69c70.01-117.61,86.99-221.45,35.63-341.29C125.26,176.69,26.58,36.53,48.01,19.82,71.4,1.73,251.64,144.4,383.45,192.97c123.46,45.37,186.23,20.18,292.43-21.02,394.73-152.97,815.5-55.81,992.12,250.26,130.14,225.34,96.04,508.73-62.63,748.27-46.49,70.15-54.42,160.06-19.76,236.62ZM1563.62,713.11c16.01-228.27-90.33-386.8-341.98-478.39-251.65-91.58-506.5-25.89-569.41,146.7-62.77,172.59,126.1,345.74,335.44,499.82,109.54,80.87,300.37,214.35,410.74,185.54,102.86-27,158.67-261.95,165.21-353.67ZM1120.03,1293.66c9.19-113.58-155.47-278.37-254.02-372.32-188.18-179.27-391.39-335.3-550.48-243.44-159.09,91.86-179.55,354.37-45.65,586.26,133.9,231.89,308.44,309.13,530.58,253.6,89.08-22.13,310.8-118.03,319.57-224.09Z"/>
+          </svg>
+          <svg class="logotext" viewBox="0 0 1892 359.78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="fill:currentColor;stroke:currentColor;stroke-miterlimit:10"><path d="M89.85,55.45l5.98,108.76c.19,3.37,4.66,4.4,6.3,1.45l61.31-110.21h-24.37l8.55-37.93h87.96l-8.88,37.93h-21.95l6.38,108.23c.21,3.54,4.92,4.62,6.64,1.52l61.05-109.75h-24.37l8.55-37.93h95.54l-8.55,37.93h-22.59l-110.54,198.48c-2.89,5.2-8.37,8.42-14.32,8.42h-27.53c-6.5,0-11.87-5.06-12.26-11.55l-5.1-85.33c-.19-3.24-4.49-4.22-6.07-1.39l-50.98,91.43c-2.35,4.22-6.81,6.84-11.64,6.84h-30.75c-5.44,0-9.94-4.23-10.28-9.66l-12.31-197.23H11.41h0c5.1-22.2,24.86-37.93,47.63-37.93h61.14s-8.55,37.93-8.55,37.93h-21.79Z"/><path d="M412.84,232.95l-4.46,19.49c-1.11,4.85-5.42,8.29-10.4,8.29h-77.55c-3.71,0-6.48-3.43-5.68-7.06l4.88-22.23c.86-3.91,4.32-6.7,8.33-6.7h12.03l22.43-97.15h-22.76l8.23-36.47h74.72l-30.66,133.63h14.34c4.31,0,7.5,4.01,6.54,8.21ZM435.53,41.25c0,7.75-2.8,14.42-8.39,20.01-5.6,5.6-12.37,8.39-20.33,8.39s-14.36-2.8-19.85-8.39c-5.49-5.59-8.23-12.26-8.23-20.01s2.69-14.69,8.07-20.17c5.38-5.49,12.05-8.23,20.01-8.23s15.01,2.74,20.5,8.23c5.49,5.49,8.23,12.21,8.23,20.17Z"/><path d="M565.45,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.54,0,9.93-1.31,16.17-3.94,3.61-1.52,7.43,1.66,6.53,5.47l-5.71,24.13c-.77,3.24-3.05,5.91-6.12,7.19-13.03,5.43-25.8,8.15-38.31,8.15-11.3,0-20.31-3.09-27.03-9.28-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M688.42,91.12l-8.23,36.47h-33.41l-18.56,78.27c-.86,5.27-1.29,8.45-1.29,9.52,0,6.24,3.55,9.36,10.65,9.36,4.04,0,8.76-1.04,14.16-3.13,4.5-1.74,9.12,2.24,8.01,6.94l-4.55,19.23c-1.19,5.05-4.85,9.12-9.69,10.99-12.01,4.64-23.8,6.96-35.37,6.96s-20.31-3.09-27.03-9.28c-6.73-6.19-10.09-14.55-10.09-25.1,0-6.88,1.34-16.35,4.03-28.4l17.43-75.37h-19.85l8.39-36.47h19.69c3.85-15.71,13.28-29.48,26.53-38.75l41.25-28.87-15.49,67.62h33.41Z"/><path d="M861.43,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,11.92,0,21.94-5.04,30.06-15.13,3.08-3.83,8.45-4.96,12.94-2.96l19.79,8.81c5.56,2.48,7.04,9.61,3.05,14.2-7.19,8.28-15.58,14.73-25.16,19.36-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM812.85,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1071.23,128.88c0,3.34-.32,6.81-.97,10.41-.65,3.61-1.78,8.74-3.39,15.41l-16.14,70.04h23.08l-6.36,27.81c-1.09,4.78-5.35,8.18-10.26,8.18h-53.41c-6.77,0-11.78-6.3-10.25-12.9l21.86-94.26c.86-4.41,1.29-7.48,1.29-9.2,0-4.41-1.05-7.93-3.15-10.57-2.1-2.64-5.25-3.95-9.44-3.95-8.61,0-21.46,6.29-38.57,18.88l-17.59,76.01h21.46l-6.27,27.42c-1.15,5.02-5.61,8.57-10.75,8.57h-69.2c-7.09,0-12.33-6.58-10.75-13.49l5.15-22.5h18.56l22.43-97.15h-25.5,0c4.81-21.33,23.76-36.47,45.62-36.47h40.08s-5,21.14-5,21.14c11.62-8.72,21.89-14.74,30.82-18.08,8.93-3.33,19.26-5,30.99-5,10.76,0,19.39,3.63,25.9,10.89,6.51,7.26,9.76,16.86,9.76,28.81Z"/><path d="M1192.27,110.32c13.88-15.6,30.07-23.4,48.58-23.4s32.49,6.67,43.25,20.01c10.76,13.34,16.14,30.66,16.14,51.97,0,17.43-3.63,34.19-10.89,50.27-7.26,16.09-17.62,29.08-31.07,38.97-13.45,9.9-29,14.85-46.64,14.85-19.58,0-35.88-9.47-48.9-28.4l-5.97,26.14h-70.36l8.55-35.99h18.56l39.38-170.91h-22.76,0c4.81-21.24,23.69-36.31,45.46-36.31h37.49l-21.63,92.15.81.65ZM1202.11,222.65c9.25,0,17.24-3.07,23.97-9.2,6.72-6.13,11.78-14.04,15.17-23.72,3.39-9.68,5.08-19.96,5.08-30.82,0-9.9-2.18-17.7-6.54-23.4-4.36-5.7-10.63-8.55-18.8-8.55-9.25,0-17.51,3.53-24.77,10.57-7.26,7.05-12.67,15.63-16.22,25.74-3.55,10.11-5.33,19.69-5.33,28.73s2.47,16.14,7.42,21.95c4.95,5.81,11.62,8.71,20.01,8.71Z"/><path d="M1493.41,162.93c0,8.18-.81,16.09-2.42,23.72h-120.23c-.86,3.55-1.29,7.21-1.29,10.97,0,10.11,2.85,18.37,8.55,24.77,5.7,6.4,13.4,9.6,23.08,9.6,14.31,0,25.88-7.26,34.7-21.79l38.41,17.11c-8.61,13.02-19.42,22.67-32.44,28.97-13.02,6.29-27.65,9.44-43.9,9.44-23.56,0-42.34-6.56-56.32-19.69-13.99-13.13-20.98-31.04-20.98-53.74,0-18.5,3.95-35.85,11.86-52.05,7.91-16.19,19.31-29.13,34.21-38.81,14.9-9.68,32.14-14.53,51.72-14.53,14.53,0,27.46,3.07,38.81,9.2,11.35,6.13,20.23,14.98,26.63,26.55,6.4,11.57,9.6,24.99,9.6,40.27ZM1444.84,150.99c0-9.25-2.32-16.57-6.94-21.95-4.63-5.38-11.24-8.07-19.85-8.07-19.91,0-33.57,12.64-40.99,37.93h67.14c.43-3.33.65-5.97.65-7.91Z"/><path d="M1670.78,91.12l-10.17,45.35c-5.7-1.29-11.03-1.94-15.98-1.94-28.19,0-46.21,18.4-54.06,55.19l-8.07,35.02h26.47l-8.23,35.99h-98.77l8.23-35.99h20.5l22.43-97.15h-23.08,0c4.81-21.33,23.76-36.47,45.62-36.47h31.68l-11.62,49.38.65.65c10.01-19.26,19.47-32.68,28.4-40.27,8.93-7.59,19.42-11.38,31.47-11.38,3.76,0,8.61.54,14.52,1.61Z"/><path d="M1797.78,119.2h0c3.88-16.45,18.56-28.08,35.47-28.08h42.81l-8.23,36.47h-18.72l-29.86,127.82c-13.02,56.7-48.15,85.05-105.38,85.05-30.45,0-56.32-5.54-77.63-16.62l15.82-37.6c20.98,9.68,39.48,14.52,55.52,14.52,13.66,0,24.4-1.94,32.2-5.81,7.8-3.87,13.96-9.92,18.48-18.16s8.44-19.77,11.78-34.62l-.65-.97c-14.74,13.88-30.07,20.82-45.99,20.82-19.8,0-34.89-6.32-45.27-18.96-10.38-12.64-15.57-29.67-15.57-51.08,0-17.64,3.77-34.29,11.3-49.95,7.53-15.65,18.02-28.32,31.47-38.01,13.45-9.68,28.62-14.52,45.51-14.52,20.12,0,35.77,9.9,46.96,29.69ZM1743.56,222.32c9.47,0,17.45-3.17,23.97-9.52,6.51-6.35,11.38-14.2,14.61-23.56,3.23-9.36,4.84-18.66,4.84-27.92s-2.5-16.81-7.5-22.68c-5-5.86-11.65-8.8-19.93-8.8-9.04,0-16.92,3.36-23.64,10.09-6.72,6.73-11.86,14.88-15.41,24.45-3.55,9.58-5.33,18.67-5.33,27.27,0,9.25,2.47,16.68,7.42,22.27,4.95,5.6,11.94,8.39,20.98,8.39Z"/></svg>
+        </div>
+        <p class="footer-desc" data-i18n="footer.desc">Outil de recherche pour l'identification visuelle de fréquences sonores par analyse de motifs de Chladni.</p>
+        <span class="footer-tdr" data-i18n="footer.tdr">Projet TDR — Lycée, 2025–2026</span>
+      </div>
+      <div class="footer-links">
+        <h4 data-i18n="footer.nav_title">Navigation</h4>
+        <a href="index.html"      data-i18n="nav.home">Accueil</a>
+        <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
+        <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+        <a href="donnees.html"    data-i18n="nav.data">Données</a>
+        <a href="apropos.html"    data-i18n="nav.about">À propos</a>
+      </div>
+      <div class="footer-links">
+        <h4 data-i18n="analyser.footer_title">Analyseur</h4>
+        <a href="analyseur.html" data-i18n="analyser.foot_link1">Importer une image</a>
+        <a href="analyseur.html" data-i18n="analyser.foot_link2">Utiliser la caméra</a>
+        <a href="donnees.html"   data-i18n="analyser.foot_link3">Base de données</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer.bottom_copy">© 2026 Wittenberg — Projet de recherche éducative</span>
+      <span data-i18n="footer.bottom_ref">Ernst Chladni (1756–1827) — Wittenberg, Saxe</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/frequencies.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/predictionService.js"></script>
+<script src="js/app.js"></script>
+<script>
+(function() {
+  // ── State ─────────────────────────────────────────────────────────────
+  let currentFile = null;
+  let cameraStream = null;
+  let currentSource = 'upload'; // 'upload' | 'camera'
+
+  // ── DOM refs ──────────────────────────────────────────────────────────
+  const fileInput       = document.getElementById('file-input');
+  const uploadZone      = document.getElementById('upload-zone');
+  const uploadPlaceholder = document.getElementById('upload-placeholder');
+  const uploadPreview   = document.getElementById('upload-preview');
+  const previewImg      = document.getElementById('preview-img');
+  const clearBtn        = document.getElementById('clear-btn');
+  const uploadFilename  = document.getElementById('upload-filename');
+  const analyzeBtn      = document.getElementById('analyze-btn');
+  const resetBtn        = document.getElementById('reset-btn');
+
+  const startCameraBtn  = document.getElementById('start-camera-btn');
+  const captureBtn      = document.getElementById('capture-btn');
+  const stopCameraBtn   = document.getElementById('stop-camera-btn');
+  const cameraFeed      = document.getElementById('camera-feed');
+  const cameraPlaceholder = document.getElementById('camera-placeholder');
+  const captureCanvas   = document.getElementById('capture-canvas');
+
+  const emptyState      = document.getElementById('empty-state');
+  const loadingState    = document.getElementById('loading-state');
+  const resultSection   = document.getElementById('result-section');
+  const loadingTitle    = document.getElementById('loading-title');
+  const loadingMsg      = document.getElementById('loading-msg');
+  const statusDot       = document.getElementById('status-dot');
+  const statusText      = document.getElementById('status-text');
+
+  // ── Source tabs ───────────────────────────────────────────────────────
+  document.querySelectorAll('.tab[data-source]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab[data-source]').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      currentSource = tab.dataset.source;
+
+      document.querySelectorAll('.tab-source').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + currentSource).classList.add('active');
+
+      if (currentSource !== 'camera' && cameraStream) stopCamera();
+    });
+  });
+
+  // ── File upload ───────────────────────────────────────────────────────
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  uploadZone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+  });
+
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  });
+
+  clearBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    clearFile();
+  });
+
+  function setFile(file) {
+    if (!file.type.startsWith('image/')) {
+      alert(window.WI18n ? window.WI18n.t('analyser.err_type') : 'Veuillez sélectionner un fichier image (JPEG, PNG, WebP).');
+      return;
+    }
+    currentFile = file;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      previewImg.src = ev.target.result;
+      uploadPlaceholder.style.display = 'none';
+      uploadPreview.style.display = 'block';
+      uploadFilename.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' Ko)';
+      enableAnalyze();
+      setStatus('ready', window.WI18n ? window.WI18n.t('analyser.status_ready') : 'Image prête pour l\'analyse');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearFile() {
+    currentFile = null;
+    fileInput.value = '';
+    previewImg.src = '';
+    uploadPlaceholder.style.display = 'block';
+    uploadPreview.style.display = 'none';
+    disableAnalyze();
+    resetResults();
+    setStatus('idle', window.WI18n ? window.WI18n.t('analyser.status_idle') : 'En attente d\'une image');
+  }
+
+  // ── Camera ────────────────────────────────────────────────────────────
+  startCameraBtn.addEventListener('click', async () => {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      cameraFeed.srcObject = cameraStream;
+      cameraFeed.style.display = 'block';
+      cameraPlaceholder.style.display = 'none';
+      captureBtn.disabled = false;
+      captureBtn.setAttribute('aria-disabled', 'false');
+      stopCameraBtn.disabled = false;
+      stopCameraBtn.setAttribute('aria-disabled', 'false');
+      startCameraBtn.disabled = true;
+      setStatus('ready', window.WI18n ? window.WI18n.t('analyser.status_cam') : 'Caméra active — cadrez le motif');
+    } catch(err) {
+      alert((window.WI18n ? window.WI18n.t('analyser.err_cam') : 'Impossible d\'accéder à la caméra. Vérifiez les autorisations du navigateur.') + '\nErreur : ' + err.message);
+    }
+  });
+
+  captureBtn.addEventListener('click', () => {
+    captureCanvas.width  = cameraFeed.videoWidth;
+    captureCanvas.height = cameraFeed.videoHeight;
+    captureCanvas.getContext('2d').drawImage(cameraFeed, 0, 0);
+    captureCanvas.toBlob(blob => {
+      currentFile = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+      enableAnalyze();
+      setStatus('ready', window.WI18n ? window.WI18n.t('analyser.status_cap') : 'Image capturée — prête pour l\'analyse');
+    }, 'image/jpeg', 0.92);
+  });
+
+  stopCameraBtn.addEventListener('click', stopCamera);
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+    cameraFeed.srcObject = null;
+    cameraFeed.style.display = 'none';
+    cameraPlaceholder.style.display = 'flex';
+    captureBtn.disabled = true;
+    captureBtn.setAttribute('aria-disabled', 'true');
+    stopCameraBtn.disabled = true;
+    stopCameraBtn.setAttribute('aria-disabled', 'true');
+    startCameraBtn.disabled = false;
+  }
+
+  // ── Analysis ──────────────────────────────────────────────────────────
+  analyzeBtn.addEventListener('click', runAnalysis);
+  resetBtn.addEventListener('click', () => {
+    clearFile();
+    currentFile = null;
+    if (currentSource === 'camera') {
+      cameraFeed.style.display = 'none';
+      cameraPlaceholder.style.display = 'flex';
+    }
+  });
+
+  async function runAnalysis() {
+    if (!currentFile) return;
+    setStatus('loading', window.WI18n ? window.WI18n.t('analyser.status_load') : 'Analyse du motif en cours…');
+    showLoading();
+
+    await PredictionService.predict(currentFile, (state, msg) => {
+      loadingMsg.textContent = msg;
+      if (state === 'analyzing') loadingTitle.textContent = 'Analyse du motif en cours…';
+    }).then(result => {
+      if (result.success) {
+        showResult(result);
+      } else {
+        showError(result.error);
+      }
+    });
+  }
+
+  function showResult(result) {
+    const freq = result.frequency;
+    const confPct = Math.round(result.confidence * 100);
+    const confLabel = getConfidenceLabel(result.confidence);
+
+    document.getElementById('result-freq').textContent = freq.hz.toLocaleString('fr-FR');
+    document.getElementById('result-mode').textContent = 'Mode ' + freq.mode + ' — ' + freq.label;
+    document.getElementById('result-conf-pct').textContent = confPct + ' %';
+    document.getElementById('result-conf-badge').className = 'badge ' + confLabel.cls;
+    document.getElementById('result-conf-badge').textContent = confLabel.text;
+    document.getElementById('result-desc').textContent = freq.description;
+
+    setTimeout(() => {
+      document.getElementById('conf-bar').style.width = confPct + '%';
+      document.getElementById('conf-bar-aria').setAttribute('aria-valuenow', confPct);
+    }, 100);
+
+
+    // Top predictions
+    const topEl = document.getElementById('top-predictions');
+    topEl.innerHTML = '';
+    result.topPredictions.slice(1).forEach((pred, i) => {
+      const pct = Math.round(pred.confidence * 100);
+      topEl.innerHTML += `
+        <div class="top-pred-item">
+          <span style="font-size:.875rem;color:var(--c-text-muted);width:2rem;flex-shrink:0;">${i === 0 ? (window.WI18n ? window.WI18n.t('analyser.pred_2nd') : '2e') : (window.WI18n ? window.WI18n.t('analyser.pred_3rd') : '3e')}</span>
+          <span style="font-size:.875rem;font-weight:600;color:var(--c-dark);min-width:80px;">${pred.frequency.label}</span>
+          <div class="top-pred-bar-wrap">
+            <div class="top-pred-bar" style="width:${pct}%;"></div>
+          </div>
+          <span style="font-size:.8125rem;color:var(--c-text-muted);min-width:36px;text-align:right;">${pct}%</span>
+        </div>`;
+    });
+
+    if (result.isMock) {
+      document.getElementById('mock-warning').style.display = 'block';
+    }
+    if (result.lowConfidence) {
+      document.getElementById('low-conf-warning').style.display = 'block';
+    }
+
+    loadingState.style.display = 'none';
+    emptyState.style.display = 'none';
+    resultSection.style.display = 'block';
+    setStatus('result', (window.WI18n ? window.WI18n.t('analyser.status_done') : 'Fréquence estimée : ') + freq.label);
+  }
+
+  function showLoading() {
+    emptyState.style.display = 'none';
+    resultSection.style.display = 'none';
+    loadingState.style.display = 'block';
+    analyzeBtn.disabled = true;
+    analyzeBtn.setAttribute('aria-disabled', 'true');
+    analyzeBtn.innerHTML = '<div class="status-loading-ring" style="width:16px;height:16px;"></div> ' + (window.WI18n ? window.WI18n.t('analyser.btn_analysing') : 'Analyse en cours…');
+  }
+
+  function showError(msg) {
+    loadingState.style.display = 'none';
+    emptyState.style.display = 'block';
+    emptyState.innerHTML = `
+      <div style="color:#c2410c;font-size:2rem;margin-bottom:1rem;">⚠</div>
+      <h3 style="font-family:var(--font-serif);font-size:1.125rem;color:var(--c-dark);margin-bottom:.5rem;">${window.WI18n ? window.WI18n.t('analyser.err_title') : 'Erreur lors de l\'analyse'}</h3>
+      <p style="font-size:.9rem;color:var(--c-text-muted);">${msg}</p>`;
+    setStatus('idle', window.WI18n ? window.WI18n.t('analyser.status_err') : 'Erreur — réessayez');
+    enableAnalyze();
+  }
+
+  function resetResults() {
+    emptyState.style.display = 'block';
+    loadingState.style.display = 'none';
+    resultSection.style.display = 'none';
+    document.getElementById('mock-warning').style.display = 'none';
+    document.getElementById('low-conf-warning').style.display = 'none';
+    document.getElementById('conf-bar').style.width = '0%';
+  }
+
+  function enableAnalyze() {
+    analyzeBtn.disabled = false;
+    analyzeBtn.setAttribute('aria-disabled', 'false');
+    analyzeBtn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> ' + (window.WI18n ? window.WI18n.t('analyser.btn_analyse') : 'Analyser le motif');
+  }
+
+  function disableAnalyze() {
+    analyzeBtn.disabled = true;
+    analyzeBtn.setAttribute('aria-disabled', 'true');
+  }
+
+  function setStatus(type, text) {
+    statusText.textContent = text;
+    statusDot.className = 'status-dot';
+    const map = { idle: 'status-dot-idle', ready: 'status-dot-ready', loading: 'status-dot-loading', result: 'status-dot-result' };
+    if (map[type]) statusDot.classList.add(map[type]);
+  }
+
+  function getConfidenceLabel(ratio) {
+    var i = window.WI18n;
+    if (ratio >= 0.85) return { text: i ? i.t('analyser.conf_high')   : 'Très élevée', cls: 'badge-success' };
+    if (ratio >= 0.70) return { text: i ? i.t('analyser.conf_med_hi') : 'Élevée',      cls: 'badge-primary' };
+    if (ratio >= 0.55) return { text: i ? i.t('analyser.conf_med')    : 'Moyenne',     cls: 'badge-warn' };
+    return                     { text: i ? i.t('analyser.conf_low')    : 'Faible',      cls: 'badge-muted' };
+  }
+
+})();
+</script>
+</body>
+</html>

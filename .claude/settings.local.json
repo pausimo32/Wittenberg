@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell(Test-Path \"C:\\\\Program Files\\\\nodejs\\\\node.exe\"; Test-Path \"$env:APPDATA\\\\npm\\\\node.cmd\"; Get-ChildItem \"C:\\\\Program Files\\\\nodejs\\\\\" -ErrorAction SilentlyContinue | Select-Object -First 5)",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\\\\assets\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\\\\css\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\\\\js\")",
+      "PowerShell(python --version 2>$null)",
+      "PowerShell(python3 --version 2>$null)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\" -Recurse -Depth 3 | Where-Object { !$_.PSIsContainer } | Select-Object FullName | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\" -Recurse -File | Select-Object FullName, LastWriteTime, @{N='KB';E={[math]::Round\\($_.Length/1KB,1\\)}} | Sort-Object LastWriteTime -Descending)",
+      "PowerShell(python --version)",
+      "PowerShell(Start-Process python -ArgumentList '-m','http.server','5500','--directory','c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1' -WindowStyle Hidden -PassThru)",
+      "PowerShell(Start-Sleep -Seconds 1; try { $r = Invoke-WebRequest -Uri 'http://localhost:5500/index.html' -UseBasicParsing -TimeoutSec 3; \"OK $\\($r.StatusCode\\)\" } catch { \"ERROR: $_\" })",
+      "Skill(run)",
+      "Skill(run:*)",
+      "PowerShell(Start-Process \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\\\\index.html\")",
+      "PowerShell(\\(Get-Command npx -ErrorAction SilentlyContinue\\).Source; \\(Get-Command node -ErrorAction SilentlyContinue\\).Source; $env:PATH -split ';' | Where-Object { $_ -match 'node|npm' })"
+    ]
+  }
+}
