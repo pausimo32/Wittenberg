@@ -17,7 +17,42 @@
       "Skill(run)",
       "Skill(run:*)",
       "PowerShell(Start-Process \"c:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\\\\index.html\")",
-      "PowerShell(\\(Get-Command npx -ErrorAction SilentlyContinue\\).Source; \\(Get-Command node -ErrorAction SilentlyContinue\\).Source; $env:PATH -split ';' | Where-Object { $_ -match 'node|npm' })"
+      "PowerShell(\\(Get-Command npx -ErrorAction SilentlyContinue\\).Source; \\(Get-Command node -ErrorAction SilentlyContinue\\).Source; $env:PATH -split ';' | Where-Object { $_ -match 'node|npm' })",
+      "Bash(Start-Process \"C:\\\\Users\\\\PC10\\\\Desktop\\\\TDR\\\\wittenberg\\\\ide1\\\\index.html\")",
+      "Bash(npx --version)",
+      "Bash(python -m http.server 8080)",
+      "PowerShell(Start-Process \"http://localhost:8080\")",
+      "Bash(npx --yes serve . -l 3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(python3 -m http.server 3000)",
+      "Bash(python3 -m http.server 8765)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8765/)",
+      "Bash(python3 -m http.server 8765 --directory .)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8765/index.html)",
+      "Bash(pkill -f \"http.server 8765\")",
+      "Bash(echo \"Server PID: $!\")",
+      "Bash(pkill -f \"http.server 8765\" 2>/dev/null; sleep 0.3 *)",
+      "Bash(node -e ' *)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/lt2/.nvm/versions/**)",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --no-sandbox --screenshot=/tmp/wittenberg_home.png --window-size=1400,900 http://localhost:8765/index.html)",
+      "Bash(echo \"exit: $?\")",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --no-sandbox --screenshot=/tmp/wittenberg_favicon.png --window-size=200,200 http://localhost:8765/assets/isotype.svg)",
+      "Bash(python3 -m http.server 8743 --directory /Volumes/KINGSTON/TDR/wittenberg/ide1)",
+      "Bash(curl -s http://localhost:8743/index.html)",
+      "Bash(curl -s http://localhost:8743/css/style.css)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s http://localhost:8743/experience.html)",
+      "Bash(kill %1)",
+      "Bash(which node && node --version 2>/dev/null || echo \"no node\" *)",
+      "Read(//Applications/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8743/index.html)",
+      "Bash(xargs kill -9)",
+      "Bash(open -a \"Google Chrome\" http://localhost:8743/index.html)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
     ]
   }
 }

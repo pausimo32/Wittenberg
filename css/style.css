@@ -3,7 +3,79 @@
    Palette: #205f75 | #123e4d | #F4F8F9 | #DCE9ED | #CFA96A
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap');
+/* ── Helvetica Neue 5 — Display & Headings ────────────────────────────────── */
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('../assets/helvetica-neue-5/HelveticaNeueMedium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('../assets/helvetica-neue-5/HelveticaNeueBold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('../assets/helvetica-neue-5/HelveticaNeueHeavy.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Satoshi — Body & UI ──────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../assets/satoshi/Satoshi-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
 
 /* --- Custom properties --- */
 :root {
@@ -16,8 +88,9 @@
   --c-text-muted:#4a6370;
   --c-white:     #ffffff;
 
-  --font-sans:   'Inter', system-ui, sans-serif;
-  --font-serif:  'Playfair Display', Georgia, serif;
+  --font-display: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  --font-sans:    'Satoshi', system-ui, -apple-system, sans-serif;
+  --font-serif:   'Helvetica Neue', Arial, Helvetica, sans-serif;
 
   --radius-sm:   6px;
   --radius-md:   12px;
@@ -39,8 +112,9 @@ body {
   font-family: var(--font-sans);
   background: var(--c-bg);
   color: var(--c-text);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 img, svg { max-width: 100%; display: block; }
@@ -49,12 +123,21 @@ button { cursor: pointer; font-family: inherit; }
 ul { list-style: none; }
 
 /* --- Typography --- */
-.font-serif { font-family: var(--font-serif); }
+.font-display { font-family: var(--font-display); }
+.font-serif   { font-family: var(--font-display); }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-serif);
+h1, h2 {
+  font-family: var(--font-display);
+  line-height: 1.1;
+  color: var(--c-dark);
+  letter-spacing: -0.018em;
+}
+
+h3, h4 {
+  font-family: var(--font-display);
   line-height: 1.2;
   color: var(--c-dark);
+  letter-spacing: -0.005em;
 }
 
 .text-xs   { font-size: .75rem; }
@@ -248,7 +331,7 @@ h1, h2, h3, h4 {
   padding: .5rem .875rem;
   border-radius: var(--radius-sm);
   transition: var(--transition);
-  letter-spacing: .01em;
+  letter-spacing: .015em;
 }
 
 .nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
@@ -321,9 +404,9 @@ h1, h2, h3, h4 {
   justify-content: center;
   gap: .5rem;
   font-family: var(--font-sans);
-  font-weight: 600;
+  font-weight: 700;
   font-size: .9375rem;
-  letter-spacing: .01em;
+  letter-spacing: .025em;
   border: none;
   border-radius: var(--radius-sm);
   padding: .75rem 1.75rem;
@@ -453,11 +536,12 @@ h1, h2, h3, h4 {
 }
 
 .hero-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(2.5rem, 5vw, 4rem);
-  font-weight: 600;
+  font-weight: 800;
   color: #fff;
-  line-height: 1.1;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
   margin-bottom: 1.5rem;
 }
 
@@ -482,9 +566,10 @@ h1, h2, h3, h4 {
 }
 
 .hero-stat-value {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   color: var(--c-accent);
   display: block;
 }
@@ -535,11 +620,12 @@ h1, h2, h3, h4 {
 }
 
 .section-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--c-dark);
-  line-height: 1.2;
+  line-height: 1.15;
+  letter-spacing: -0.010em;
   margin-bottom: .75rem;
 }
 
@@ -622,9 +708,9 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background: var(--c-primary);
   color: #fff;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -698,9 +784,10 @@ h1, h2, h3, h4 {
    FREQUENCY DISPLAY
    ============================================================ */
 .freq-display {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 3.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--c-accent);
   line-height: 1;
 }
@@ -1095,10 +1182,12 @@ h1, h2, h3, h4 {
 }
 
 .page-header-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
   color: #fff;
-  line-height: 1.15;
+  line-height: 1.08;
+  letter-spacing: -0.020em;
   margin-bottom: .75rem;
 }
 
