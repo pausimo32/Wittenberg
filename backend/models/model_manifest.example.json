@@ -1,0 +1,69 @@
+{
+  "manifest_version": 1,
+  "model": {
+    "name": "wittenberg-chladni-cnn",
+    "version": "0.0.0-exemple",
+    "framework": "onnx",
+    "format": "onnx",
+    "artifact": "chladni_cnn.onnx",
+    "sha256": null,
+    "trained_at": null,
+    "notes": "GABARIT — ne pas servir tel quel. Remplacez les classes ci-dessous par les fréquences réellement mesurées sur la plaque, puis renommez ce fichier en model_manifest.json."
+  },
+  "input": {
+    "height": 224,
+    "width": 224,
+    "channels": 1,
+    "layout": "NHWC",
+    "dtype": "float32",
+    "value_range": [0.0, 1.0],
+    "normalization": {
+      "mode": "scale_01"
+    }
+  },
+  "preprocessing": {
+    "version": "prep-0.0.0-exemple",
+    "grayscale": true,
+    "plate_detection": {
+      "enabled": true,
+      "fallback_center_crop": 0.9,
+      "min_area_ratio": 0.15,
+      "max_skew": 0.35
+    },
+    "contrast": {
+      "mode": "minmax"
+    },
+    "denoise": {
+      "mode": "none",
+      "kernel_size": 3
+    },
+    "edge_detection": {
+      "enabled": false,
+      "method": "canny",
+      "low_threshold": 100,
+      "high_threshold": 200,
+      "aperture_size": 3
+    },
+    "resize_mode": "pad",
+    "pad_value": 0
+  },
+  "output": {
+    "activation": "softmax"
+  },
+  "classes": [
+    { "index": 0, "label": "CLASSE 1 — à remplacer", "frequency_hz": 111.0 },
+    { "index": 1, "label": "CLASSE 2 — à remplacer", "frequency_hz": 222.0 },
+    { "index": 2, "label": "CLASSE 3 — à remplacer", "frequency_hz": 333.0 }
+  ],
+  "decision": {
+    "min_confidence": 0.55,
+    "min_margin": 0.0,
+    "top_k": 3
+  },
+  "dataset": {
+    "id": null,
+    "date": null,
+    "images_per_class": null,
+    "notes": "Les fréquences ci-dessus sont des valeurs factices destinées à illustrer le schéma. Elles ne proviennent d'aucune mesure et ne doivent jamais être servies. L'ordre index -> fréquence doit reproduire exactement l'ordre des classes utilisé à l'entraînement."
+  }
+}

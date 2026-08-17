@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "roi": { "mode": "homography", "output_size": 512 },
+  "grayscale": { "code": "COLOR_RGBA2GRAY" },
+  "clahe": { "enabled": true, "clip_limit": 2.0, "tile_grid_size": [8, 8] },
+  "blur": { "ksize": [5, 5], "sigma_x": 1.4, "sigma_y": 1.4, "border": "BORDER_DEFAULT" },
+  "canny": { "threshold1": 50, "threshold2": 150, "aperture_size": 3, "l2_gradient": false },
+  "resize": { "size": [128, 128], "interpolation": "INTER_AREA" },
+  "output": { "dtype": "float32", "scale": 0.00392156862745098, "shape": [128, 128, 1] }
+}

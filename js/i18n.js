@@ -30,7 +30,10 @@
       'footer.bottom_ref':   'Ernst Chladni (1756–1827) — Wittenberg, Saxe',
 
       /* Badges communs */
-      'badge.simulation':  'Simulation — modèle non connecté',
+      'badge.model_checking': 'Vérification du modèle…',
+      'badge.model_ready':    'Modèle connecté',
+      'badge.model_absent':   'Modèle non connecté',
+      'badge.backend_offline': 'Service d\'analyse injoignable',
       'badge.to_collect':  'À collecter',
       'badge.prototype':   'Prototype — en cours',
       'badge.coming_soon': 'À venir',
@@ -125,7 +128,7 @@
       'index.limits.w6_desc':     'La fréquence doit rester stable pendant la durée d\'exposition pour que les grains atteignent leur position d\'équilibre.',
 
       'index.cta.title':     'Prêt à analyser un motif ?',
-      'index.cta.desc':      'Capturez ou importez une image d\'un motif de Chladni et obtenez une estimation de fréquence. Le modèle est actuellement en phase de simulation — la connexion au modèle réel sera disponible après entraînement.',
+      'index.cta.desc':      'Capturez ou importez une image d\'un motif de Chladni et obtenez une estimation de fréquence. L\'analyseur est relié au service d\'inférence ; l\'estimation sera produite dès qu\'un modèle entraîné y sera déployé.',
       'index.cta.btn_open':  'Ouvrir l\'analyseur',
       'index.cta.btn_exp':   'Voir l\'expérience',
 
@@ -179,10 +182,14 @@
       'analyser.conf_label':    'Confiance du modèle',
       'analyser.desc_label':    'Description du motif',
       'analyser.alts_label':    'Hypothèses alternatives',
-      'analyser.mock_warn':     'Aucun modèle entraîné n\'est encore connecté à cette version. Cette estimation est une simulation destinée à valider l\'interface.',
+      'analyser.quality_title': 'Qualité de l\'image',
+      'analyser.no_desc':       'Aucune description n\'est disponible pour cette fréquence.',
+      'analyser.ambiguous_warn': 'Deux fréquences obtiennent des probabilités très proches. Le motif est ambigu : reprenez la photographie ou vérifiez la stabilité de la fréquence appliquée.',
+      'analyser.err_service_title': 'Analyse indisponible',
+      'analyser.model_ready_title': 'Modèle chargé sur le serveur',
+      'analyser.model_absent_title': 'Aucun modèle entraîné n\'est disponible sur le serveur. L\'analyse est désactivée tant qu\'un modèle validé n\'est pas fourni.',
       'analyser.low_conf_warn': 'Le niveau de confiance est faible. Le motif peut être ambigu ou les conditions expérimentales ont pu varier. Vérifiez l\'éclairage et la position de la caméra.',
       'analyser.err_title':     'Erreur lors de l\'analyse',
-      'analyser.badge_sim':     'Simulation',
       'analyser.conf_high':     'Très élevée',
       'analyser.conf_med_hi':   'Élevée',
       'analyser.conf_med':      'Moyenne',
@@ -215,6 +222,9 @@
       'pred.error':      'Erreur lors de l\'analyse',
       'pred.img_error':  'Impossible de charger l\'image.',
       'pred.unknown':    'Erreur inconnue lors de l\'analyse.',
+      'pred.no_file':    'Aucune image sélectionnée.',
+      'pred.timeout':    'L\'analyse a pris trop de temps. Réessayez avec une image plus légère.',
+      'pred.unreachable': 'Le service d\'analyse est injoignable. Vérifiez que le backend est démarré.',
 
       /* ── EXPÉRIENCE ── */
       'exp.page_eyebrow': 'Dispositif expérimental',
@@ -397,7 +407,7 @@
 
       'about.proto_done1': 'Interface web complète (accueil, analyseur, données, expérience, à propos)',
       'about.proto_done2': 'Pipeline de prédiction modulaire (import image, caméra, prétraitement, résultat)',
-      'about.proto_done3': 'Service de prédiction simulé (mock) avec architecture réelle documentée',
+      'about.proto_done3': 'Service de prédiction relié à l\'API d\'inférence, avec prétraitement déterministe côté serveur',
       'about.proto_done4': 'Visualisation mathématique des motifs de Chladni (canvas)',
       'about.proto_pend1': 'Collecte d\'images expérimentales',
       'about.proto_pend2': 'Entraînement du modèle CNN',
@@ -432,7 +442,10 @@
       'footer.bottom_copy':  '© 2026 Wittenberg — Proyecto de investigación educativa',
       'footer.bottom_ref':   'Ernst Chladni (1756–1827) — Wittenberg, Sajonia',
 
-      'badge.simulation':  'Simulación — modelo no conectado',
+      'badge.model_checking': 'Comprobando el modelo…',
+      'badge.model_ready':    'Modelo conectado',
+      'badge.model_absent':   'Modelo no conectado',
+      'badge.backend_offline': 'Servicio de análisis inaccesible',
       'badge.to_collect':  'Por recopilar',
       'badge.prototype':   'Prototipo — en curso',
       'badge.coming_soon': 'Próximamente',
@@ -526,7 +539,7 @@
       'index.limits.w6_desc':     'La frecuencia debe permanecer estable durante el tiempo de exposición para que los granos alcancen su posición de equilibrio.',
 
       'index.cta.title':     '¿Listo para analizar un patrón?',
-      'index.cta.desc':      'Capture o importe una imagen de un patrón de Chladni y obtenga una estimación de frecuencia. El modelo está actualmente en fase de simulación — la conexión al modelo real estará disponible tras el entrenamiento.',
+      'index.cta.desc':      'Capture o importe una imagen de un patrón de Chladni y obtenga una estimación de frecuencia. El analizador está conectado al servicio de inferencia; la estimación se producirá en cuanto se despliegue en él un modelo entrenado.',
       'index.cta.btn_open':  'Abrir el analizador',
       'index.cta.btn_exp':   'Ver el experimento',
 
@@ -580,10 +593,14 @@
       'analyser.conf_label':    'Confianza del modelo',
       'analyser.desc_label':    'Descripción del patrón',
       'analyser.alts_label':    'Hipótesis alternativas',
-      'analyser.mock_warn':     'Ningún modelo entrenado está conectado aún a esta versión. Esta estimación es una simulación destinada a validar la interfaz.',
+      'analyser.quality_title': 'Calidad de la imagen',
+      'analyser.no_desc':       'No hay ninguna descripción disponible para esta frecuencia.',
+      'analyser.ambiguous_warn': 'Dos frecuencias obtienen probabilidades muy próximas. El patrón es ambiguo: repita la fotografía o compruebe la estabilidad de la frecuencia aplicada.',
+      'analyser.err_service_title': 'Análisis no disponible',
+      'analyser.model_ready_title': 'Modelo cargado en el servidor',
+      'analyser.model_absent_title': 'No hay ningún modelo entrenado disponible en el servidor. El análisis permanece desactivado mientras no se proporcione un modelo validado.',
       'analyser.low_conf_warn': 'El nivel de confianza es bajo. El patrón puede ser ambiguo o las condiciones experimentales pueden haber variado. Compruebe la iluminación y la posición de la cámara.',
       'analyser.err_title':     'Error durante el análisis',
-      'analyser.badge_sim':     'Simulación',
       'analyser.conf_high':     'Muy alta',
       'analyser.conf_med_hi':   'Alta',
       'analyser.conf_med':      'Media',
@@ -615,6 +632,9 @@
       'pred.error':      'Error durante el análisis',
       'pred.img_error':  'No se puede cargar la imagen.',
       'pred.unknown':    'Error desconocido durante el análisis.',
+      'pred.no_file':    'Ninguna imagen seleccionada.',
+      'pred.timeout':    'El análisis ha tardado demasiado. Inténtelo de nuevo con una imagen más ligera.',
+      'pred.unreachable': 'El servicio de análisis no está accesible. Compruebe que el backend está en marcha.',
 
       /* EXPERIMENTO */
       'exp.page_eyebrow': 'Dispositivo experimental',
@@ -797,7 +817,7 @@
 
       'about.proto_done1': 'Interfaz web completa (inicio, analizador, datos, experimento, acerca de)',
       'about.proto_done2': 'Pipeline de predicción modular (importar imagen, cámara, preprocesamiento, resultado)',
-      'about.proto_done3': 'Servicio de predicción simulado (mock) con arquitectura real documentada',
+      'about.proto_done3': 'Servicio de predicción conectado a la API de inferencia, con preprocesamiento determinista en el servidor',
       'about.proto_done4': 'Visualización matemática de los patrones de Chladni (canvas)',
       'about.proto_pend1': 'Recopilación de imágenes experimentales',
       'about.proto_pend2': 'Entrenamiento del modelo CNN',
@@ -832,7 +852,10 @@
       'footer.bottom_copy':  '© 2026 Wittenberg — Projecte de recerca educativa',
       'footer.bottom_ref':   'Ernst Chladni (1756–1827) — Wittenberg, Saxònia',
 
-      'badge.simulation':  'Simulació — model no connectat',
+      'badge.model_checking': 'Comprovant el model…',
+      'badge.model_ready':    'Model connectat',
+      'badge.model_absent':   'Model no connectat',
+      'badge.backend_offline': 'Servei d\'anàlisi inaccessible',
       'badge.to_collect':  'Per recopilar',
       'badge.prototype':   'Prototip — en curs',
       'badge.coming_soon': 'Properament',
@@ -926,7 +949,7 @@
       'index.limits.w6_desc':     'La freqüència ha de romandre estable durant el temps d\'exposició perquè els grans assoleixin la seva posició d\'equilibri.',
 
       'index.cta.title':     'Llest per analitzar un patró?',
-      'index.cta.desc':      'Captureu o importeu una imatge d\'un patró de Chladni i obteniu una estimació de freqüència. El model es troba actualment en fase de simulació — la connexió al model real estarà disponible després de l\'entrenament.',
+      'index.cta.desc':      'Captureu o importeu una imatge d\'un patró de Chladni i obteniu una estimació de freqüència. L\'analitzador està connectat al servei d\'inferència; l\'estimació es produirà tan bon punt s\'hi desplegui un model entrenat.',
       'index.cta.btn_open':  'Obrir l\'analitzador',
       'index.cta.btn_exp':   'Veure l\'experiment',
 
@@ -980,10 +1003,14 @@
       'analyser.conf_label':    'Confiança del model',
       'analyser.desc_label':    'Descripció del patró',
       'analyser.alts_label':    'Hipòtesis alternatives',
-      'analyser.mock_warn':     'Cap model entrenat no està connectat encara a aquesta versió. Aquesta estimació és una simulació destinada a validar la interfície.',
+      'analyser.quality_title': 'Qualitat de la imatge',
+      'analyser.no_desc':       'No hi ha cap descripció disponible per a aquesta freqüència.',
+      'analyser.ambiguous_warn': 'Dues freqüències obtenen probabilitats molt properes. El patró és ambigu: repetiu la fotografia o comproveu l\'estabilitat de la freqüència aplicada.',
+      'analyser.err_service_title': 'Anàlisi no disponible',
+      'analyser.model_ready_title': 'Model carregat al servidor',
+      'analyser.model_absent_title': 'No hi ha cap model entrenat disponible al servidor. L\'anàlisi resta desactivada mentre no es proporcioni un model validat.',
       'analyser.low_conf_warn': 'El nivell de confiança és baix. El patró pot ser ambigu o les condicions experimentals poden haver variat. Verifiqueu la il·luminació i la posició de la càmera.',
       'analyser.err_title':     'Error durant l\'anàlisi',
-      'analyser.badge_sim':     'Simulació',
       'analyser.conf_high':     'Molt alta',
       'analyser.conf_med_hi':   'Alta',
       'analyser.conf_med':      'Mitjana',
@@ -1015,6 +1042,9 @@
       'pred.error':      'Error durant l\'anàlisi',
       'pred.img_error':  'No es pot carregar la imatge.',
       'pred.unknown':    'Error desconegut durant l\'anàlisi.',
+      'pred.no_file':    'Cap imatge seleccionada.',
+      'pred.timeout':    'L\'anàlisi ha trigat massa. Torneu-ho a provar amb una imatge més lleugera.',
+      'pred.unreachable': 'El servei d\'anàlisi no és accessible. Comproveu que el backend estigui en marxa.',
 
       /* EXPERIMENT */
       'exp.page_eyebrow': 'Dispositiu experimental',
@@ -1197,7 +1227,7 @@
 
       'about.proto_done1': 'Interfície web completa (inici, analitzador, dades, experiment, sobre el projecte)',
       'about.proto_done2': 'Pipeline de predicció modular (importar imatge, càmera, preprocessament, resultat)',
-      'about.proto_done3': 'Servei de predicció simulat (mock) amb arquitectura real documentada',
+      'about.proto_done3': 'Servei de predicció connectat a l\'API d\'inferència, amb preprocessament determinista al servidor',
       'about.proto_done4': 'Visualització matemàtica dels patrons de Chladni (canvas)',
       'about.proto_pend1': 'Recollida d\'imatges experimentals',
       'about.proto_pend2': 'Entrenament del model CNN',
@@ -1269,6 +1299,13 @@
   }
 
   /* Public API */
-  window.WI18n = { t: t, setLang: setLang, init: init, getLang: function() { return _lang; } };
+  window.WI18n = {
+    t: t,
+    setLang: setLang,
+    init: init,
+    /* Réapplique les traductions, par exemple après un rendu dynamique. */
+    apply: applyTranslations,
+    getLang: function() { return _lang; }
+  };
 
 })();

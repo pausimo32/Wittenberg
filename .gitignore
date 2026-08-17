@@ -1,0 +1,43 @@
+# ── Python ───────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# ── Configuration locale ─────────────────────────────────────────────────
+# `.env.example` reste versionné ; `.env` ne l'est jamais.
+.env
+.env.*
+!.env.example
+
+# ── Artefacts de modèle ──────────────────────────────────────────────────
+# Les poids ne sont pas versionnés : ils sont montés en volume ou téléchargés
+# au déploiement. Voir backend/models/README.md.
+*.onnx
+*.keras
+*.h5
+*.tflite
+backend/models/saved_model/
+# `model_manifest.json` reste versionné : c'est la trace de l'ordre exact des
+# classes et de la version du prétraitement, indispensable à la reproductibilité.
+
+# Jeux de données et rapports d'évaluation
+data/
+backend/data/
+rapport_validation.json
+
+# ── Divers ───────────────────────────────────────────────────────────────
+# Fichiers AppleDouble créés par macOS sur les volumes non HFS.
+._*
+.DS_Store
+Thumbs.db
+*.log

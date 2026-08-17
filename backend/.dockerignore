@@ -1,0 +1,26 @@
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+.venv/
+venv/
+env/
+
+.env
+*.log
+
+tests/
+.coverage
+htmlcov/
+
+# Les artefacts de modèle sont montés en volume, jamais copiés dans l'image.
+models/*.onnx
+models/*.keras
+models/*.h5
+models/*.tflite
+models/saved_model/
+
+.git/
+.gitignore

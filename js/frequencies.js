@@ -6,6 +6,16 @@
  * réellement utilisées dans l'expérience physique.
  * Chaque classe correspond à une fréquence appliquée sur la plaque
  * et au motif de Chladni qu'elle produit.
+ *
+ * IMPORTANT — ce fichier n'est PAS la source de vérité des classes du modèle.
+ * Les fréquences prédites proviennent exclusivement du manifeste chargé par le
+ * backend (`backend/models/model_manifest.json`). Ces données ne servent qu'à
+ * deux usages éditoriaux :
+ *   - alimenter le tableau descriptif de `donnees.html` ;
+ *   - enrichir un résultat d'analyse d'un mode vibratoire et d'une description,
+ *     uniquement lorsque la fréquence prédite figure ici à l'identique.
+ * Une fréquence absente de cette liste s'affiche sans description : jamais avec
+ * une description approchée, qui serait scientifiquement trompeuse.
  */
 
 const FREQUENCIES = [
