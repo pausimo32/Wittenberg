@@ -13,7 +13,8 @@ green: every gate exists because failing it silently costs more than failing it 
 | F2 | Python preprocessing | unit tests green on `tests/fixtures/` | opus → sonnet |
 | F3a | Ingest pipeline built | synthetic sessions ingest + split; curator READY | sonnet |
 | F3b | ≥ 4 real sessions ingested | curator says READY TO TRAIN | sonnet |
-| F4 | Trained + evaluated model | acceptance gates in model-spec §6 | opus |
+| F4a | Training bench built | `train` -> `eval` -> `check-model` green end to end on the synthetic sessions | opus |
+| F4b | Trained + evaluated model | acceptance gates in model-spec §6, on real captures | opus |
 | F5 | Local serving API (CPU) | `check-model` green, API == direct call, ≤ 150 ms | sonnet |
 | F6 | Vite + React app + `/dades` | analyse flow end to end; a session can be labelled and committed | sonnet |
 | F7 | Didactic module + field prep | E2E green, reset clean, `v1.0-field` tagged | sonnet |
@@ -363,7 +364,39 @@ sonnet.
 
 ---
 
-## F4 — Train and evaluate (the team's RTX 5070)
+## F4a — The training bench (code, NOT blocked by the lab)
+
+Same move as F2.5 and F3a, for the same reason: F1 and F3b are lab phases that consume weeks
+of calendar time, and the code that trains does not have to wait for them. What F4a builds is
+`src/model.py`, `src/dataset.py`, `src/train.py`, `src/evaluate.py`, and the `train`, `eval`
+and `check-model` targets — greened against the four synthetic sessions.
+
+**The gate is "it runs end to end and writes the artefacts". It is never an accuracy figure.**
+On synthetic captures the network reaches ~100 %, and that number measures how well it
+inverted the closed-form mode shape that drew the images. `metrics.json` from a synthetic run
+carries a `do_not_report` field saying so, in the file itself, because the person who opens it
+in six months will not remember where the data came from.
+
+The corollary matters more than the gate: **do not tune a single hyperparameter by looking at
+that number.** §3 of `docs/04-model-spec.md` fixes all of them and §5 is where they move — in
+an ablation, on real data, with the result written down. A learning rate chosen because it
+improved a score on rendered images is a learning rate chosen at random.
+
+Two things to check rather than assume:
+
+- the head reads `n_classes` from `config/classes.json` (6 with the synthetic sessions, 10–18
+  with real ones), never from a constant. The checkpoint stores a class *index*, so a head
+  sized for the wrong list answers with a different frequency at full confidence;
+- `python tasks.py check-model` is green against the checkpoint the bench produced, and red
+  when `config/preprocess.json` is mutated. That is the F5 gate, built here because it is what
+  makes F4a verifiable at all.
+
+Then `rm -rf data/raw/SYNTH-*` and delete the synthetic runs, before the first real training
+finds them and someone has to read timestamps to tell which is which.
+
+---
+
+## F4b — Train and evaluate on real captures (the team's RTX 5070)
 
 Training is the only step that wants a GPU. It runs on the team's own card, a handful of times,
 and the app never touches it (`docs/adr/0005`). Nothing is uploaded anywhere.
@@ -388,13 +421,14 @@ first operation. `python tasks.py check-device` runs a real matmul precisely to 
 
 ```
 ## Context
-Phase F4. Curator says READY TO TRAIN. ≥ 4 sessions ingested.
+Phase F4b. Curator says READY TO TRAIN. ≥ 4 real sessions ingested.
+The training bench from F4a exists and is green on synthetic data.
 Read: docs/04-model-spec.md.
 Do NOT read: docs/01, 02, 03, 05, 06, 07.
 
 ## Task
-Implement src/model.py + src/train.py + src/evaluate.py; train wittenberg_v1 and
-baseline_paper; produce the full evaluation set.
+Train wittenberg_v1 and baseline_paper on the real captures and produce the full
+evaluation set. The bench is built; this phase produces the numbers.
 
 ## Constraints
 - Split by session (GroupShuffleSplit on session_id). Never random. ADR 0002 is not

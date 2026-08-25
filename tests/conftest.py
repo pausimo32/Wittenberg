@@ -81,3 +81,16 @@ def white_quad_photo() -> np.ndarray:
     image[..., 3] = 255
     cv2.fillConvexPoly(image, PLATE_QUAD, (255, 255, 255, 255))
     return image
+
+
+@pytest.fixture(scope="session")
+def tiny_dataset(tmp_path_factory) -> Path:
+    """A complete three-session dataset, ingested and split. See `conftest_f4a.py`.
+
+    Session-scoped because building it costs a few seconds and every test that uses it
+    only reads. Three sessions is the minimum `src/split.py` will partition, and every
+    class appears in every session so no fold is missing one.
+    """
+    from conftest_f4a import build_dataset
+
+    return build_dataset(tmp_path_factory.mktemp("f4a") / "data")

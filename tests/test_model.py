@@ -1,0 +1,179 @@
+"""Contract tests for `src/model.py` — `docs/04-model-spec.md` §1 and §2.
+
+Three properties, and the first is the one that would fail silently.
+
+**The head is sized from `config/classes.json`.** A checkpoint stores a class *index*, not a
+frequency. A head sized from a constant is right for exactly one mode list and, when the list
+changes, answers with a different frequency at full confidence — no exception, no warning,
+nothing in `metrics.json`.
+
+**The parameter counts are the ones §1 quotes.** They are in the document and will be in the
+TDR, so they are asserted here rather than trusted. The conv bias is worth 448 parameters and
+`bias=False` would silently make every quoted figure wrong.
+
+**The model emits logits.** §3 uses `CrossEntropyLoss(label_smoothing=0.05)`, which applies
+its own softmax. A softmax in `forward` would be applied twice — the loss would be wrong, not
+broken, which is worse.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+import torch
+
+from model import (
+    MODEL_NAMES,
+    ModelError,
+    WittenbergV1,
+    build_model,
+    classes_from_config,
+    parameter_count,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def write_classes(path: Path, frequencies: list[int]) -> Path:
+    path.write_text(
+        json.dumps(
+            {
+                "version": "1.0.0",
+                "n_classes": len(frequencies),
+                "classes": [
+                    {"index": i, "freq_hz": f} for i, f in enumerate(frequencies)
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+# --------------------------------------------------------------------------- #
+# the head is sized from the config, never from a constant
+# --------------------------------------------------------------------------- #
+
+def test_the_class_list_comes_from_the_config_file(tmp_path):
+    path = write_classes(tmp_path / "classes.json", [100, 200, 300, 400, 500, 600, 700])
+    assert len(classes_from_config(path)) == 7
+
+
+@pytest.mark.parametrize("n_classes", [6, 10, 14, 18])
+@pytest.mark.parametrize("name", MODEL_NAMES)
+def test_the_head_width_follows_the_class_count(tmp_path, name, n_classes):
+    """6 with the synthetic sessions, 10-18 with real ones (docs/02 §3)."""
+    path = write_classes(tmp_path / "classes.json", [100 * (i + 1) for i in range(n_classes)])
+    model = build_model(name, len(classes_from_config(path)))
+    assert model(torch.zeros(2, 1, 128, 128)).shape == (2, n_classes)
+
+
+def test_no_class_count_is_hardcoded_anywhere_in_the_module():
+    """`n_classes` is a required argument; there is no default to fall back to."""
+    import inspect
+
+    signature = inspect.signature(build_model)
+    assert signature.parameters["n_classes"].default is inspect.Parameter.empty
+
+
+def test_the_real_config_and_the_real_model_agree():
+    classes = classes_from_config()
+    model = build_model("wittenberg_v1", len(classes))
+    assert model.classifier.out_features == len(classes)
+
+
+def test_a_config_with_renumbered_indices_is_refused(tmp_path):
+    """The index IS the class. A gap or a reorder voids every checkpoint silently."""
+    path = tmp_path / "classes.json"
+    path.write_text(
+        json.dumps({"classes": [{"index": 0, "freq_hz": 100}, {"index": 2, "freq_hz": 200}]}),
+        encoding="utf-8",
+    )
+    with pytest.raises(ModelError, match="indices"):
+        classes_from_config(path)
+
+
+def test_a_missing_config_names_the_target_that_writes_it(tmp_path):
+    with pytest.raises(ModelError, match="tasks.py modes"):
+        classes_from_config(tmp_path / "nope.json")
+
+
+def test_a_single_class_model_is_refused():
+    with pytest.raises(ModelError):
+        build_model("wittenberg_v1", 1)
+
+
+def test_an_unknown_model_name_is_refused():
+    with pytest.raises(ModelError, match="unknown model"):
+        build_model("resnet50", 6)
+
+
+# --------------------------------------------------------------------------- #
+# the architecture §1 specifies
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("n_classes,expected", [(12, 288876), (14, 289134)])
+def test_parameter_count_matches_the_spec(n_classes, expected):
+    """§1 quotes both of these figures. If this fails, the document is now wrong."""
+    assert parameter_count(build_model("wittenberg_v1", n_classes))["trainable"] == expected
+
+
+def test_the_trunk_is_287328_whatever_the_head_is():
+    """§1: "The convolutional trunk is 287 328; the head adds 128·n + n"."""
+    for n in (6, 12, 14, 18):
+        total = parameter_count(build_model("wittenberg_v1", n))["trainable"]
+        assert total - (128 * n + n) == 287328
+
+
+def test_the_batchnorm_buffers_are_counted_separately():
+    """§1: 902 non-trainable buffers, which PyTorch does not count as parameters."""
+    assert parameter_count(build_model("wittenberg_v1", 12))["buffers"] == 902
+
+
+def test_the_head_is_global_average_pooling_not_flatten():
+    """§2: Flatten after 16x16x128 gives a 32 768-wide dense layer — more parameters than
+    we have training images, and it ties the prediction to absolute pixel positions."""
+    model = build_model("wittenberg_v1", 12)
+    assert isinstance(model, WittenbergV1)
+    assert model.classifier.in_features == 128
+
+
+def test_the_model_returns_logits_not_probabilities():
+    """CrossEntropyLoss applies its own softmax (§3). Two softmaxes is a quiet bug."""
+    model = build_model("wittenberg_v1", 6).eval()
+    with torch.no_grad():
+        out = model(torch.randn(4, 1, 128, 128))
+    assert not torch.allclose(out.sum(dim=1), torch.ones(4), atol=1e-3)
+    assert (out < 0).any()
+
+
+def test_the_input_is_nchw():
+    """docs/03 produces NHWC (128,128,1); the permute belongs to the loader, not here."""
+    model = build_model("wittenberg_v1", 6).eval()
+    with torch.no_grad():
+        assert model(torch.zeros(1, 1, 128, 128)).shape == (1, 6)
+    with pytest.raises(RuntimeError):
+        model(torch.zeros(1, 128, 128, 1))
+
+
+def test_the_baseline_is_the_published_architecture_not_an_improved_one():
+    """§1 A: one Conv2d(1, 64, 3) + ReLU, one MaxPool, flatten, Linear. Do not improve it."""
+    from torch import nn
+
+    model = build_model("baseline_paper", 6)
+    kinds = [type(m) for m in model.features]
+    assert kinds == [nn.Conv2d, nn.ReLU, nn.MaxPool2d]
+    assert model.features[0].out_channels == 64
+    assert model.features[0].kernel_size == (3, 3)
+    assert isinstance(model.classifier, nn.Linear)
+    assert model.classifier.in_features == 64 * 63 * 63       # flatten, on purpose
+
+
+@pytest.mark.parametrize("name", MODEL_NAMES)
+def test_every_model_exposes_the_layer_gradcam_needs(name):
+    """§4.6 is non-negotiable, so a model with nowhere to hook is not a usable model."""
+    from torch import nn
+
+    assert isinstance(build_model(name, 6).cam_layer, nn.Conv2d)

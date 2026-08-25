@@ -76,19 +76,24 @@ def venv_python() -> str:
 
 
 def latest_run() -> Path:
-    """Windows-safe replacement for a `runs/latest` symlink."""
-    pointer = RUNS / "latest.txt"
-    if not pointer.exists():
-        die("no runs yet — run `python tasks.py train`")
-    p = RUNS / pointer.read_text(encoding="utf-8").strip()
-    if not p.is_dir():
-        die(f"runs/latest.txt points at {p}, which does not exist")
-    return p
+    """Windows-safe replacement for a `runs/latest` symlink — CLAUDE.md points here.
+
+    The pointer file itself is `src/runs.py`'s; this wrapper exists so the CLI reports a
+    missing run the way every other target reports a problem, instead of a traceback.
+    """
+    import runs as runs_module
+
+    try:
+        return runs_module.latest_run(RUNS)
+    except runs_module.RunsError as exc:
+        die(str(exc))
+        raise
 
 
 def write_latest(run_dir: Path):
-    RUNS.mkdir(exist_ok=True)
-    (RUNS / "latest.txt").write_text(run_dir.name, encoding="utf-8")
+    import runs as runs_module
+
+    runs_module.write_latest(run_dir, RUNS)
 
 
 # --------------------------------------------------------------------------- #
@@ -359,20 +364,116 @@ def _sessions_to_ingest(argv: list[str]) -> list[str]:
     return []
 
 
-@target("train", "train the CNN, write runs/<ts>/  [F4]")
-def train(argv): not_implemented("F4")
+@target("train", "train the CNN, write runs/<ts>/  [F4a]")
+def train(argv):
+    """`python tasks.py train [--model wittenberg_v1|baseline_paper] [--epochs N]`."""
+    from dataset import DatasetError
+    from model import ModelError
+    from runs import RunsError
+    from train import TrainingError
+    from train import train as run_training
+
+    model_name = _option(argv, "--model", "wittenberg_v1")
+    epochs = _option(argv, "--epochs", None)
+
+    try:
+        run_dir = run_training(
+            DATA, model_name=model_name, epochs=int(epochs) if epochs else None
+        )
+    except (TrainingError, DatasetError, ModelError, RunsError) as exc:
+        die(str(exc))
+
+    metrics = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
+    print(f"  {metrics['model']}  {metrics['parameters']['trainable']} trainable parameters")
+    print(
+        f"  {metrics['epochs_run']} epochs on {metrics['device']}, "
+        f"best at {metrics['best_epoch']}  "
+        f"val_loss {metrics['best_val_loss']:.4f}  val_acc {metrics['best_val_accuracy']:.4f}"
+    )
+    print(f"  run -> {run_dir.relative_to(ROOT)}  ({metrics['train_seconds']} s)")
+    if metrics.get("synthetic"):
+        print("  SYNTHETIC DATA — no number in this run may be reported (docs/00 F2.5)")
+    print("  next: `python tasks.py eval`")
 
 
-@target("eval", "confusion matrix, per-class report, Grad-CAM  [F4]")
-def eval_(argv): not_implemented("F4")
+@target("eval", "confusion matrix, per-class report, Grad-CAM  [F4a]")
+def eval_(argv):
+    """`python tasks.py eval [--run <name>] [--split test]`."""
+    from dataset import DatasetError
+    from evaluate import EvaluationError, evaluate_run
+    from runs import RunsError
+
+    try:
+        run_dir = _run_from(argv)
+        summary = evaluate_run(run_dir, DATA, split_name=_option(argv, "--split", "test"))
+    except (EvaluationError, DatasetError, RunsError) as exc:
+        die(str(exc))
+
+    accuracy = summary["accuracy"]
+    low, high = accuracy["frame_level_wilson_95"]
+    print(f"  {summary['split']} split: {summary['images']} images, "
+          f"sessions {', '.join(summary['sessions'])}")
+    print(f"  accuracy {accuracy['frame_level']:.4f}  "
+          f"95 % Wilson [{low:.4f}, {high:.4f}]  (frame-level — see §4.1)")
+    print(f"  macro F1 {summary['per_class']['macro_f1']:.4f}   worst class "
+          f"{summary['per_class']['worst_class_hz']} Hz at recall "
+          f"{summary['per_class']['worst_class_recall']:.4f}")
+
+    distance = summary["frequency_distance"]
+    if distance["errors"]:
+        print(f"  {distance['errors']} errors, median |f_true - f_pred| "
+              f"{distance['median_distance_hz']:.0f} Hz, "
+              f"{distance['adjacent_class_share']:.1%} on an adjacent mode")
+    else:
+        print("  no misclassifications — on synthetic data this means nothing (docs/00 F2.5)")
+
+    written = summary["gradcam"]["written"]
+    print(f"  Grad-CAM for {len(written)} classes -> "
+          f"{(run_dir / 'report' / 'gradcam').relative_to(ROOT)}")
+    print(f"  report -> {(run_dir / 'report').relative_to(ROOT)}")
 
 
-@target("ablate", "run one ablation from docs/04-model-spec.md §5  [F4]")
-def ablate(argv): not_implemented("F4")
+@target("ablate", "run one ablation from docs/04-model-spec.md §5  [F4b]")
+def ablate(argv): not_implemented("F4b")
 
 
-@target("check-model", "GATE: checkpoint preprocess hash == current config  [F5]")
-def check_model(argv): not_implemented("F5")
+@target("check-model", "GATE: checkpoint preprocess hash == current config  [F4a]")
+def check_model(argv):
+    """`python tasks.py check-model [--run <name>]`. Hard failure, never a warning."""
+    from preprocess import load_config
+    from runs import (
+        RunsError,
+        check_preprocess_hash,
+        missing_artefacts,
+    )
+
+    try:
+        run_dir = _run_from(argv)
+        absent = missing_artefacts(run_dir)
+        if absent:
+            die(f"{run_dir.name} is missing {', '.join(absent)} — it is not a finished run")
+        result = check_preprocess_hash(run_dir, load_config())
+    except RunsError as exc:
+        die(str(exc))
+
+    print(f"  {result['run']}  preprocessing {result['preprocess_version']}")
+    print(f"  sha256 {result['sha256']}  MATCHES config/preprocess.json")
+    print("  this checkpoint may be served (docs/03-preprocessing-spec.md §4)")
+
+
+def _run_from(argv: list[str]) -> Path:
+    from runs import resolve_run
+
+    return resolve_run(argv, RUNS)
+
+
+def _option(argv: list[str], flag: str, default):
+    if flag not in argv:
+        return default
+    i = argv.index(flag)
+    if i + 1 >= len(argv):
+        die(f"{flag} needs a value")
+    return argv[i + 1]
 
 
 @target("api", "start the FastAPI dev server with reload  [F5]")

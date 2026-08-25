@@ -128,10 +128,17 @@ With a single implementation there is nothing to compare. What *can* still go wr
 checkpoint trained under a different version of this spec.
 
 1. Every checkpoint stores the fully resolved `config/preprocess.json` **and its SHA-256** in
-   `runs/<ts>/config.json`.
+   `runs/<ts>/config.json`, and the SHA-256 again inside `model.pt` — the checkpoint travels
+   with the repository (`docs/adr/0005`) and has to carry its own provenance.
 2. The API asserts at startup that the hash of the running `config/preprocess.json` equals the
    checkpoint's. On mismatch it **refuses to start** and prints both versions.
 3. `python tasks.py check-model` runs the same assertion from the command line.
+
+**The hash is over the resolved config, canonically serialised** —
+`json.dumps(config, sort_keys=True, separators=(",", ":"))`, in `src/runs.py`. Not over the
+file's bytes: re-indenting the JSON, reordering two keys, or Git checking the file out with
+CRLF on Windows would each change the bytes without changing a single pixel, and a guard that
+fires on those is a guard everyone learns to ignore. Any changed *value* changes the hash.
 
 This is a hard failure, never a warning. It is the whole of what used to be a parity harness.
 

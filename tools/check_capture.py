@@ -31,10 +31,10 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from calibrate import calibrate  # noqa: E402
-from imageio import UnsupportedImageError, decode  # noqa: E402
-from preprocess import load_config, preprocess_stages  # noqa: E402
-from quality import assess, load_gate  # noqa: E402
+from calibrate import calibrate
+from imageio import UnsupportedImageError, decode
+from preprocess import load_config, preprocess_stages
+from quality import assess, load_gate
 
 #: What to try, in order, when Canny sees nothing. Ordered by how much they cost.
 REMEDIES = (

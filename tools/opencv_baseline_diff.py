@@ -58,8 +58,8 @@ def frames_of(session_id: str) -> list[Path]:
 def dump(args) -> int:
     import cv2
 
-    from calibrate import read_calibration
     import preprocess as P
+    from calibrate import read_calibration
 
     config = P.load_config(ROOT / "config" / "preprocess.json")
     calib = read_calibration(ROOT / "data" / "calib" / f"{args.session}.json")

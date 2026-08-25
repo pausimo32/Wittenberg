@@ -288,8 +288,8 @@ def _read_session_log(session_dir: Path, session_id: str) -> dict[str, Any]:
             f"{path} not found. Every session needs one, written BEFORE the first "
             f"capture. Required keys: {', '.join(REQUIRED_SESSION_KEYS)}"
             + (", synthetic" if is_synthetic(session_id) else "")
-            + f". Five of them are columns of metadata.csv (§4) and none of them can be "
-            f"reconstructed from the images four days after the lab."
+            + ". Five of them are columns of metadata.csv (§4) and none of them can be "
+            "reconstructed from the images four days after the lab."
         )
 
     try:

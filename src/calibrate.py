@@ -69,7 +69,7 @@ class Calibration(NamedTuple):
     px_per_mm: float | None
     n_markers: int
     marker_ids: list[int]
-    nominal_mismatch: list[int] = []
+    nominal_mismatch: list[int]
 
     @property
     def usable(self) -> bool:
@@ -81,13 +81,14 @@ class Calibration(NamedTuple):
         if not self.nominal_mismatch:
             return []
         ids = ", ".join(str(i) for i in self.nominal_mismatch)
-        return [
+        message = (
             f"marker(s) {ids}: the corner touching the plate is not the one the nominal "
             f"zenithal rig produces (docs/02 §1.1). The calibration used the geometric "
             f"corner and is correct either way, but this means a marker is taped on "
             f"rotated, or the plate is turned within the frame. Check the rig before the "
             f"next session; if the plate is deliberately turned, say so in session.json."
-        ]
+        )
+        return [message]
 
 
 def load_calibration_config(path: Path | str | None = None) -> dict[str, Any]:
@@ -113,7 +114,7 @@ def calibrate(
 
     wanted = [int(params["marker_ids"][name]) for name in CORNER_ORDER]
     if not all(i in found for i in wanted):
-        return Calibration(session_id, roi_mode, None, None, len(found), sorted(found))
+        return Calibration(session_id, roi_mode, None, None, len(found), sorted(found), [])
 
     centroid = np.mean([found[i].mean(axis=0) for i in wanted], axis=0)
     chosen = [_innermost_index(found[i], centroid) for i in wanted]

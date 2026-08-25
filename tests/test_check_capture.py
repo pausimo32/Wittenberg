@@ -23,12 +23,12 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
-from check_capture import main  # noqa: E402
-from synth_capture import render_frame, spoil  # noqa: E402
+from check_capture import main
+from synth_capture import render_frame, spoil
 
-from calibrate import calibrate  # noqa: E402
-from preprocess import load_config  # noqa: E402
-from quality import assess, load_gate  # noqa: E402
+from calibrate import calibrate
+from preprocess import load_config
+from quality import assess, load_gate
 
 
 def frame(defect: str = "", n_markers: int = 4, blank: bool = False) -> np.ndarray:

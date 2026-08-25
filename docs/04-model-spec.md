@@ -93,6 +93,12 @@ preprocessing version and the framework/CUDA versions), `metrics.json`, `history
 6. **Grad-CAM** on 3 correct and 3 incorrect samples per class. Verifies the model looks at
    nodal lines and not at a scratch on the plate or the rig shadow. Non-negotiable — without it
    there is no evidence the model learned the physics.
+   *Implementation note, because it bites at the end of a training run and not before:* the
+   backward hook makes the hooked layer's output a view, so **no `ReLU` in either model may be
+   `inplace=True`**. `baseline_paper` puts its ReLU directly after the layer that is hooked and
+   raises `view+inplace`; `wittenberg_v1` happens to survive only because a BatchNorm sits in
+   between. A class the model gets entirely right cannot supply three incorrect samples — the
+   evaluation records the shortfall rather than reporting fewer without saying so.
 
 ## 5. Ablations — these ARE the results chapter
 
