@@ -124,7 +124,15 @@ export const t = {
       discardConfirm: (id: string) =>
         `Segur que vols descartar l’esborrany ${id}? S’esborraran les fotografies que has pujat. El conjunt de dades no es tocarà.`,
       path: 'Carpeta',
+      updated: 'Últim canvi',
       untouched: 'Res no s’ha escrit encara al conjunt de dades.',
+      // The machine tokens the server keeps (`new` / `calibrated` / `committing`), said in
+      // Catalan. A view in Catalan that prints `calibrated` has just stopped being in Catalan.
+      statuses: {
+        new: 'Començada',
+        calibrated: 'Calibrada',
+        committing: 'Incorporant-se',
+      },
       counts: (accepted: number, rejected: number, duplicates: number) =>
         duplicates > 0
           ? `${accepted} acceptades · ${rejected} rebutjades · ${duplicates} duplicades`
@@ -142,6 +150,18 @@ export const t = {
       },
       interrupted:
         'La incorporació d’aquest esborrany es va interrompre. Les captures estan desades a part i encara no hi ha cap sessió: torna a incorporar-la per reprendre-ho, o descarta l’esborrany i s’esborraran amb ell.',
+    },
+
+    error: {
+      // Namespaced here rather than borrowed from `analyze`: these are different failures with
+      // different things to do about them, and the one that matters is `notFound` — after a
+      // discard in another tab, opening an esborrany's link is a 404, not a network problem,
+      // and telling someone the server is unreachable sends them to debug the wrong thing.
+      list: 'No s’han pogut llegir els esborranys oberts.',
+      load: 'No s’ha pogut llegir aquest esborrany.',
+      notFound:
+        'Aquest esborrany ja no existeix. Probablement s’ha descartat o s’ha incorporat des d’una altra pestanya.',
+      discard: 'No s’ha pogut descartar l’esborrany.',
     },
 
     steps: {

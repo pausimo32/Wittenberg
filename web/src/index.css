@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens from WITTENBERG_BRAND_GUIDE.md §4, semantic names, no raw hex anywhere else.
+ *
+ * Two project constraints shape everything below:
+ *
+ * 1. **No remote font.** The guide suggests Inter; a field session runs with the machine
+ *    offline (docs/05 §3), so nothing is fetched from fonts.googleapis.com. The stack falls
+ *    through to the system UI face, which on the team's Windows laptop is Segoe UI. If Inter
+ *    is ever wanted it gets vendored into the bundle, never linked.
+ * 2. **Legible at a distance, for older adults, on a shared or projected laptop**
+ *    (docs/05 §5). Base size is 17px rather than 16, body text is --color-text on
+ *    --color-background at 12.9:1, and no interactive text uses --color-muted.
+ */
+@theme {
+  --color-primary: #205f75;
+  --color-primary-strong: #1a4f61;
+  --color-secondary: #123e4d;
+  --color-background: #f4f8f9;
+  --color-surface: #dce9ed;
+  --color-accent: #cfa96a;
+  --color-accent-ink: #6b5220;
+  --color-text: #102f3a;
+  --color-muted: #5f7780;
+  --color-border: rgba(18, 62, 77, 0.16);
+  --color-white: #ffffff;
+
+  /* Warning, not error: a centre-cropped photo is a caveat about the answer, not a
+     failure of the app. Ink is dark enough to read as body text (docs/05 §5). */
+  --color-warn-surface: #fdf3e0;
+  --color-warn-border: #d8b878;
+  --color-warn-ink: #6b5220;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
+  /* Data values want tabular figures so a column of probabilities does not shuffle. */
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, monospace;
+}
+
+:root {
+  font-size: 17px;
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A visible focus ring everywhere, never removed. Participants share one laptop and the
+   viewer is driven with the arrow keys (docs/05 §8). */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* docs/05 §5: respected, not approximated. Everything that moves here is decorative —
+   the pipeline viewer still advances, it just stops sliding while it does. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Steps 7 and 8 render pixelated: at 128×128 the pixel grid *is* the point, and smoothing
+   it hides that the network sees something coarse (docs/05 §8). Feature maps and the tiled
+   channel sheets are the same case. */
+.pixelated {
+  image-rendering: pixelated;
+}
+
+@utility card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+}
