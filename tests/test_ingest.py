@@ -619,3 +619,126 @@ def test_an_empty_session_does_not_start_a_pool(data_root):
     from ingest import _assess_all
 
     assert _assess_all([], {}, "homography", None, None, jobs=8) == []
+
+
+# --------------------------------------------------------------------------- #
+# what /dades reuses — one implementation, not two that agree today  [F6]
+# --------------------------------------------------------------------------- #
+
+def test_gate_frame_is_the_verdict_ingest_records(data_root):
+    """`docs/05` §9: the gate `/dades` applies and the gate `tasks.py ingest` applies are the
+    same function, and this is where that stops being a claim."""
+    from ingest import _frames_of, _session_calibration, gate_frame
+    from preprocess import load_config
+    from quality import load_gate
+
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    calib, roi_mode, _flags = _session_calibration(data_root, "SYNTH-20260101-01")
+    frames = _frames_of(data_root / "raw" / "SYNTH-20260101-01")
+    report = ingest_session("SYNTH-20260101-01", data_root)
+    rows = {r["image_id"]: r for r in rows_of(data_root)}
+
+    for freq_hz, path in frames:
+        quality, reason, _metrics = gate_frame(path, calib, roi_mode, load_config(), load_gate())
+        image_id = f"SYNTH-20260101-01_{freq_hz}_{path.stem.split('_')[-1]}"
+        assert quality == rows[image_id]["quality"]
+        assert (reason is None) == (rows[image_id]["quality"] == "ok")
+    assert report.total == len(frames)
+
+
+def test_progress_is_called_once_per_frame(data_root):
+    build_session(data_root, "SYNTH-20260101-01", frames=3)
+    seen: list[tuple[int, int]] = []
+
+    report = ingest_session(
+        "SYNTH-20260101-01", data_root, jobs=1, progress=lambda d, t: seen.append((d, t))
+    )
+
+    assert [d for d, _t in seen] == list(range(1, report.total + 1))
+    assert {t for _d, t in seen} == {report.total}
+
+
+def test_progress_does_not_change_a_single_byte(data_root):
+    """Reporting is observation. If it moved a byte it would not be reporting."""
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    ingest_session("SYNTH-20260101-01", data_root, jobs=1)
+    quiet = (data_root / "metadata.csv").read_bytes()
+
+    ingest_session("SYNTH-20260101-01", data_root, jobs=1, progress=lambda d, t: None)
+
+    assert (data_root / "metadata.csv").read_bytes() == quiet
+
+
+def test_read_session_log_is_public_and_still_refuses(data_root):
+    from ingest import read_session_log
+
+    session_dir = data_root / "raw" / "SYNTH-20260101-01"
+    session_dir.mkdir(parents=True)
+    (session_dir / "session.json").write_text(
+        '{"session_id": "SYNTH-20260101-01"}', encoding="utf-8"
+    )
+
+    with pytest.raises(IngestError, match="missing key"):
+        read_session_log(session_dir, "SYNTH-20260101-01")
+
+
+def test_assess_frame_keeps_stages_only_when_asked(data_root):
+    """Default behaviour is ingest's, unchanged: a rejected frame costs no preprocess pass and
+    a 48 MB RGBA array never leaves the function."""
+    from ingest import _frames_of, _session_calibration, assess_frame
+    from preprocess import load_config
+    from quality import load_gate
+
+    build_session(data_root, "SYNTH-20260101-01", frames=1)
+    calib, roi_mode, _ = _session_calibration(data_root, "SYNTH-20260101-01")
+    _freq, path = _frames_of(data_root / "raw" / "SYNTH-20260101-01")[0]
+
+    plain = assess_frame(path, calib, roi_mode, load_config(), load_gate())
+    rich = assess_frame(
+        path, calib, roi_mode, load_config(), load_gate(), keep_stages=True, keep_input=True
+    )
+
+    assert plain.decoded is None
+    assert rich.decoded is not None
+    assert rich.stages is not None
+
+
+def test_a_partial_frame_has_no_stages_even_when_they_are_asked_for(data_root):
+    """Without four markers there is no rectified plate, so there is no edge map that means
+    anything — and `/dades` must not be handed one to draw."""
+    from ingest import _frames_of, _session_calibration, assess_frame
+    from preprocess import load_config
+    from quality import load_gate
+
+    build_session(data_root, "SYNTH-20260101-01", frames=2, bad_frame_markers={1: 3})
+    calib, roi_mode, _ = _session_calibration(data_root, "SYNTH-20260101-01")
+    frames = _frames_of(data_root / "raw" / "SYNTH-20260101-01")
+
+    partial = [
+        assess_frame(
+            path, calib, roi_mode, load_config(), load_gate(), keep_stages=True, keep_input=True
+        )
+        for _freq, path in frames
+    ]
+    partial = [a for a in partial if a.result is not None and a.result.reason == "partial"]
+
+    assert partial, "the fixture was supposed to plant a three-marker frame"
+    assert all(a.stages is None for a in partial)
+
+
+def test_ingest_can_read_a_session_from_a_staging_directory(data_root):
+    """The session id, and therefore every image_id, comes from the argument — never from the
+    directory name. That is what lets `/dades` rename the directory after a successful ingest
+    instead of before a possibly failing one."""
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    staged = data_root / "raw" / ".incoming-SYNTH-20260101-01"
+    (data_root / "raw" / "SYNTH-20260101-01").rename(staged)
+    (data_root / "calib" / "SYNTH-20260101-01.json").rename(staged / "calibration.json")
+
+    report = ingest_session("SYNTH-20260101-01", data_root, jobs=1, session_dir=staged)
+
+    rows = rows_of(data_root)
+    assert report.total == 4                     # 2 classes x 2 frames
+    assert {r["session_id"] for r in rows} == {"SYNTH-20260101-01"}
+    assert all(r["image_id"].startswith("SYNTH-20260101-01_") for r in rows)
+    assert report.roi_mode == "homography"       # the staged calibration was found and used

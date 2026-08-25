@@ -42,6 +42,7 @@ import json
 import os
 import time
 from collections import Counter
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -122,12 +123,26 @@ class SessionReport(NamedTuple):
 
 
 def ingest_session(
-    session_id: str, data_root: Path | str, jobs: int | None = None
+    session_id: str,
+    data_root: Path | str,
+    jobs: int | None = None,
+    progress: Callable[[int, int], None] | None = None,
+    session_dir: Path | str | None = None,
 ) -> SessionReport:
     """Ingest one session. Idempotent: re-running replaces its rows, never duplicates.
 
     `jobs` is how many worker processes decode and gate frames. `None` picks a sensible
     number, `1` forces everything into this process. See `_assess_all`.
+
+    `progress(done, total)` is called after each frame, in input order. It observes and never
+    decides: every byte written is the same whether it is given or not.
+
+    `session_dir` is where the captures are, defaulting to `data/raw/<session_id>`. `/dades`
+    passes a staging directory: it moves a browser-uploaded session to
+    `data/raw/.incoming-<session_id>`, ingests it there, and renames it to the session's own
+    name only once this function has returned — so a failure leaves the draft, not a session
+    that half exists. The session id, and therefore every `image_id`, comes from the argument
+    and never from the directory name, which is what makes that rename invisible.
     """
     try:
         validate_session_id(session_id)
@@ -135,12 +150,12 @@ def ingest_session(
         raise IngestError(str(exc)) from exc
 
     root = Path(data_root)
-    session_dir = root / "raw" / session_id
+    session_dir = root / "raw" / session_id if session_dir is None else Path(session_dir)
     if not session_dir.is_dir():
         raise IngestError(f"{session_dir} not found")
 
-    conditions = _read_session_log(session_dir, session_id)
-    calib, roi_mode, flags = _session_calibration(root, session_id)
+    conditions = read_session_log(session_dir, session_id)
+    calib, roi_mode, flags = _session_calibration(root, session_id, session_dir)
 
     existing = read_metadata(root / "metadata.csv")
     # Checked before a single file is written, so a refusal leaves the dataset as it was.
@@ -162,7 +177,7 @@ def ingest_session(
     # to a single byte of metadata.csv — which is the property that lets it run in eight.
     frames = _frames_of(session_dir)
     total = len(frames)
-    verdicts = _assess_all(frames, calib, roi_mode, config, gate, jobs)
+    verdicts = _assess_all(frames, calib, roi_mode, config, gate, jobs, progress)
 
     for (freq_hz, image_path), (quality, reason, metrics, resized) in zip(frames, verdicts):
         tally = by_class.setdefault(str(freq_hz), {"total": 0, "accepted": 0})
@@ -272,18 +287,18 @@ def _assess_worker(image_path_str: str):
     pickling it back would cost more than the decode saved. What comes back is the verdict,
     the metrics, and the 128x128 step-7 array, which is 16 KB.
     """
-    result, stages = _assess_one(
+    assessment = assess_frame(
         Path(image_path_str),
         _WORKER["calib"],
         _WORKER["roi_mode"],
         _WORKER["config"],
         _WORKER["gate"],
     )
-    quality, reason, metrics = _verdict(result)
-    return quality, reason, metrics, (None if reason is not None else stages.resized)
+    quality, reason, metrics = verdict_of(assessment.result)
+    return quality, reason, metrics, (None if reason is not None else assessment.stages.resized)
 
 
-def _assess_all(frames, calib, roi_mode: str, config, gate, jobs: int | None):
+def _assess_all(frames, calib, roi_mode: str, config, gate, jobs: int | None, progress=None):
     """Every frame's verdict, **in the order `frames` was given**.
 
     Determinism does not depend on how many processes did the work: each frame is decoded,
@@ -300,24 +315,41 @@ def _assess_all(frames, calib, roi_mode: str, config, gate, jobs: int | None):
     every worker re-imports the calling module, so an unguarded script re-runs itself once per
     worker. `tasks.py` is guarded; a one-off script may not be, so the pool failure is caught,
     reported, and finished serially rather than turned into eight tracebacks and no dataset.
+
+    `progress(done, total)` is called after each frame, in input order, on the calling thread.
+    It observes and never decides: the frame list, the order and every byte written are the same
+    whether it is given or not.
     """
     if not frames:
         return []
 
     _init_worker(calib, roi_mode, config, gate)
     paths = [str(path) for _freq, path in frames]
+    total = len(paths)
+
+    def report(done: int) -> None:
+        if progress is not None:
+            progress(done, total)
 
     started = time.perf_counter()
     first = _assess_worker(paths[0])
     seconds_per_frame = time.perf_counter() - started
+    report(1)
     rest = paths[1:]
+
+    def serially():
+        results = [first]
+        for path in rest:
+            results.append(_assess_worker(path))
+            report(len(results))
+        return results
 
     explicit = jobs is not None
     workers = max(1, int(jobs)) if explicit else worker_count()
     if not rest or workers == 1:
-        return [first, *(_assess_worker(path) for path in rest)]
+        return serially()
     if not explicit and not is_worth_parallelising(len(rest), seconds_per_frame):
-        return [first, *(_assess_worker(path) for path in rest)]
+        return serially()
 
     try:
         with ProcessPoolExecutor(
@@ -325,14 +357,18 @@ def _assess_all(frames, calib, roi_mode: str, config, gate, jobs: int | None):
             initializer=_init_worker,
             initargs=(calib, roi_mode, config, gate),
         ) as pool:
-            return [first, *pool.map(_assess_worker, rest, chunksize=4)]
+            results = [first]
+            for result in pool.map(_assess_worker, rest, chunksize=4):
+                results.append(result)
+                report(len(results))
+            return results
     except (OSError, RuntimeError) as exc:        # BrokenProcessPool, no spawn, sandbox, ...
         print(
             f"  NOTE: the worker pool did not start ({type(exc).__name__}); finishing in one\n"
             f"        process, which is slower but identical. If this ran from a script, it\n"
             f"        needs an `if __name__ == \"__main__\":` guard."
         )
-        return [first, *(_assess_worker(path) for path in rest)]
+        return serially()
 
 
 def _frames_of(session_dir: Path) -> list[tuple[int, Path]]:
@@ -346,8 +382,31 @@ def _frames_of(session_dir: Path) -> list[tuple[int, Path]]:
     return frames
 
 
-def _assess_one(image_path: Path, calib, roi_mode: str, config, gate):
-    """Decode, count markers, gate. Returns `(GateResult | None, Stages | None)`.
+class Assessment(NamedTuple):
+    """What one frame produced. `stages` and `decoded` are `None` unless asked for.
+
+    `keep_stages` and `keep_input` exist for `/dades`'s live gate, which has to draw the
+    rejection it is reporting. Both default to off, so ingest's own path costs exactly what it
+    cost before: a rejected frame is not preprocessed, and a 48 MB RGBA array is never carried
+    back out of a worker process.
+    """
+
+    result: Any | None
+    stages: Any | None
+    decoded: Any | None
+
+
+def assess_frame(
+    image_path: Path,
+    calib,
+    roi_mode: str,
+    config,
+    gate,
+    *,
+    keep_stages: bool = False,
+    keep_input: bool = False,
+) -> Assessment:
+    """Decode, count markers, gate.
 
     The stages are computed once and handed back so an accepted image is not
     preprocessed a second time just to be written out.
@@ -355,16 +414,27 @@ def _assess_one(image_path: Path, calib, roi_mode: str, config, gate):
     try:
         decoded = decode(image_path)
     except UnsupportedImageError:
-        return None, None
+        return Assessment(None, None, None)
 
     n_markers = len(detect_markers(decoded.pixels)) if roi_mode == ROI_MODE_HOMOGRAPHY else 0
     result = assess(decoded.pixels, calib, n_markers=n_markers, config=config, gate=gate)
-    if not result.accepted:
-        return result, None
-    return result, preprocess_stages(decoded.pixels, calib, config)
+
+    # A `partial` frame has no usable ROI, so there are no stages to compute for it at all.
+    wanted = result.accepted or (keep_stages and result.reason != "partial")
+    stages = preprocess_stages(decoded.pixels, calib, config) if wanted else None
+    return Assessment(result, stages, decoded if keep_input else None)
 
 
-def _verdict(result) -> tuple[str, str | None, dict[str, Any]]:
+def gate_frame(image_path: Path, calib, roi_mode: str, config, gate):
+    """The verdict `tasks.py ingest` will record for this frame, available before it runs.
+
+    `/dades` calls this and nothing else. `docs/05` §9: "It is a different interface to one
+    implementation, not a second one."
+    """
+    return verdict_of(assess_frame(image_path, calib, roi_mode, config, gate).result)
+
+
+def verdict_of(result) -> tuple[str, str | None, dict[str, Any]]:
     """`(quality, reason, metrics)` for one frame.
 
     `reason` is `None` exactly when the frame was accepted. An undecodable file has no
@@ -409,7 +479,7 @@ def _freq_of(freq_dir: Path) -> int:
 # session inputs
 # --------------------------------------------------------------------------- #
 
-def _read_session_log(session_dir: Path, session_id: str) -> dict[str, Any]:
+def read_session_log(session_dir: Path, session_id: str) -> dict[str, Any]:
     """Read and validate `data/raw/<session_id>/session.json`. Refuse, never warn.
 
     Five of these keys are columns of `metadata.csv` and cannot be recovered from the
@@ -477,15 +547,21 @@ def _read_session_log(session_dir: Path, session_id: str) -> dict[str, Any]:
     return log
 
 
-def _session_calibration(root: Path, session_id: str):
+def _session_calibration(root: Path, session_id: str, session_dir: Path | None = None):
     """`(calib, roi_mode, flags)`.
 
     A session with no calibration file is ingested as `center_crop` and flagged — the
     ingest skill allows this explicitly. It is *not* the same as the silent fallback §6
     forbids: that one is about an individual frame whose markers were not found in a
     session that *is* calibrated, and it stays a `partial` rejection.
+
+    A `calibration.json` sitting *inside* the session directory wins over `data/calib/`. That
+    is how a session still being staged by `/dades` carries its own geometry:
+    `data/calib/<session_id>.json` is a committed file, and writing one for a session whose
+    ingest then failed would leave an orphan in the repository describing nothing.
     """
-    path = root / "calib" / f"{session_id}.json"
+    staged = None if session_dir is None else Path(session_dir) / "calibration.json"
+    path = staged if staged is not None and staged.exists() else root / "calib" / f"{session_id}.json"
     if not path.exists():
         return (
             {"roi_mode": ROI_MODE_CENTER_CROP},
