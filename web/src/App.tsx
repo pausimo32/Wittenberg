@@ -19,6 +19,7 @@ import { Analitza } from './routes/Analitza'
 import { Apren } from './routes/Apren'
 import { Dades } from './routes/Dades'
 import { DraftWizard } from './routes/dades/DraftWizard'
+import { NewSession } from './routes/dades/NewSession'
 import { Galeria } from './routes/Galeria'
 import { Home } from './routes/Home'
 import { Sobre } from './routes/Sobre'
@@ -91,10 +92,9 @@ export function App() {
           <Route path="/apren" element={<Apren />} />
           <Route path="/galeria" element={<Galeria />} />
           <Route path="/dades" element={<Dades />} />
-          {/* `/dades/nova` — the session form — is not routed yet: it arrives with its
-              component in Task 14. The link on `/dades` points at it already and dangles
-              until then. It is a static segment, which the router ranks above `:draftId`
-              wherever it is declared, so adding it cannot shadow this route. */}
+          {/* A static segment, which the router ranks above `:draftId` wherever it is
+              declared — so `/dades/nova` is the form and never a draft called "nova". */}
+          <Route path="/dades/nova" element={<NewSession />} />
           <Route path="/dades/:draftId" element={<DraftWizard />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="*" element={<Home />} />

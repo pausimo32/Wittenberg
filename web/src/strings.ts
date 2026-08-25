@@ -153,15 +153,21 @@ export const t = {
     },
 
     error: {
-      // Namespaced here rather than borrowed from `analyze`: these are different failures with
-      // different things to do about them, and the one that matters is `notFound` — after a
+      // Each of these names *what did not happen*, which is more use than naming the pipe it
+      // did not happen through. `notFound` is the one that earns the namespace: after a
       // discard in another tab, opening an esborrany's link is a 404, not a network problem,
-      // and telling someone the server is unreachable sends them to debug the wrong thing.
+      // and reporting it as one sends someone to restart a server that answered perfectly.
+      //
+      // A genuinely unreachable server keeps using `t.analyze.error.network` — that sentence
+      // is the same fact everywhere and copying it in here would be the duplication this file
+      // argues against.
       list: 'No s’han pogut llegir els esborranys oberts.',
       load: 'No s’ha pogut llegir aquest esborrany.',
       notFound:
         'Aquest esborrany ja no existeix. Probablement s’ha descartat o s’ha incorporat des d’una altra pestanya.',
       discard: 'No s’ha pogut descartar l’esborrany.',
+      create: 'No s’ha pogut començar la sessió.',
+      upload: 'No s’ha pogut pujar el fitxer.',
     },
 
     steps: {
@@ -201,6 +207,8 @@ export const t = {
       lead:
         'Fotografia el marc amb els quatre marcadors. Sense els quatre no hi ha placa rectificada, i sense placa rectificada la porta de qualitat no té res a mesurar.',
       drop: 'Arrossega aquí el fotograma de calibratge',
+      choose: 'Tria un fitxer',
+      working: 'Calibrant…',
       found: (n: number) => `${n} marcadors de 4 detectats`,
       ok: 'Calibratge fet. La placa detectada és la del contorn verd.',
       failed:

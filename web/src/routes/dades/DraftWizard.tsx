@@ -11,8 +11,11 @@
  *
  * The four headings below are the shape of the flow, always visible, so the order is legible
  * before it is enforced — and the order *is* enforced, by the server: `POST /frames` answers
- * 409 `not_calibrated` until the four markers have been found. Tasks 15 to 17 hang the step
- * components off `draft` and `reload`.
+ * 409 `not_calibrated` until the four markers have been found. The photo step is therefore
+ * shut here too, on `draft.calibrated`, and the doubling is the point: the server's refusal is
+ * the one that cannot be bypassed, and this one is the one that can be seen. Neither is the
+ * other's substitute — a lock only in the UI is advice, and a lock only in the server is a
+ * 409 arriving after someone has selected six hundred photographs.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -21,6 +24,7 @@ import type { Draft } from '../../api/types'
 import { ApiError } from '../../api/client'
 import { getDraft } from '../../api/drafts'
 import { t } from '../../strings'
+import { Calibration } from './Calibration'
 
 /** The four steps, in order, with the state each one is waiting on. */
 const STEPS = [
@@ -115,19 +119,30 @@ export function DraftWizard() {
       )}
 
       <ol className="mt-8 space-y-4">
-        {STEPS.map((entry, index) => (
-          <li
-            key={entry.key}
-            aria-current={index === step ? 'step' : undefined}
-            className={
-              index === step
-                ? 'rounded-xl border border-primary bg-surface p-5'
-                : 'rounded-xl border border-border p-5'
-            }
-          >
-            <h2 className="text-xl font-semibold">{entry.label}</h2>
-          </li>
-        ))}
+        {STEPS.map((entry, index) => {
+          // The photo step, until the four markers are found. Held shut and said out loud, so
+          // nobody has to discover the order by selecting six hundred photographs and reading
+          // the server's 409 — which is still the refusal that counts.
+          const locked = entry.key === 'frames' && draft !== null && !draft.calibrated
+          return (
+            <li
+              key={entry.key}
+              aria-current={index === step ? 'step' : undefined}
+              aria-disabled={locked || undefined}
+              className={`rounded-xl border p-5 ${
+                index === step ? 'border-primary bg-surface' : 'border-border'
+              } ${locked ? 'opacity-60' : ''}`}
+            >
+              <h2 className="text-xl font-semibold">{entry.label}</h2>
+
+              {entry.key === 'calibration' && draft !== null && (
+                <Calibration draft={draft} onCalibrated={() => void reload()} />
+              )}
+
+              {locked && <p className="mt-3 text-muted">{t.data.calibration.locked}</p>}
+            </li>
+          )
+        })}
       </ol>
     </div>
   )
