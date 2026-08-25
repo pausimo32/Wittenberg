@@ -34,7 +34,6 @@ web/node_modules/
 *.keras
 *.h5
 *.tflite
-backend/models/saved_model/
 
 # ── Datasets ─────────────────────────────────────────────────────────────
 # Captures and derived images are never versioned; the metadata, the mode
@@ -42,7 +41,6 @@ backend/models/saved_model/
 # what makes a run reproducible. See CLAUDE.md rule 4, docs/02-dataset-spec.md.
 data/raw/
 data/processed/
-backend/data/
 !data/metadata.csv
 
 # ── Training runs ────────────────────────────────────────────────────────

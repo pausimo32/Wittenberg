@@ -1,1 +1,0 @@
-"""Utilitaires réservés aux tests."""

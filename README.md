@@ -1,84 +1,50 @@
 # Wittenberg
 
-Outil de recherche pour l'identification visuelle de fréquences sonores à
-partir de motifs de Chladni photographiés sur une plaque vibrante.
+Web tool that predicts the excitation frequency of a Chladni plate from a photo of its
+nodal pattern, and explains wave physics to people with no physics background.
 
-Projet TDR — physique des ondes, vision par ordinateur et apprentissage
-automatique supervisé.
+Research artefact for a TDR (Catalan high-school research project). The user interface is
+Catalan; the code, the comments and the documentation are English.
 
-## Structure
+## What it is
+
+One local process on one computer: FastAPI on `127.0.0.1`, a 1.17 MB PyTorch checkpoint on
+the **CPU**, and a Vite + React front end built to static files and served by the same
+process. No GPU, no API key, no network — see `docs/adr/0004` and `docs/adr/0005`.
+
+Training is a separate activity that runs offline on the team's own GPU and is not part of
+the app.
 
 ```
-.                       frontend statique : HTML, CSS, JavaScript, sans build
-  index.html            présentation du projet
-  analyseur.html        outil principal : import ou caméra, puis analyse
-  experience.html       dispositif expérimental
-  donnees.html          jeu de données et classes de fréquences
-  apropos.html          cadre académique du TDR
-  css/ js/ assets/
-backend/                service d'inférence Python (FastAPI + ONNX Runtime)
-  README.md             installation, API, prétraitement, variables, tests
-  models/README.md      comment fournir ou remplacer le modèle
+config/       preprocessing, classes, calibration and quality-gate parameters
+data/         captures, per-session calibrations, metadata.csv, modes.csv
+docs/         the specifications; docs/adr/ the decisions
+runs/         one directory per training run
+src/          preprocess, imageio, calibrate, quality, ingest, split, metadata, modes
+tools/        synth_capture.py, check_capture.py — lab and dry-run helpers
+tasks.py      the task runner (there is no make)
+web/          the front end
 ```
 
-## Démarrer en local
-
-Deux serveurs : l'API d'inférence et le site statique.
-
-**1. Backend** — voir [`backend/README.md`](backend/README.md) pour le détail.
+## Getting started
 
 ```bash
-cd backend
-python -m venv .venv
-source .venv/Scripts/activate     # Windows (Git Bash)
-# .venv\Scripts\Activate.ps1      # Windows (PowerShell)
-# source .venv/bin/activate       # Linux / macOS
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn wittenberg.app:app --reload --port 8000 --app-dir src
+python tasks.py setup      # venv, dependencies, version and device checks
+python tasks.py --list     # every target and what it does
 ```
 
-**2. Frontend** — depuis la racine du dépôt, dans un second terminal :
+`python tasks.py app` builds the front end if it is stale, starts the local server and
+opens the browser.
 
-```bash
-python -m http.server 5500
-```
+There is no `make` and there are no symlinks anywhere: the project must run unchanged on
+native Windows without WSL.
 
-Puis ouvrir <http://127.0.0.1:5500/analyseur.html>.
+## Documents
 
-Le port 5500 figure déjà dans `WITTENBERG_ALLOWED_ORIGINS`. Pour un autre
-port, ajoutez l'origine correspondante dans `backend/.env`.
-
-> Ouvrir les fichiers HTML directement (`file://`) empêche le navigateur
-> d'appeler l'API : passez toujours par un serveur local.
-
-## Adresse de l'API côté navigateur
-
-Le frontend est statique : il n'a ni build ni variables d'environnement.
-`js/config.js` résout l'adresse de l'API, par ordre de priorité :
-
-1. `<meta name="wittenberg-api-base" content="https://api.exemple.org">`
-2. `window.WITTENBERG_API_BASE_URL`, définie avant le chargement du script
-3. `localStorage.setItem('wittenberg.apiBaseUrl', '…')`
-4. par défaut : `http://localhost:8000` en local, même origine en production
-
-## État du projet
-
-L'analyseur est relié à une véritable API d'inférence ; **aucune prédiction
-n'est simulée**. Il manque uniquement le modèle entraîné : tant qu'il n'est
-pas déposé, `/ready` répond `503`, l'analyse reste désactivée et l'interface
-l'indique explicitement.
-
-Artefacts à fournir dans `backend/models/` :
-
-- `model_manifest.json` — classes, ordre `index → fréquence`, géométrie
-  d'entrée, version du prétraitement ;
-- l'artefact du modèle (`.onnx` recommandé).
-
-Marche à suivre détaillée : [`backend/models/README.md`](backend/models/README.md).
-
-## Documents de référence
-
-- `WITTENBERG_CONTEXT.md` — portée scientifique et fonctionnelle
-- `WITTENBERG_BRAND_GUIDE.md` — identité visuelle
-- `CLAUDE.md` — consignes de contribution
+- `CLAUDE.md` — the rules that survive a `/clear`
+- `docs/00-master-plan.md` — the eight phases and their gates
+- `docs/02-dataset-spec.md` — capture, ingest, splitting
+- `docs/03-preprocessing-spec.md` — the preprocessing contract
+- `docs/04-model-spec.md` — architecture, training, acceptance gates
+- `docs/06-research-protocol.md` — what the written work needs
+- `WITTENBERG_CONTEXT.md`, `WITTENBERG_BRAND_GUIDE.md` — scope and visual identity
