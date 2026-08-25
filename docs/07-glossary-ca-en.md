@@ -45,6 +45,27 @@ Never invent a Catalan physics term — if it is missing here, add it here first
 | inference | inferència | inferencia | |
 | prediction | predicció | predicción | |
 | confidence | confiança | confianza | |
+| capture session | sessió de captura | sesión de captura | one rig setup, one day (`docs/02` §2) |
+| capture | captura | captura | one photograph |
+| draft (session in progress) | esborrany | borrador | lives in `drafts/`, never in `data/` |
+| calibration | calibratge | calibrado | the operation, not the file |
+| marker (ArUco) | marcador | marcador | the four on the plate frame (`docs/02` §1.1) |
+| quality gate | porta de qualitat | puerta de calidad | `docs/02` §6 |
+| accepted / rejected | acceptada / rebutjada | aceptada / rechazada | of a capture |
+| reason (for rejection) | motiu | motivo | blurred / partial / luminance / edge density |
+| blurred | borrosa | borrosa | `laplacian_variance` below the threshold |
+| partial | parcial | parcial | fewer than four markers found. The `quality` value; `/dades` shows the *cause* — marcadors no trobats — because the label alone does not say what to do about it |
+| luminance | luminància | luminancia | mean grey level |
+| edge density | densitat de contorns | densidad de contornos | in the interior, not the border |
+| yield | rendiment | rendimiento | accepted / total, a reported result |
+| split (train/val/test) | partició | partición | by session, never random |
+| provenance | procedència | procedencia | real capture vs `SYNTH-*` |
+| grain mass | massa de gra | masa de grano | grams |
+| lighting | il·luminació | iluminación | `lamp_diffuse` / `lamp_grazing` / `ambient` = llum difusa / llum rasant / llum ambient |
+| commit into the dataset | incorporar al conjunt de dades | incorporar al conjunto de datos | step 5 of `/dades` |
+| duplicate (capture) | duplicada | duplicada | same bytes already in the draft. A third counter: neither accepted nor rejected, because the gate never saw it |
+| pending (capture) | pendent | pendiente | stored but not yet gated — a real state, not a placeholder |
+| staged (captures, before they are a session) | desades a part | guardadas aparte | `data/raw/.incoming-<session_id>/`. Describe it, do not name it: there is no accepted Catalan term and inventing one is what this file exists to prevent |
 
 **The accuracy/precision trap.** Catalan and Spanish "precisió/precisión" is routinely used
 for *accuracy*, but in a work that also reports precision and recall per class that ambiguity
