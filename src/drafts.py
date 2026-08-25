@@ -34,6 +34,7 @@ from typing import Any
 import cv2
 import numpy as np
 
+from calibrate import calibrate, write_calibration
 from imageio import SUPPORTED_SUFFIXES, thumbnail
 from ingest import SESSION_LOG, read_session_log
 from metadata import validate_session_id
@@ -42,6 +43,12 @@ from metadata import validate_session_id
 DRAFTS_ROOT = Path(__file__).resolve().parents[1] / "drafts"
 
 DRAFT_LOG = "draft.json"
+
+#: The session's geometry, under the fixed name `ingest._session_calibration` looks for
+#: inside a session directory. `write_calibration` names its file after the session; a draft
+#: keeps it under this name instead so that promoting the directory into `data/raw/` needs no
+#: rename, and nothing downstream has to reconstruct a session id from a path.
+CALIB_LOG = "calibration.json"
 
 FRAMES_LOG = "frames.json"
 DUPLICATES_LOG = "duplicates.json"
@@ -176,6 +183,58 @@ def discard(drafts_root: Path | str, draft_id: str) -> None:
     `data/` is not touched, because nothing of this draft was ever in `data/`.
     """
     shutil.rmtree(_within(drafts_root, draft_id), ignore_errors=True)
+
+
+# --------------------------------------------------------------------------- #
+# the calibration
+# --------------------------------------------------------------------------- #
+
+
+def store_calibration(
+    draft: Draft, image_rgba: np.ndarray, cfg: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    """Detect the markers in the calibration frame and, if there are four, keep it.
+
+    `/dades` only ever produces `homography` sessions. `center_crop` is what ingest falls back
+    to for a session that was captured without a marker board — a fact about a past afternoon,
+    not something to offer as an option while the rig is still set up in front of you.
+
+    A detection that finds three markers calibrates nothing: there is no quad, so the plate is
+    not rectified, and `docs/02` §6 has every subsequent frame rejected as `partial` anyway. It
+    is still recorded — as a failed attempt, with its `n_markers` — because that count is the
+    only thing that tells the person at the rig whether to move the board or the camera.
+    """
+    calib = calibrate(image_rgba, draft.session_id, cfg)
+    info = {
+        "ok": calib.corners is not None,
+        "roi_mode": calib.roi_mode,
+        "n_markers": calib.n_markers,
+        "marker_ids": calib.marker_ids,
+        "corners": calib.corners,
+        "px_per_mm": calib.px_per_mm,
+        "flags": calib.flags,
+    }
+    if info["ok"]:
+        # `write_calibration` writes `<session_id>.json`, the name `data/calib/` stores. A
+        # session id is `YYYYMMDD-NN` or `SYNTH-YYYYMMDD-NN`, so that is never `CALIB_LOG`
+        # already: the file is always moved onto the fixed name the draft promises.
+        Path(write_calibration(calib, draft.root)).replace(draft.root / CALIB_LOG)
+        draft.log["status"] = STATUS_CALIBRATED
+
+    draft.log["calibration"] = info
+    save(draft)
+    return info
+
+
+def calibration(draft: Draft) -> dict[str, Any] | None:
+    """The last attempt, whether it succeeded or not. `None` before the first one."""
+    return draft.log.get("calibration")
+
+
+def is_calibrated(draft: Draft) -> bool:
+    """Four markers were found and their quad is on disk — the door `POST /frames` holds shut."""
+    info = draft.log.get("calibration")
+    return bool(info and info.get("ok"))
 
 
 # --------------------------------------------------------------------------- #

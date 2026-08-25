@@ -288,3 +288,51 @@ def test_size_on_disk_counts_the_captures(drafts_root):
     drafts.store_frame(draft, 440, "IMG_4711.JPG", data)
 
     assert drafts.size_on_disk(draft) >= len(data)
+
+
+def marker_board(cfg):
+    """A zenithal frame with the four ArUco markers where `docs/02` §1.1 puts them."""
+    import numpy as np
+
+    from calibrate import CORNER_ORDER, draw_marker
+
+    frame = np.full((600, 600, 4), 255, np.uint8)
+    corners = {
+        "top_left": (40, 40),
+        "top_right": (460, 40),
+        "bottom_right": (460, 460),
+        "bottom_left": (40, 460),
+    }
+    for name in CORNER_ORDER:
+        marker = draw_marker(int(cfg["marker_ids"][name]), 100, cfg)
+        x, y = corners[name]
+        frame[y : y + 100, x : x + 100, :3] = marker[..., None]
+    return frame
+
+
+def test_a_four_marker_frame_calibrates_the_draft(drafts_root):
+    from calibrate import load_calibration_config
+
+    cfg = load_calibration_config()
+    draft = drafts.create(drafts_root, SESSION)
+
+    info = drafts.store_calibration(draft, marker_board(cfg), cfg)
+
+    assert info["ok"] is True
+    assert info["n_markers"] == 4
+    assert len(info["corners"]) == 4
+    assert (draft.root / "calibration.json").is_file()
+    assert drafts.is_calibrated(drafts.read(drafts_root, "20260830-01"))
+
+
+def test_a_frame_without_markers_does_not_calibrate_anything(drafts_root):
+    import numpy as np
+
+    draft = drafts.create(drafts_root, SESSION)
+
+    info = drafts.store_calibration(draft, np.full((600, 600, 4), 255, np.uint8))
+
+    assert info["ok"] is False
+    assert info["n_markers"] == 0
+    assert not drafts.is_calibrated(drafts.read(drafts_root, "20260830-01"))
+    assert not (draft.root / "calibration.json").exists()
