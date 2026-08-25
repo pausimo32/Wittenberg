@@ -31,9 +31,10 @@ the three blocks from the gaps between the forward hooks, step 1 and Grad-CAM fr
 around them. A step nobody timed carries `ms: null` rather than a plausible number — the
 viewer is didactic, and a clean invented figure teaches worse than a blank.
 
-**Nothing is written to disk.** Uploads are decoded from the request body, every stage is
-PNG-encoded in memory, and there is no upload directory to configure. `create_app` opens no
-file after startup.
+**`/api/predict` writes nothing to disk.** Uploads are decoded from the request body, every
+stage is PNG-encoded in memory, and there is no upload directory to configure. The one part
+of this process that does write is `/dades` (§9), whose routes live in `src/dataset_api.py`
+and whose writes go to `drafts/` until the moment someone presses commit.
 """
 
 from __future__ import annotations
@@ -61,12 +62,16 @@ from calibrate import (
 )
 from cam import gradcam
 from dataset import to_model_input
+from dataset_api import DatasetState, dataset_router
+from drafts import DRAFTS_ROOT
 from imageio import UnsupportedImageError, decode_bytes, thumbnail
 from model import build_model
 from preprocess import load_config, preprocess_stages
+from quality import load_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 CLASSES_PATH = ROOT / "config" / "classes.json"
+DATA_ROOT = ROOT / "data"
 WEB_DIST = ROOT / "web" / "dist"
 
 HOST = "127.0.0.1"
@@ -299,6 +304,8 @@ def create_app(
     config_path: Path | str | None = None,
     classes_path: Path | str | None = None,
     web_dist: Path | str | None = None,
+    data_root: Path | str | None = None,
+    drafts_root: Path | str | None = None,
 ) -> FastAPI:
     """Load everything, then build the routes. Raises `StartupRefused` before binding.
 
@@ -350,6 +357,22 @@ def create_app(
             return _predict(serving, data, file.filename, with_stages=stages)
         except UnsupportedImageError as exc:
             raise HTTPException(status_code=415, detail=str(exc)) from exc
+
+    # §9 — `/dades`. The only routes in this process that write anything, and they live in
+    # their own module so §3's "nothing is written to disk" stays a readable property of the
+    # code above rather than a claim with an exception attached. Included before the static
+    # mount for the same reason that mount comes last: `/` catches everything.
+    app.include_router(
+        dataset_router(
+            DatasetState(
+                data_root=Path(DATA_ROOT if data_root is None else data_root),
+                drafts_root=Path(DRAFTS_ROOT if drafts_root is None else drafts_root),
+                calibration_config=serving.calibration_config,
+                preprocess_config=serving.config,
+                gate=load_gate(),
+            )
+        )
+    )
 
     dist = Path(WEB_DIST if web_dist is None else web_dist)
     if dist.is_dir():
