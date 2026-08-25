@@ -316,3 +316,203 @@ def test_the_quad_is_drawn_where_the_markers_are(client):
     assert abs(xs.max() - expected[:, 0].max()) <= 2
     assert abs(ys.min() - expected[:, 1].min()) <= 2
     assert abs(ys.max() - expected[:, 1].max()) <= 2
+
+
+# --------------------------------------------------------------------------- #
+# the frames — the order, the live gate, the thumbnails
+# --------------------------------------------------------------------------- #
+
+def calibrated_draft(client):
+    from calibrate import load_calibration_config
+
+    client.post("/api/drafts", json=SESSION)
+    upload(
+        client,
+        "/api/drafts/20260830-01/calibration",
+        a_png(marker_board(load_calibration_config())[..., :3]),
+        "calib.png",
+        "image/png",
+    )
+
+
+def test_frames_refused_before_calibration(client, roots):
+    """Requirement 3, enforced by the server. The ROI the gate measures does not exist yet, and
+    a rule that lives only in a component is one component away from not being a rule."""
+    _data_root, drafts_root = roots
+    client.post("/api/drafts", json=SESSION)
+
+    response = upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg())
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "not_calibrated"
+    # And the bytes were not kept either: refusing after storing would leave a frame nobody
+    # asked for in a draft whose owner was told no.
+    assert not (drafts_root / "20260830-01" / "raw").exists()
+
+
+def test_a_frame_is_gated_as_it_arrives(client):
+    calibrated_draft(client)
+
+    response = upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg())
+
+    assert response.status_code == 200, response.text
+    record = response.json()
+    assert record["name"] == "IMG_0001.jpg"
+    assert record["original_filename"] == "IMG_4711.jpg"
+    assert record["quality"] in {"ok", "blurred", "partial", "reject"}
+    assert record["quality"] != "pending"
+    assert (record["reason"] is None) == (record["quality"] == "ok")
+
+
+def test_the_live_gate_is_the_ingest_gate(client, roots):
+    """`docs/05` §9, acceptance test 1 — identical verdicts, asserted rather than assumed.
+
+    Not "the same thresholds as": the route calls `ingest.assess_frame`, so a discrepancy would
+    have to be a discrepancy inside one function.
+    """
+    from calibrate import read_calibration
+    from ingest import gate_frame
+    from preprocess import load_config
+    from quality import load_gate
+
+    _data_root, drafts_root = roots
+    calibrated_draft(client)
+    for i in range(4):
+        upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg(i), f"IMG_{i}.jpg")
+
+    draft = drafts.read(drafts_root, "20260830-01")
+    calib = read_calibration(draft.root / "calibration.json")
+    records = drafts.frame_records(draft)
+    assert len(records) == 4
+    for record in records:
+        path = drafts.frame_path(draft, record)
+        quality, reason, _metrics = gate_frame(
+            path, calib, calib["roi_mode"], load_config(), load_gate()
+        )
+        assert (quality, reason) == (record["quality"], record["reason"])
+
+
+def test_a_rejected_frame_carries_a_thumbnail(client):
+    calibrated_draft(client)
+
+    record = upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg()).json()
+
+    if record["reason"] is None:
+        pytest.skip("this synthetic frame passed the gate; the thumbnail path needs a reject")
+    assert record["preview"] is True
+    image = client.get(f"/api/drafts/20260830-01/preview/440/{record['name']}?kind=original")
+    assert image.status_code == 200
+    assert image.headers["content-type"] == "image/png"
+
+
+def test_a_partial_frame_gets_no_edge_preview(client, roots):
+    """Without four markers there is no rectified plate, so there is no edge map that means
+    anything — and offering one would be showing a rectification that did not happen."""
+    calibrated_draft(client)
+
+    # A frame with no markers at all: the session is calibrated, this capture is not usable.
+    import numpy as np
+
+    blank = a_png(np.full((400, 400, 3), 128, np.uint8))
+    record = upload(
+        client, "/api/drafts/20260830-01/frames?freq_hz=440", blank, "blank.png", "image/png"
+    ).json()
+
+    assert record["reason"] == "partial"
+    assert record["preview"] is True
+    assert (
+        client.get(
+            f"/api/drafts/20260830-01/preview/440/{record['name']}?kind=original"
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(f"/api/drafts/20260830-01/preview/440/{record['name']}?kind=edges").status_code
+        == 404
+    )
+
+
+def test_the_same_folder_dropped_twice_is_refused(client):
+    calibrated_draft(client)
+    upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg())
+
+    again = upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg())
+
+    assert again.status_code == 409
+    assert again.json()["detail"]["code"] == "duplicate_frame"
+
+
+def test_the_same_capture_under_a_new_name_is_its_own_category(client):
+    """Requirement 8, at the route. Not `rejected`: the gate never saw it, and a retried batch
+    must not read as a lighting problem."""
+    calibrated_draft(client)
+    data = a_jpeg()
+    upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", data, "IMG_1.jpg")
+
+    again = upload(client, "/api/drafts/20260830-01/frames?freq_hz=620", data, "IMG_2.jpg")
+
+    assert again.status_code == 409
+    assert again.json()["detail"]["code"] == "duplicate_content"
+    summary = client.get("/api/drafts/20260830-01").json()
+    assert summary["duplicates"] == 1
+    assert summary["total"] == 1
+    assert summary["accepted"] + summary["rejected"] == 1
+
+
+def test_a_text_file_is_refused_before_it_is_stored(client, roots):
+    calibrated_draft(client)
+    _data_root, drafts_root = roots
+
+    response = client.post(
+        "/api/drafts/20260830-01/frames?freq_hz=440",
+        files={"file": ("notes.txt", b"hello", "text/plain")},
+    )
+
+    assert response.status_code == 415
+    assert response.json()["detail"]["code"] == "unsupported_image"
+    assert not (drafts_root / "20260830-01" / "raw" / "440").exists()
+
+
+def test_a_frame_can_be_taken_back_out(client):
+    calibrated_draft(client)
+    record = upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg()).json()
+
+    dropped = client.delete(f"/api/drafts/20260830-01/frames/440/{record['name']}")
+
+    assert dropped.status_code == 204
+    assert client.get("/api/drafts/20260830-01").json()["total"] == 0
+    assert (
+        client.get(
+            f"/api/drafts/20260830-01/preview/440/{record['name']}?kind=original"
+        ).status_code
+        == 404
+    )
+
+
+def test_a_preview_name_cannot_escape_the_draft(client):
+    """The one path segment that is not a validated session id."""
+    calibrated_draft(client)
+
+    response = client.get("/api/drafts/20260830-01/preview/440/..%2F..%2Fdraft.json")
+
+    assert response.status_code == 404
+
+
+def test_an_unknown_preview_kind_is_a_404(client):
+    calibrated_draft(client)
+
+    assert (
+        client.get("/api/drafts/20260830-01/preview/440/IMG_0001.jpg?kind=secret").status_code
+        == 404
+    )
+
+
+def test_uploading_a_frame_writes_nothing_under_data(client, roots):
+    """`docs/05` §9: uploading is not committing."""
+    data_root, _drafts_root = roots
+    calibrated_draft(client)
+    before = dir_fingerprint(data_root)
+
+    upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg())
+
+    assert dir_fingerprint(data_root) == before

@@ -22,12 +22,13 @@ from typing import Annotated, Any, NamedTuple
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import Response
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, Response
 
 import drafts as drafts_module
+from calibrate import ROI_MODE_HOMOGRAPHY
 from imageio import UnsupportedImageError, decode_bytes, thumbnail
-from ingest import IngestError
+from ingest import IngestError, assess_frame, verdict_of
 from metadata import MixedProvenanceError
 
 #: The calibration preview is the one picture in this view someone squints at, so it gets
@@ -155,6 +156,93 @@ def dataset_router(state: DatasetState) -> APIRouter:
         # camera produced, and only the picture that illustrates it is ever made smaller.
         info = drafts_module.store_calibration(draft, decoded.pixels, state.calibration_config)
         return {"calibration": info, "preview": _calibration_preview(decoded.pixels, info)}
+
+    @router.post("/drafts/{draft_id}/frames")
+    def add_frame(
+        draft_id: str,
+        freq_hz: Annotated[int, Query(ge=1, description="the class label, in Hz")],
+        file: Annotated[UploadFile, File()],
+    ) -> dict[str, Any]:
+        """Steps 3 and 4: store the bytes, then gate them.
+
+        **The order is imposed here, not only in the view.** Without a validated calibration
+        there is no 512 px ROI, so there is nothing for `quality.assess` to measure — and a
+        rule that lives only in a React component is one component away from not being a rule.
+        The refusal comes before the bytes are stored, so a draft whose owner was told no does
+        not quietly acquire the frame anyway.
+
+        **The gate is `ingest.assess_frame`.** Not the same thresholds as ingest — the same
+        call, with the same config and the same session calibration. `docs/05` §9: "a
+        discrepancy here would let the UI accept images the pipeline rejects", and the only way
+        to make that impossible rather than unlikely is for there to be one function.
+
+        Declared `def`, not `async def`, deliberately. Starlette then runs it in a worker
+        thread, so a ~560 ms HEIC decode does not hold the event loop and the rest of the app
+        keeps answering while a folder of sixty photos streams through (hard rule 2). The
+        client uploads a few at a time; see `web/src/lib/upload.ts`.
+        """
+        draft = load(draft_id)
+        if not drafts_module.is_calibrated(draft):
+            raise conflict(
+                "not_calibrated",
+                "this draft has no validated calibration yet — the ROI the gate measures does "
+                "not exist until four markers have been found",
+            )
+
+        data = file.file.read()
+        if not data:
+            raise conflict("empty_upload", "empty upload", status=400)
+
+        try:
+            record = drafts_module.store_frame(draft, freq_hz, file.filename or "", data)
+        except drafts_module.DuplicateName as exc:
+            raise conflict("duplicate_frame", str(exc)) from exc
+        except drafts_module.DuplicateContent as exc:
+            raise conflict("duplicate_content", str(exc)) from exc
+        except drafts_module.DraftError as exc:
+            raise conflict("unsupported_image", str(exc), status=415) from exc
+
+        path = drafts_module.frame_path(draft, record)
+        assessment = assess_frame(
+            path,
+            drafts_module.calibration(draft),
+            ROI_MODE_HOMOGRAPHY,
+            state.preprocess_config,
+            state.gate,
+            keep_stages=True,
+            keep_input=True,
+        )
+        quality, reason, metrics = verdict_of(assessment.result)
+
+        # Previews first: `record_verdict` records whether they exist, and a verdict claiming
+        # `preview: true` about a file that is not there is worse than no preview at all.
+        # Only rejections get one — §9 asks for "the reason and a thumbnail", and an accepted
+        # frame has nothing to explain.
+        if reason is not None and assessment.decoded is not None:
+            drafts_module.write_previews(
+                draft,
+                path,
+                freq_hz,
+                assessment.decoded.pixels,
+                None if assessment.stages is None else assessment.stages.edges,
+            )
+        return drafts_module.record_verdict(draft, record, quality, reason, metrics)
+
+    @router.delete("/drafts/{draft_id}/frames/{freq_hz}/{name}", status_code=204)
+    def drop_frame(draft_id: str, freq_hz: int, name: str) -> Response:
+        drafts_module.remove_frame(load(draft_id), freq_hz, Path(name).name)
+        return Response(status_code=204)
+
+    @router.get("/drafts/{draft_id}/preview/{freq_hz}/{name}")
+    def preview(draft_id: str, freq_hz: int, name: str, kind: str = "original") -> FileResponse:
+        """A stored rejection thumbnail. `Path(name).name` is the traversal guard on the one
+        path segment in this router that is not a validated session id."""
+        if kind not in ("original", "edges"):
+            raise conflict("no_preview", f"unknown preview kind {kind!r}", status=404)
+        path = drafts_module.preview_path(load(draft_id), freq_hz, Path(name).name, kind)
+        if not path.is_file():
+            raise conflict("no_preview", f"no {kind} preview for {name}", status=404)
+        return FileResponse(path, media_type="image/png")
 
     return router
 
