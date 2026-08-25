@@ -8,35 +8,60 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Environnements virtuels
+# Virtual environments
 .venv/
 venv/
 env/
 
-# ── Configuration locale ─────────────────────────────────────────────────
-# `.env.example` reste versionné ; `.env` ne l'est jamais.
+# ── Node / frontend ──────────────────────────────────────────────────────
+node_modules/
+web/dist/
+web/node_modules/
+.vite/
+
+# ── Local configuration ──────────────────────────────────────────────────
+# `.env.example` stays versioned; `.env` never does.
 .env
 .env.*
 !.env.example
 
-# ── Artefacts de modèle ──────────────────────────────────────────────────
-# Les poids ne sont pas versionnés : ils sont montés en volume ou téléchargés
-# au déploiement. Voir backend/models/README.md.
+# ── Model artefacts ──────────────────────────────────────────────────────
+# Weights are never versioned. `python tasks.py check-model` verifies a
+# checkpoint against config/preprocess.json; the checkpoint itself is local.
+*.pt
+*.pth
 *.onnx
 *.keras
 *.h5
 *.tflite
 backend/models/saved_model/
-# `model_manifest.json` reste versionné : c'est la trace de l'ordre exact des
-# classes et de la version du prétraitement, indispensable à la reproductibilité.
 
-# Jeux de données et rapports d'évaluation
-data/
+# ── Datasets ─────────────────────────────────────────────────────────────
+# Captures and derived images are never versioned; the metadata, the mode
+# table, the per-session calibrations and the ingest report are — they are
+# what makes a run reproducible. See CLAUDE.md rule 4, docs/02-dataset-spec.md.
+data/raw/
+data/processed/
 backend/data/
+!data/metadata.csv
+
+# ── Training runs ────────────────────────────────────────────────────────
+# Everything in runs/ is ignored except metrics.json and config.json, which
+# are the reportable trace of a run. The two-step pattern below is required:
+# git does not descend into an excluded directory, so `runs/*` + `!runs/*/`
+# re-opens the run directories before their contents are filtered.
+runs/*
+!runs/*/
+runs/*/*
+!runs/*/metrics.json
+!runs/*/config.json
+
+# ── Scratch ──────────────────────────────────────────────────────────────
+scratchpad/
 rapport_validation.json
 
-# ── Divers ───────────────────────────────────────────────────────────────
-# Fichiers AppleDouble créés par macOS sur les volumes non HFS.
+# ── Misc ─────────────────────────────────────────────────────────────────
+# AppleDouble files created by macOS on non-HFS volumes.
 ._*
 .DS_Store
 Thumbs.db

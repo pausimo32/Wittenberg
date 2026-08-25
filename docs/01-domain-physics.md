@@ -62,7 +62,7 @@ Each maps to a pre/post-test question (`docs/06-research-protocol.md`).
 | 3 | Resonance: some frequencies "fit" the plate, most do not | sweep animation — the pattern only snaps into focus at modes |
 | 4 | Standing wave: a wave that does not travel | side-by-side travelling vs standing animation |
 | 5 | Node: does not move. Antinode: moves most | overlay labels the sand lines as nodes |
-| 6 | Nodal lines are where the sand collects | this is the "aha" — sand goes where nothing moves |
+| 6 | Nodal lines are where the sand collects | this is the "aha" — sand goes where nothing moves. The pipeline viewer's Canny step (`docs/05-webapp-spec.md` §8) shows it happening: everything but the nodal lines disappears |
 | 7 | Higher frequency → more complex figure | gallery of the project's own modes, ordered |
 
 Write these in Catalan, using `docs/07-glossary-ca-en.md`. Never introduce a term in the UI

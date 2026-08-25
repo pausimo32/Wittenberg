@@ -1,0 +1,4 @@
+{
+  "opencv_python": "4.12.0",
+  "_note": "Pinned for reproducibility across the three team members' machines and across time. Checked by `python tasks.py check-versions`. See docs/03-preprocessing-spec.md \u00a75.3."
+}

@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "_note": "ArUco calibration for ingest. Defined by docs/02-dataset-spec.md §1.1 - this file carries the rig convention as values, it does not define the rule. Recorded in every data/calib/<session_id>.json.",
+  "dictionary": "DICT_4X4_50",
+  "marker_ids": { "top_left": 0, "top_right": 1, "bottom_right": 2, "bottom_left": 3 },
+  "corner_rule": "innermost",
+  "_corner_rule_note": "See docs/02-dataset-spec.md §1.1 for the rule and why the marker centre and the outer corner are both wrong.",
+  "plate_size_mm": 200.0
+}

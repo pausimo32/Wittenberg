@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "provenance": "synthetic",
+  "_note": "Generated from data/modes.csv by `python tasks.py modes`. The class index is FROZEN: it is the position in ascending frequency order and it is what a trained checkpoint stores instead of a frequency. Re-generating this file after adding or removing a mode renumbers the classes and voids every checkpoint trained against the previous version. Do not hand-edit it.",
+  "min_separation_hz": 40,
+  "n_classes": 6,
+  "classes": [
+    {
+      "index": 0,
+      "freq_hz": 420,
+      "width_hz": "12",
+      "n_nodal_lines": "3",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 1,
+      "freq_hz": 610,
+      "width_hz": "16",
+      "n_nodal_lines": "4",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 2,
+      "freq_hz": 860,
+      "width_hz": "20",
+      "n_nodal_lines": "5",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 3,
+      "freq_hz": 1170,
+      "width_hz": "12",
+      "n_nodal_lines": "5",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 4,
+      "freq_hz": 1540,
+      "width_hz": "16",
+      "n_nodal_lines": "6",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 5,
+      "freq_hz": 1970,
+      "width_hz": "20",
+      "n_nodal_lines": "7",
+      "symmetry": "diagonal"
+    }
+  ],
+  "rejected": [
+    {
+      "freq_hz": 2760,
+      "nearest_neighbour_hz": 25,
+      "reason": "nearest neighbour is 25 Hz away; docs/02 \u00a73 requires >= 40 Hz for the classes to be separable"
+    },
+    {
+      "freq_hz": 2785,
+      "nearest_neighbour_hz": 25,
+      "reason": "nearest neighbour is 25 Hz away; docs/02 \u00a73 requires >= 40 Hz for the classes to be separable"
+    }
+  ]
+}

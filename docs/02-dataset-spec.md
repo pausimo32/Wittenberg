@@ -16,6 +16,42 @@ Fixed zenithal mount (documented in `Montura_cenital_iPhone11_Wittemberg.pdf`).
 Lock focus and exposure before the first capture of a session and do not touch them again.
 An auto-exposure change mid-session is the single biggest source of within-class variance.
 
+### 1.1 ArUco calibration frame — which corner is the calibration point
+
+Four ArUco markers are taped at the plate corners, one per corner, from the
+`DICT_4X4_50` dictionary. **The marker id says which corner it is**, and ingest orders
+the quad by id, never by geometry:
+
+| id | plate corner |
+|---|---|
+| 0 | top-left |
+| 1 | top-right |
+| 2 | bottom-right |
+| 3 | bottom-left |
+
+Ordering by position instead would silently mis-order a frame shot at an angle, and a
+mis-ordered quad warps to a mirrored or rotated plate that still looks entirely
+plausible.
+
+Each marker has four corners, but only one of them touches the plate. **That inner
+corner is the calibration point** — the corner nearest the centre of the four-marker
+constellation. The two plausible alternatives are both wrong by a knowable amount: at
+the nominal 210 mm working distance (§1, ≈ 14.5 px/mm) a 25 mm marker is ≈ 360 px, so
+taking the marker **centre** drags ≈ 12 mm of rig into the ROI on every side, and taking
+the **outer** corner drags ≈ 25 mm. Either shrinks the plate within the warped image and
+displaces every nodal line the model is asked to read.
+
+The rule holds under perspective: the warp is projective, and a projective map preserves
+which corner of a marker is nearest the interior.
+
+The dictionary and the id map are a **rig convention, not a physical constant**, so they
+live in `config/calibration.json` and are copied into every `data/calib/<session_id>.json`
+alongside the four points. This section is the definition; the config refers to it and
+must not restate it.
+
+Fewer than four markers in a frame is a `partial` rejection under §6, never a silent
+fall-back to `center_crop`.
+
 ## 2. Session model — why it matters more than anything else
 
 A **session** = one continuous run: rig untouched, lighting unchanged, sand replenished the
@@ -73,14 +109,14 @@ data/
 | `image_id` | str | `<session_id>_<freq_hz>_<n>` — primary key |
 | `session_id` | str | `YYYYMMDD-NN` |
 | `freq_hz` | int | the label |
-| `split` | enum | `train` / `val` / `test` — assigned by session, never per-image |
+| `split` | enum | `train` / `val` / `test` — assigned by session, never per-image. **Empty** when `quality` is not `ok`: a rejected frame belongs to no partition (§6) |
 | `material` | enum | `sand` / `semolina` / `salt` |
 | `grain_mass_g` | float | |
 | `distance_mm` | int | 210 unless deliberately varied |
 | `lighting` | enum | `lamp_diffuse` / `lamp_grazing` / `ambient` |
 | `dwell_s` | float | seconds between reaching the frequency and the shutter |
 | `roi_mode` | enum | `homography` / `center_crop` |
-| `quality` | enum | `ok` / `blurred` / `partial` / `reject` |
+| `quality` | enum | `ok` / `blurred` / `partial` / `reject` — the §6 verdict. Only `ok` rows are training data |
 | `notes` | str | free text |
 
 ## 5. Volume targets
@@ -108,11 +144,35 @@ Treat a burst as one observation for confidence-interval purposes and say so in 
 
 ## 6. Quality gate at ingest
 
-`make ingest` rejects an image and writes the reason to `data/ingest_report.json` when:
+`python tasks.py ingest` rejects an image and writes the reason to `data/ingest_report.json` when:
 
-- Laplacian variance < 100 → `blurred`
 - fewer than 4 ArUco markers found and `roi_mode` is `homography` → `partial`
+- Laplacian variance < 100 → `blurred`
 - mean luminance outside `[40, 215]` → `reject` (clipped highlights kill Canny)
 - fewer than 0.5 % or more than 25 % edge pixels after Canny → `reject` (no pattern / noise)
 
-Rejected images stay in `raw/` and are counted in the TDR as an honest yield figure.
+**The rules are evaluated in that order — markers → blur → luminance → edge density —
+and the reported reason is the first that fails.** The marker check has to come first
+because it is not merely a preference: with fewer than four markers there is no
+homography, so there is no ROI on which blur, luminance or edge density could be
+measured at all. A frame failing several rules is counted once, under the first.
+
+**Where each metric is measured.** The marker count comes from the raw frame, which is
+where the markers are. Blur, luminance and edge density are measured on the warped
+512 × 512 ROI, so a session shot at a different distance is not judged on a different
+number of pixels.
+
+**Edge density is measured on the ROI interior**, with a 2 % margin excluded on each
+side. Counting the full frame lets an image containing no nodal pattern whatsoever pass
+the 0.5 % floor on the strength of its border alone — a bright rig edge, a plate rim, a
+shadow line at the frame boundary. The margin is the difference between measuring the
+pattern and measuring the furniture.
+
+The thresholds live in `config/quality_gate.json`, not in code, so a change to the gate
+is a reviewable diff; ingest copies them verbatim into every `data/ingest_report.json`,
+because a yield figure is meaningless without the gate that produced it.
+
+Rejected images stay in `raw/` and are counted in the TDR as an honest yield figure. They
+also keep a row in `metadata.csv` (§4), carrying their verdict in `quality` and an empty
+`split`: the rejection rate is a reported result of this project, and the committed file
+is where it has to be visible.

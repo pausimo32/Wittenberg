@@ -22,13 +22,13 @@ flagged. A session missing `session_id` is blocked; those images cannot be used 
 ## Run
 
 ```bash
-make ingest SESSION=20260916-01
+python tasks.py ingest --session 20260916-01
 ```
 
 Which does, in order:
 
 1. **HEIC → PNG**, EXIF orientation applied then stripped, Display P3 → sRGB, profile stripped.
-   Once, here — never later (spec §5.4).
+   Once, here — never later (spec §5.1).
 2. **Calibrate** — homography from the 4 markers, warp to 512×512.
 3. **Quality gate** (`docs/02-dataset-spec.md` §6): Laplacian variance ≥ 100; ≥ 4 markers;
    mean luminance ∈ [40, 215]; Canny edge density ∈ [0.5 %, 25 %].
@@ -42,7 +42,7 @@ Idempotent. Re-running a session replaces its rows; it never duplicates them.
 Splits are per **session**, never per image (`docs/adr/0002`).
 
 ```bash
-make split   # GroupShuffleSplit on session_id, seed 42
+python tasks.py split   # GroupShuffleSplit on session_id, seed 42
 ```
 
 Never hand-edit `split` in `metadata.csv`. Never move a single image between splits. If a

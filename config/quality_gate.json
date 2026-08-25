@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "_note": "Ingest quality gate — docs/02-dataset-spec.md §6. Thresholds live here, not in code, so a gate change is a reviewable diff and is recorded verbatim in every data/ingest_report.json.",
+  "laplacian_variance_min": 100.0,
+  "markers_required": 4,
+  "mean_luminance": { "min": 40.0, "max": 215.0 },
+  "edge_density": {
+    "min": 0.005,
+    "max": 0.25,
+    "interior_margin_frac": 0.02,
+    "_note": "Measured on the INTERIOR of the warped ROI only, with interior_margin_frac excluded per side. Counting the full frame lets an image with no pattern at all pass on its border alone."
+  }
+}

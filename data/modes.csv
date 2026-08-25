@@ -1,0 +1,9 @@
+freq_hz,width_hz,n_nodal_lines,symmetry,quality,notes
+420,12,3,diagonal,clear,"synthetic mode (1,2)"
+610,16,4,diagonal,clear,"synthetic mode (1,3)"
+860,20,5,diagonal,clear,"synthetic mode (2,3)"
+1170,12,5,diagonal,clear,"synthetic mode (1,4)"
+1540,16,6,diagonal,clear,"synthetic mode (2,4)"
+1970,20,7,diagonal,clear,"synthetic mode (3,4)"
+2760,6,9,asymmetric,faint,synthetic near-degenerate pair; must fail the 40 Hz rule
+2785,6,9,asymmetric,faint,synthetic near-degenerate pair; must fail the 40 Hz rule

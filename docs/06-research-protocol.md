@@ -18,7 +18,7 @@ If a change does not serve one of these rows, it is out of scope.
 
 ## 2. Annex generation — automated, never manual
 
-The Pla de treball lists 12 annexes. These are produced by `make annexes`, from data, into
+The Pla de treball lists 12 annexes. These are produced by `python tasks.py annexes`, from data, into
 `annexes/`. Regenerating must be idempotent.
 
 | Annex | Source |
@@ -26,10 +26,10 @@ The Pla de treball lists 12 annexes. These are produced by `make annexes`, from 
 | 3. Frequency table | `data/modes.csv` |
 | 4. Sample of obtained patterns | `data/metadata.csv` + `data/processed/` |
 | 6. Image database | `data/metadata.csv` summary tables |
-| 7. Preprocessing code | `src/preprocess.py` + `web/lib/preprocess.ts`, syntax-highlighted |
+| 7. Preprocessing code and stages | `src/preprocess.py` syntax-highlighted, plus the 8-stage strip rendered for one image per class |
 | 8. Model code | `src/model.py`, `src/train.py` |
 | 9. Full model results | `runs/<ts>/report/` |
-| 10. Web app screenshots | Playwright, deterministic viewport |
+| 10. App screenshots | Playwright against the built local app, fixed viewport |
 
 Annexes 1, 2, 5, 11, 12 (schematics, photos, protocol, questionnaires) are produced by hand.
 
@@ -52,10 +52,12 @@ retyped from memory.
 
 Every claim below must be true at submission:
 
-1. `git clone` + `make setup` + `make train` reproduces reported metrics within ±1 % (seed 42).
+1. `git clone` + `python tasks.py setup` + `python tasks.py train` reproduces reported metrics within ±1 % (seed 42).
 2. Every reported figure regenerates from `runs/` with one command.
-3. The preprocessing used at inference is provably the one used at training —
-   `npm run parity` is the evidence (`docs/03-preprocessing-spec.md` §4).
+3. The preprocessing used at inference **is** the one used at training — the API calls
+   `src/preprocess.py`, the same function that built the dataset, and refuses to start if the
+   checkpoint's config hash differs (`docs/adr/0004`). State this as an architectural property,
+   not as a test result.
 4. The dataset split is by session and stated as such, with the naive-split number reported
    alongside for comparison.
 

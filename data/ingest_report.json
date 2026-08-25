@@ -1,0 +1,1985 @@
+{
+  "generated_at": "2026-08-25T09:56:29+00:00",
+  "gate": {
+    "version": "1.0.0",
+    "_note": "Ingest quality gate \u2014 docs/02-dataset-spec.md \u00a76. Thresholds live here, not in code, so a gate change is a reviewable diff and is recorded verbatim in every data/ingest_report.json.",
+    "laplacian_variance_min": 100.0,
+    "markers_required": 4,
+    "mean_luminance": {
+      "min": 40.0,
+      "max": 215.0
+    },
+    "edge_density": {
+      "min": 0.005,
+      "max": 0.25,
+      "interior_margin_frac": 0.02,
+      "_note": "Measured on the INTERIOR of the warped ROI only, with interior_margin_frac excluded per side. Counting the full frame lets an image with no pattern at all pass on its border alone."
+    }
+  },
+  "preprocess_version": "1.1.0",
+  "sessions": {
+    "SYNTH-01": {
+      "total": 120,
+      "accepted": 87,
+      "rejected": {
+        "luminance": 9,
+        "partial": 7,
+        "edge_density": 5,
+        "blurred": 12
+      },
+      "rejection_rate": 0.275,
+      "roi_mode": "homography",
+      "flags": [],
+      "conditions": {
+        "material": "sand",
+        "grain_mass_g": 2.0,
+        "distance_mm": 210,
+        "lighting": "lamp_diffuse",
+        "dwell_s": 3.0
+      },
+      "by_class": {
+        "1170": {
+          "total": 20,
+          "accepted": 14
+        },
+        "1540": {
+          "total": 20,
+          "accepted": 15
+        },
+        "1970": {
+          "total": 20,
+          "accepted": 13
+        },
+        "420": {
+          "total": 20,
+          "accepted": 16
+        },
+        "610": {
+          "total": 20,
+          "accepted": 14
+        },
+        "860": {
+          "total": 20,
+          "accepted": 15
+        }
+      },
+      "rejected_images": [
+        {
+          "image_id": "SYNTH-01_1170_0004",
+          "path": "raw/SYNTH-01/1170/IMG_0004.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 166.1306,
+            "mean_luminance": 216.8352,
+            "interior_margin_px": 10,
+            "edge_density": 0.0224,
+            "edge_density_full_frame": 0.0271
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1170_0007",
+          "path": "raw/SYNTH-01/1170/IMG_0007.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1170_0008",
+          "path": "raw/SYNTH-01/1170/IMG_0008.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12463.5305,
+            "mean_luminance": 95.7414,
+            "interior_margin_px": 10,
+            "edge_density": 0.3403,
+            "edge_density_full_frame": 0.339
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1170_0009",
+          "path": "raw/SYNTH-01/1170/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3256,
+            "mean_luminance": 101.5583,
+            "interior_margin_px": 10,
+            "edge_density": 0.01,
+            "edge_density_full_frame": 0.01
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1170_0017",
+          "path": "raw/SYNTH-01/1170/IMG_0017.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 166.1971,
+            "mean_luminance": 216.845,
+            "interior_margin_px": 10,
+            "edge_density": 0.0226,
+            "edge_density_full_frame": 0.0272
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1170_0019",
+          "path": "raw/SYNTH-01/1170/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3174,
+            "mean_luminance": 101.5545,
+            "interior_margin_px": 10,
+            "edge_density": 0.01,
+            "edge_density_full_frame": 0.0099
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1540_0004",
+          "path": "raw/SYNTH-01/1540/IMG_0004.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1540_0009",
+          "path": "raw/SYNTH-01/1540/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3867,
+            "mean_luminance": 100.1487,
+            "interior_margin_px": 10,
+            "edge_density": 0.0078,
+            "edge_density_full_frame": 0.008
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1540_0010",
+          "path": "raw/SYNTH-01/1540/IMG_0010.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 170.0304,
+            "mean_luminance": 216.4835,
+            "interior_margin_px": 10,
+            "edge_density": 0.025,
+            "edge_density_full_frame": 0.03
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1540_0011",
+          "path": "raw/SYNTH-01/1540/IMG_0011.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12415.5553,
+            "mean_luminance": 95.7713,
+            "interior_margin_px": 10,
+            "edge_density": 0.3397,
+            "edge_density_full_frame": 0.3382
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1540_0019",
+          "path": "raw/SYNTH-01/1540/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3861,
+            "mean_luminance": 100.1686,
+            "interior_margin_px": 10,
+            "edge_density": 0.0076,
+            "edge_density_full_frame": 0.0078
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0001",
+          "path": "raw/SYNTH-01/1970/IMG_0001.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0003",
+          "path": "raw/SYNTH-01/1970/IMG_0003.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 171.606,
+            "mean_luminance": 216.5816,
+            "interior_margin_px": 10,
+            "edge_density": 0.0266,
+            "edge_density_full_frame": 0.0313
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0009",
+          "path": "raw/SYNTH-01/1970/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3665,
+            "mean_luminance": 100.4401,
+            "interior_margin_px": 10,
+            "edge_density": 0.011,
+            "edge_density_full_frame": 0.0106
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0014",
+          "path": "raw/SYNTH-01/1970/IMG_0014.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12610.1249,
+            "mean_luminance": 95.954,
+            "interior_margin_px": 10,
+            "edge_density": 0.3394,
+            "edge_density_full_frame": 0.338
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0016",
+          "path": "raw/SYNTH-01/1970/IMG_0016.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 170.7979,
+            "mean_luminance": 216.5702,
+            "interior_margin_px": 10,
+            "edge_density": 0.0265,
+            "edge_density_full_frame": 0.0327
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0018",
+          "path": "raw/SYNTH-01/1970/IMG_0018.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_1970_0019",
+          "path": "raw/SYNTH-01/1970/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3746,
+            "mean_luminance": 100.4289,
+            "interior_margin_px": 10,
+            "edge_density": 0.0123,
+            "edge_density_full_frame": 0.0118
+          }
+        },
+        {
+          "image_id": "SYNTH-01_420_0009",
+          "path": "raw/SYNTH-01/420/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.1888,
+            "mean_luminance": 100.1319,
+            "interior_margin_px": 10,
+            "edge_density": 0.0054,
+            "edge_density_full_frame": 0.0051
+          }
+        },
+        {
+          "image_id": "SYNTH-01_420_0012",
+          "path": "raw/SYNTH-01/420/IMG_0012.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 154.1538,
+            "mean_luminance": 216.4806,
+            "interior_margin_px": 10,
+            "edge_density": 0.0124,
+            "edge_density_full_frame": 0.0173
+          }
+        },
+        {
+          "image_id": "SYNTH-01_420_0016",
+          "path": "raw/SYNTH-01/420/IMG_0016.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_420_0019",
+          "path": "raw/SYNTH-01/420/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.184,
+            "mean_luminance": 100.1163,
+            "interior_margin_px": 10,
+            "edge_density": 0.0053,
+            "edge_density_full_frame": 0.0052
+          }
+        },
+        {
+          "image_id": "SYNTH-01_610_0002",
+          "path": "raw/SYNTH-01/610/IMG_0002.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12522.8365,
+            "mean_luminance": 96.2275,
+            "interior_margin_px": 10,
+            "edge_density": 0.3403,
+            "edge_density_full_frame": 0.339
+          }
+        },
+        {
+          "image_id": "SYNTH-01_610_0005",
+          "path": "raw/SYNTH-01/610/IMG_0005.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 151.7122,
+            "mean_luminance": 220.243,
+            "interior_margin_px": 10,
+            "edge_density": 0.0184,
+            "edge_density_full_frame": 0.0236
+          }
+        },
+        {
+          "image_id": "SYNTH-01_610_0009",
+          "path": "raw/SYNTH-01/610/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.4347,
+            "mean_luminance": 113.8938,
+            "interior_margin_px": 10,
+            "edge_density": 0.0094,
+            "edge_density_full_frame": 0.0095
+          }
+        },
+        {
+          "image_id": "SYNTH-01_610_0013",
+          "path": "raw/SYNTH-01/610/IMG_0013.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_610_0018",
+          "path": "raw/SYNTH-01/610/IMG_0018.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 152.5045,
+            "mean_luminance": 220.2646,
+            "interior_margin_px": 10,
+            "edge_density": 0.0184,
+            "edge_density_full_frame": 0.0236
+          }
+        },
+        {
+          "image_id": "SYNTH-01_610_0019",
+          "path": "raw/SYNTH-01/610/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.4358,
+            "mean_luminance": 113.8933,
+            "interior_margin_px": 10,
+            "edge_density": 0.0093,
+            "edge_density_full_frame": 0.0095
+          }
+        },
+        {
+          "image_id": "SYNTH-01_860_0005",
+          "path": "raw/SYNTH-01/860/IMG_0005.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12543.0024,
+            "mean_luminance": 96.0498,
+            "interior_margin_px": 10,
+            "edge_density": 0.3404,
+            "edge_density_full_frame": 0.339
+          }
+        },
+        {
+          "image_id": "SYNTH-01_860_0009",
+          "path": "raw/SYNTH-01/860/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.2872,
+            "mean_luminance": 100.2676,
+            "interior_margin_px": 10,
+            "edge_density": 0.0103,
+            "edge_density_full_frame": 0.0099
+          }
+        },
+        {
+          "image_id": "SYNTH-01_860_0010",
+          "path": "raw/SYNTH-01/860/IMG_0010.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-01_860_0011",
+          "path": "raw/SYNTH-01/860/IMG_0011.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 162.9846,
+            "mean_luminance": 216.5156,
+            "interior_margin_px": 10,
+            "edge_density": 0.0194,
+            "edge_density_full_frame": 0.0246
+          }
+        },
+        {
+          "image_id": "SYNTH-01_860_0019",
+          "path": "raw/SYNTH-01/860/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.2937,
+            "mean_luminance": 100.2752,
+            "interior_margin_px": 10,
+            "edge_density": 0.011,
+            "edge_density_full_frame": 0.0107
+          }
+        }
+      ]
+    },
+    "SYNTH-02": {
+      "total": 120,
+      "accepted": 87,
+      "rejected": {
+        "luminance": 9,
+        "partial": 15,
+        "edge_density": 5,
+        "blurred": 4
+      },
+      "rejection_rate": 0.275,
+      "roi_mode": "homography",
+      "flags": [],
+      "conditions": {
+        "material": "semolina",
+        "grain_mass_g": 1.6,
+        "distance_mm": 210,
+        "lighting": "lamp_grazing",
+        "dwell_s": 3.0
+      },
+      "by_class": {
+        "1170": {
+          "total": 20,
+          "accepted": 14
+        },
+        "1540": {
+          "total": 20,
+          "accepted": 15
+        },
+        "1970": {
+          "total": 20,
+          "accepted": 13
+        },
+        "420": {
+          "total": 20,
+          "accepted": 16
+        },
+        "610": {
+          "total": 20,
+          "accepted": 14
+        },
+        "860": {
+          "total": 20,
+          "accepted": 15
+        }
+      },
+      "rejected_images": [
+        {
+          "image_id": "SYNTH-02_1170_0004",
+          "path": "raw/SYNTH-02/1170/IMG_0004.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 170.0014,
+            "mean_luminance": 219.7903,
+            "interior_margin_px": 10,
+            "edge_density": 0.0216,
+            "edge_density_full_frame": 0.0266
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1170_0007",
+          "path": "raw/SYNTH-02/1170/IMG_0007.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1170_0008",
+          "path": "raw/SYNTH-02/1170/IMG_0008.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12814.8616,
+            "mean_luminance": 97.4404,
+            "interior_margin_px": 10,
+            "edge_density": 0.3416,
+            "edge_density_full_frame": 0.3392
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1170_0009",
+          "path": "raw/SYNTH-02/1170/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3804,
+            "mean_luminance": 102.9384,
+            "interior_margin_px": 10,
+            "edge_density": 0.0104,
+            "edge_density_full_frame": 0.0104
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1170_0017",
+          "path": "raw/SYNTH-02/1170/IMG_0017.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 170.021,
+            "mean_luminance": 219.7682,
+            "interior_margin_px": 10,
+            "edge_density": 0.022,
+            "edge_density_full_frame": 0.0272
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1170_0019",
+          "path": "raw/SYNTH-02/1170/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3841,
+            "mean_luminance": 102.9268,
+            "interior_margin_px": 10,
+            "edge_density": 0.0112,
+            "edge_density_full_frame": 0.0112
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1540_0004",
+          "path": "raw/SYNTH-02/1540/IMG_0004.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1540_0009",
+          "path": "raw/SYNTH-02/1540/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.4519,
+            "mean_luminance": 101.5451,
+            "interior_margin_px": 10,
+            "edge_density": 0.0087,
+            "edge_density_full_frame": 0.0088
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1540_0010",
+          "path": "raw/SYNTH-02/1540/IMG_0010.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 173.9279,
+            "mean_luminance": 219.4082,
+            "interior_margin_px": 10,
+            "edge_density": 0.0226,
+            "edge_density_full_frame": 0.0269
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1540_0011",
+          "path": "raw/SYNTH-02/1540/IMG_0011.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12858.5145,
+            "mean_luminance": 97.1355,
+            "interior_margin_px": 10,
+            "edge_density": 0.3413,
+            "edge_density_full_frame": 0.3396
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1540_0019",
+          "path": "raw/SYNTH-02/1540/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.4458,
+            "mean_luminance": 101.5467,
+            "interior_margin_px": 10,
+            "edge_density": 0.0097,
+            "edge_density_full_frame": 0.0098
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0001",
+          "path": "raw/SYNTH-02/1970/IMG_0001.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0003",
+          "path": "raw/SYNTH-02/1970/IMG_0003.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 175.1075,
+            "mean_luminance": 219.4785,
+            "interior_margin_px": 10,
+            "edge_density": 0.0248,
+            "edge_density_full_frame": 0.0295
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0009",
+          "path": "raw/SYNTH-02/1970/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0014",
+          "path": "raw/SYNTH-02/1970/IMG_0014.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12799.2685,
+            "mean_luminance": 97.1876,
+            "interior_margin_px": 10,
+            "edge_density": 0.3393,
+            "edge_density_full_frame": 0.3377
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0016",
+          "path": "raw/SYNTH-02/1970/IMG_0016.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 175.7079,
+            "mean_luminance": 219.5068,
+            "interior_margin_px": 10,
+            "edge_density": 0.0246,
+            "edge_density_full_frame": 0.029
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0018",
+          "path": "raw/SYNTH-02/1970/IMG_0018.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_1970_0019",
+          "path": "raw/SYNTH-02/1970/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_420_0009",
+          "path": "raw/SYNTH-02/420/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_420_0012",
+          "path": "raw/SYNTH-02/420/IMG_0012.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 157.0003,
+            "mean_luminance": 219.4101,
+            "interior_margin_px": 10,
+            "edge_density": 0.0122,
+            "edge_density_full_frame": 0.0181
+          }
+        },
+        {
+          "image_id": "SYNTH-02_420_0016",
+          "path": "raw/SYNTH-02/420/IMG_0016.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_420_0019",
+          "path": "raw/SYNTH-02/420/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_610_0002",
+          "path": "raw/SYNTH-02/610/IMG_0002.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12866.4192,
+            "mean_luminance": 97.3191,
+            "interior_margin_px": 10,
+            "edge_density": 0.3406,
+            "edge_density_full_frame": 0.339
+          }
+        },
+        {
+          "image_id": "SYNTH-02_610_0005",
+          "path": "raw/SYNTH-02/610/IMG_0005.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 154.4144,
+            "mean_luminance": 223.1592,
+            "interior_margin_px": 10,
+            "edge_density": 0.0174,
+            "edge_density_full_frame": 0.0225
+          }
+        },
+        {
+          "image_id": "SYNTH-02_610_0009",
+          "path": "raw/SYNTH-02/610/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 2,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_610_0013",
+          "path": "raw/SYNTH-02/610/IMG_0013.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_610_0018",
+          "path": "raw/SYNTH-02/610/IMG_0018.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 155.937,
+            "mean_luminance": 223.1767,
+            "interior_margin_px": 10,
+            "edge_density": 0.0176,
+            "edge_density_full_frame": 0.0235
+          }
+        },
+        {
+          "image_id": "SYNTH-02_610_0019",
+          "path": "raw/SYNTH-02/610/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 2,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_860_0005",
+          "path": "raw/SYNTH-02/860/IMG_0005.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12770.2489,
+            "mean_luminance": 97.0348,
+            "interior_margin_px": 10,
+            "edge_density": 0.3391,
+            "edge_density_full_frame": 0.3373
+          }
+        },
+        {
+          "image_id": "SYNTH-02_860_0009",
+          "path": "raw/SYNTH-02/860/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_860_0010",
+          "path": "raw/SYNTH-02/860/IMG_0010.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-02_860_0011",
+          "path": "raw/SYNTH-02/860/IMG_0011.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 165.9166,
+            "mean_luminance": 219.4647,
+            "interior_margin_px": 10,
+            "edge_density": 0.0187,
+            "edge_density_full_frame": 0.0241
+          }
+        },
+        {
+          "image_id": "SYNTH-02_860_0019",
+          "path": "raw/SYNTH-02/860/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        }
+      ]
+    },
+    "SYNTH-03": {
+      "total": 120,
+      "accepted": 87,
+      "rejected": {
+        "luminance": 9,
+        "partial": 15,
+        "edge_density": 5,
+        "blurred": 4
+      },
+      "rejection_rate": 0.275,
+      "roi_mode": "homography",
+      "flags": [],
+      "conditions": {
+        "material": "sand",
+        "grain_mass_g": 2.2,
+        "distance_mm": 210,
+        "lighting": "lamp_grazing",
+        "dwell_s": 3.0
+      },
+      "by_class": {
+        "1170": {
+          "total": 20,
+          "accepted": 14
+        },
+        "1540": {
+          "total": 20,
+          "accepted": 15
+        },
+        "1970": {
+          "total": 20,
+          "accepted": 13
+        },
+        "420": {
+          "total": 20,
+          "accepted": 16
+        },
+        "610": {
+          "total": 20,
+          "accepted": 14
+        },
+        "860": {
+          "total": 20,
+          "accepted": 15
+        }
+      },
+      "rejected_images": [
+        {
+          "image_id": "SYNTH-03_1170_0004",
+          "path": "raw/SYNTH-03/1170/IMG_0004.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 169.5089,
+            "mean_luminance": 219.7878,
+            "interior_margin_px": 10,
+            "edge_density": 0.0211,
+            "edge_density_full_frame": 0.0261
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1170_0007",
+          "path": "raw/SYNTH-03/1170/IMG_0007.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1170_0008",
+          "path": "raw/SYNTH-03/1170/IMG_0008.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12837.7737,
+            "mean_luminance": 97.4144,
+            "interior_margin_px": 10,
+            "edge_density": 0.3412,
+            "edge_density_full_frame": 0.3395
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1170_0009",
+          "path": "raw/SYNTH-03/1170/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3795,
+            "mean_luminance": 102.9424,
+            "interior_margin_px": 10,
+            "edge_density": 0.0105,
+            "edge_density_full_frame": 0.0105
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1170_0017",
+          "path": "raw/SYNTH-03/1170/IMG_0017.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 169.7898,
+            "mean_luminance": 219.7785,
+            "interior_margin_px": 10,
+            "edge_density": 0.0218,
+            "edge_density_full_frame": 0.0265
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1170_0019",
+          "path": "raw/SYNTH-03/1170/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3784,
+            "mean_luminance": 102.9415,
+            "interior_margin_px": 10,
+            "edge_density": 0.0096,
+            "edge_density_full_frame": 0.0096
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1540_0004",
+          "path": "raw/SYNTH-03/1540/IMG_0004.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1540_0009",
+          "path": "raw/SYNTH-03/1540/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.4551,
+            "mean_luminance": 101.5462,
+            "interior_margin_px": 10,
+            "edge_density": 0.0097,
+            "edge_density_full_frame": 0.0098
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1540_0010",
+          "path": "raw/SYNTH-03/1540/IMG_0010.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 173.9532,
+            "mean_luminance": 219.3868,
+            "interior_margin_px": 10,
+            "edge_density": 0.0225,
+            "edge_density_full_frame": 0.0273
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1540_0011",
+          "path": "raw/SYNTH-03/1540/IMG_0011.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12759.5435,
+            "mean_luminance": 97.106,
+            "interior_margin_px": 10,
+            "edge_density": 0.3405,
+            "edge_density_full_frame": 0.3388
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1540_0019",
+          "path": "raw/SYNTH-03/1540/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.4507,
+            "mean_luminance": 101.5454,
+            "interior_margin_px": 10,
+            "edge_density": 0.0091,
+            "edge_density_full_frame": 0.0092
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0001",
+          "path": "raw/SYNTH-03/1970/IMG_0001.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0003",
+          "path": "raw/SYNTH-03/1970/IMG_0003.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 175.1555,
+            "mean_luminance": 219.5026,
+            "interior_margin_px": 10,
+            "edge_density": 0.0254,
+            "edge_density_full_frame": 0.0305
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0009",
+          "path": "raw/SYNTH-03/1970/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0014",
+          "path": "raw/SYNTH-03/1970/IMG_0014.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12864.9048,
+            "mean_luminance": 97.0719,
+            "interior_margin_px": 10,
+            "edge_density": 0.3411,
+            "edge_density_full_frame": 0.3395
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0016",
+          "path": "raw/SYNTH-03/1970/IMG_0016.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 175.8216,
+            "mean_luminance": 219.484,
+            "interior_margin_px": 10,
+            "edge_density": 0.025,
+            "edge_density_full_frame": 0.0296
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0018",
+          "path": "raw/SYNTH-03/1970/IMG_0018.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_1970_0019",
+          "path": "raw/SYNTH-03/1970/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_420_0009",
+          "path": "raw/SYNTH-03/420/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_420_0012",
+          "path": "raw/SYNTH-03/420/IMG_0012.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 156.5604,
+            "mean_luminance": 219.4132,
+            "interior_margin_px": 10,
+            "edge_density": 0.0122,
+            "edge_density_full_frame": 0.0169
+          }
+        },
+        {
+          "image_id": "SYNTH-03_420_0016",
+          "path": "raw/SYNTH-03/420/IMG_0016.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_420_0019",
+          "path": "raw/SYNTH-03/420/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_610_0002",
+          "path": "raw/SYNTH-03/610/IMG_0002.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12806.9035,
+            "mean_luminance": 96.8868,
+            "interior_margin_px": 10,
+            "edge_density": 0.3404,
+            "edge_density_full_frame": 0.3386
+          }
+        },
+        {
+          "image_id": "SYNTH-03_610_0005",
+          "path": "raw/SYNTH-03/610/IMG_0005.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 155.5153,
+            "mean_luminance": 223.1689,
+            "interior_margin_px": 10,
+            "edge_density": 0.0175,
+            "edge_density_full_frame": 0.0226
+          }
+        },
+        {
+          "image_id": "SYNTH-03_610_0009",
+          "path": "raw/SYNTH-03/610/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 2,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_610_0013",
+          "path": "raw/SYNTH-03/610/IMG_0013.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_610_0018",
+          "path": "raw/SYNTH-03/610/IMG_0018.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 153.9502,
+            "mean_luminance": 223.1703,
+            "interior_margin_px": 10,
+            "edge_density": 0.0181,
+            "edge_density_full_frame": 0.023
+          }
+        },
+        {
+          "image_id": "SYNTH-03_610_0019",
+          "path": "raw/SYNTH-03/610/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 2,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_860_0005",
+          "path": "raw/SYNTH-03/860/IMG_0005.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12874.949,
+            "mean_luminance": 97.4079,
+            "interior_margin_px": 10,
+            "edge_density": 0.3405,
+            "edge_density_full_frame": 0.3388
+          }
+        },
+        {
+          "image_id": "SYNTH-03_860_0009",
+          "path": "raw/SYNTH-03/860/IMG_0009.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_860_0010",
+          "path": "raw/SYNTH-03/860/IMG_0010.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-03_860_0011",
+          "path": "raw/SYNTH-03/860/IMG_0011.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 165.4236,
+            "mean_luminance": 219.4323,
+            "interior_margin_px": 10,
+            "edge_density": 0.0171,
+            "edge_density_full_frame": 0.0226
+          }
+        },
+        {
+          "image_id": "SYNTH-03_860_0019",
+          "path": "raw/SYNTH-03/860/IMG_0019.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        }
+      ]
+    },
+    "SYNTH-04": {
+      "total": 120,
+      "accepted": 87,
+      "rejected": {
+        "luminance": 9,
+        "partial": 7,
+        "edge_density": 5,
+        "blurred": 12
+      },
+      "rejection_rate": 0.275,
+      "roi_mode": "homography",
+      "flags": [],
+      "conditions": {
+        "material": "semolina",
+        "grain_mass_g": 1.5,
+        "distance_mm": 210,
+        "lighting": "lamp_diffuse",
+        "dwell_s": 3.5
+      },
+      "by_class": {
+        "1170": {
+          "total": 20,
+          "accepted": 14
+        },
+        "1540": {
+          "total": 20,
+          "accepted": 15
+        },
+        "1970": {
+          "total": 20,
+          "accepted": 13
+        },
+        "420": {
+          "total": 20,
+          "accepted": 16
+        },
+        "610": {
+          "total": 20,
+          "accepted": 14
+        },
+        "860": {
+          "total": 20,
+          "accepted": 15
+        }
+      },
+      "rejected_images": [
+        {
+          "image_id": "SYNTH-04_1170_0004",
+          "path": "raw/SYNTH-04/1170/IMG_0004.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 165.7864,
+            "mean_luminance": 216.8283,
+            "interior_margin_px": 10,
+            "edge_density": 0.0225,
+            "edge_density_full_frame": 0.0257
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1170_0007",
+          "path": "raw/SYNTH-04/1170/IMG_0007.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1170_0008",
+          "path": "raw/SYNTH-04/1170/IMG_0008.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12493.9441,
+            "mean_luminance": 96.031,
+            "interior_margin_px": 10,
+            "edge_density": 0.3407,
+            "edge_density_full_frame": 0.3389
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1170_0009",
+          "path": "raw/SYNTH-04/1170/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3276,
+            "mean_luminance": 101.5477,
+            "interior_margin_px": 10,
+            "edge_density": 0.0105,
+            "edge_density_full_frame": 0.0105
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1170_0017",
+          "path": "raw/SYNTH-04/1170/IMG_0017.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 165.9329,
+            "mean_luminance": 216.8278,
+            "interior_margin_px": 10,
+            "edge_density": 0.0225,
+            "edge_density_full_frame": 0.0277
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1170_0019",
+          "path": "raw/SYNTH-04/1170/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3226,
+            "mean_luminance": 101.557,
+            "interior_margin_px": 10,
+            "edge_density": 0.0097,
+            "edge_density_full_frame": 0.0097
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1540_0004",
+          "path": "raw/SYNTH-04/1540/IMG_0004.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1540_0009",
+          "path": "raw/SYNTH-04/1540/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3905,
+            "mean_luminance": 100.1708,
+            "interior_margin_px": 10,
+            "edge_density": 0.0048,
+            "edge_density_full_frame": 0.0052
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1540_0010",
+          "path": "raw/SYNTH-04/1540/IMG_0010.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 170.3684,
+            "mean_luminance": 216.4824,
+            "interior_margin_px": 10,
+            "edge_density": 0.0249,
+            "edge_density_full_frame": 0.0304
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1540_0011",
+          "path": "raw/SYNTH-04/1540/IMG_0011.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12478.9698,
+            "mean_luminance": 95.7366,
+            "interior_margin_px": 10,
+            "edge_density": 0.3411,
+            "edge_density_full_frame": 0.3396
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1540_0019",
+          "path": "raw/SYNTH-04/1540/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3918,
+            "mean_luminance": 100.1554,
+            "interior_margin_px": 10,
+            "edge_density": 0.0072,
+            "edge_density_full_frame": 0.0074
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0001",
+          "path": "raw/SYNTH-04/1970/IMG_0001.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0003",
+          "path": "raw/SYNTH-04/1970/IMG_0003.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 171.5967,
+            "mean_luminance": 216.5657,
+            "interior_margin_px": 10,
+            "edge_density": 0.0265,
+            "edge_density_full_frame": 0.0314
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0009",
+          "path": "raw/SYNTH-04/1970/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3723,
+            "mean_luminance": 100.4296,
+            "interior_margin_px": 10,
+            "edge_density": 0.0128,
+            "edge_density_full_frame": 0.0123
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0014",
+          "path": "raw/SYNTH-04/1970/IMG_0014.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12593.2406,
+            "mean_luminance": 96.0346,
+            "interior_margin_px": 10,
+            "edge_density": 0.341,
+            "edge_density_full_frame": 0.3391
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0016",
+          "path": "raw/SYNTH-04/1970/IMG_0016.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 170.5853,
+            "mean_luminance": 216.5776,
+            "interior_margin_px": 10,
+            "edge_density": 0.0266,
+            "edge_density_full_frame": 0.0305
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0018",
+          "path": "raw/SYNTH-04/1970/IMG_0018.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_1970_0019",
+          "path": "raw/SYNTH-04/1970/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3727,
+            "mean_luminance": 100.4312,
+            "interior_margin_px": 10,
+            "edge_density": 0.0117,
+            "edge_density_full_frame": 0.0112
+          }
+        },
+        {
+          "image_id": "SYNTH-04_420_0009",
+          "path": "raw/SYNTH-04/420/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.193,
+            "mean_luminance": 100.1204,
+            "interior_margin_px": 10,
+            "edge_density": 0.0055,
+            "edge_density_full_frame": 0.0053
+          }
+        },
+        {
+          "image_id": "SYNTH-04_420_0012",
+          "path": "raw/SYNTH-04/420/IMG_0012.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 154.3365,
+            "mean_luminance": 216.4907,
+            "interior_margin_px": 10,
+            "edge_density": 0.0125,
+            "edge_density_full_frame": 0.0179
+          }
+        },
+        {
+          "image_id": "SYNTH-04_420_0016",
+          "path": "raw/SYNTH-04/420/IMG_0016.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_420_0019",
+          "path": "raw/SYNTH-04/420/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.2077,
+            "mean_luminance": 100.1139,
+            "interior_margin_px": 10,
+            "edge_density": 0.0046,
+            "edge_density_full_frame": 0.0045
+          }
+        },
+        {
+          "image_id": "SYNTH-04_610_0002",
+          "path": "raw/SYNTH-04/610/IMG_0002.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12502.8027,
+            "mean_luminance": 96.0211,
+            "interior_margin_px": 10,
+            "edge_density": 0.3392,
+            "edge_density_full_frame": 0.3378
+          }
+        },
+        {
+          "image_id": "SYNTH-04_610_0005",
+          "path": "raw/SYNTH-04/610/IMG_0005.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 152.542,
+            "mean_luminance": 220.2513,
+            "interior_margin_px": 10,
+            "edge_density": 0.0184,
+            "edge_density_full_frame": 0.0235
+          }
+        },
+        {
+          "image_id": "SYNTH-04_610_0009",
+          "path": "raw/SYNTH-04/610/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.443,
+            "mean_luminance": 113.8909,
+            "interior_margin_px": 10,
+            "edge_density": 0.0091,
+            "edge_density_full_frame": 0.0093
+          }
+        },
+        {
+          "image_id": "SYNTH-04_610_0013",
+          "path": "raw/SYNTH-04/610/IMG_0013.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_610_0018",
+          "path": "raw/SYNTH-04/610/IMG_0018.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 152.3744,
+            "mean_luminance": 220.2207,
+            "interior_margin_px": 10,
+            "edge_density": 0.0184,
+            "edge_density_full_frame": 0.0235
+          }
+        },
+        {
+          "image_id": "SYNTH-04_610_0019",
+          "path": "raw/SYNTH-04/610/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.436,
+            "mean_luminance": 113.8992,
+            "interior_margin_px": 10,
+            "edge_density": 0.0094,
+            "edge_density_full_frame": 0.0096
+          }
+        },
+        {
+          "image_id": "SYNTH-04_860_0005",
+          "path": "raw/SYNTH-04/860/IMG_0005.png",
+          "reason": "edge_density",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 12523.6137,
+            "mean_luminance": 95.9014,
+            "interior_margin_px": 10,
+            "edge_density": 0.3407,
+            "edge_density_full_frame": 0.3392
+          }
+        },
+        {
+          "image_id": "SYNTH-04_860_0009",
+          "path": "raw/SYNTH-04/860/IMG_0009.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.3156,
+            "mean_luminance": 100.2745,
+            "interior_margin_px": 10,
+            "edge_density": 0.0104,
+            "edge_density_full_frame": 0.0101
+          }
+        },
+        {
+          "image_id": "SYNTH-04_860_0010",
+          "path": "raw/SYNTH-04/860/IMG_0010.png",
+          "reason": "partial",
+          "quality": "partial",
+          "metrics": {
+            "n_markers": 3,
+            "roi_mode": "homography"
+          }
+        },
+        {
+          "image_id": "SYNTH-04_860_0011",
+          "path": "raw/SYNTH-04/860/IMG_0011.png",
+          "reason": "luminance",
+          "quality": "reject",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 162.2606,
+            "mean_luminance": 216.5305,
+            "interior_margin_px": 10,
+            "edge_density": 0.0193,
+            "edge_density_full_frame": 0.0238
+          }
+        },
+        {
+          "image_id": "SYNTH-04_860_0019",
+          "path": "raw/SYNTH-04/860/IMG_0019.png",
+          "reason": "blurred",
+          "quality": "blurred",
+          "metrics": {
+            "n_markers": 4,
+            "roi_mode": "homography",
+            "laplacian_variance": 1.2954,
+            "mean_luminance": 100.2645,
+            "interior_margin_px": 10,
+            "edge_density": 0.0101,
+            "edge_density_full_frame": 0.0097
+          }
+        }
+      ]
+    }
+  },
+  "totals": {
+    "total": 480,
+    "accepted": 348,
+    "rejected": {
+      "blurred": 32,
+      "edge_density": 20,
+      "luminance": 36,
+      "partial": 44
+    },
+    "rejection_rate": 0.275
+  }
+}

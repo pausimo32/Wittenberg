@@ -1,27 +1,32 @@
 # Preprocessing specification — the contract
 
-**Status:** normative. Both implementations must satisfy this file byte-for-byte within the
-stated tolerances. Reference study: Kumar & Wani (2024), *Modal Frequency Prediction of Chladni
-Patterns Using Machine Learning*, Open Journal of Acoustics 12(1), 1–16.
+**Status:** normative. Reference study: Kumar & Wani (2024), *Modal Frequency Prediction of
+Chladni Patterns Using Machine Learning*, Open Journal of Acoustics 12(1), 1–16.
 
-Two implementations exist and must agree:
+There is **one** implementation: `src/preprocess.py`, using `cv2`. It is called in two places —
+when building the training set, and by the local API at inference time (`docs/05-webapp-spec.md`
+§3). Same function, same machine, same parameters. Train/serve skew is structurally impossible;
+see `docs/adr/0004`.
 
-| Side | File | Library |
-|---|---|---|
-| Training | `src/preprocess.py` | `cv2` (opencv-python) |
-| Inference | `web/lib/preprocess.ts` | `opencv.js` (OpenCV compiled to WASM) |
-
-They use the **same OpenCV C++ core**, which is why they can agree. Do not reimplement any
-step with Canvas 2D, `drawImage`, or hand-written loops — those diverge (see §5).
+This file still exists, and is still normative, for three reasons: `config/preprocess.json` must
+remain the only place the parameters live; a reader of the TDR must be able to reproduce the
+pipeline from a document rather than from source; and any change here invalidates every trained
+model, which needs saying out loud.
 
 ## 1. Parameters — the only place they are defined
 
-All parameters live in `config/preprocess.json`. Both sides read that file; no literals in code.
+All parameters live in `config/preprocess.json`. Training and the API both read that file; no
+numeric literals anywhere in the transform path.
 
 ```json
 {
-  "version": "1.0.0",
-  "roi": { "mode": "homography", "output_size": 512 },
+  "version": "1.1.0",
+  "roi": {
+    "mode": "homography",
+    "output_size": 512,
+    "interpolation": "INTER_LINEAR",
+    "border_mode": "BORDER_REPLICATE"
+  },
   "grayscale": { "code": "COLOR_RGBA2GRAY" },
   "clahe": { "enabled": true, "clip_limit": 2.0, "tile_grid_size": [8, 8] },
   "blur": { "ksize": [5, 5], "sigma_x": 1.4, "sigma_y": 1.4, "border": "BORDER_DEFAULT" },
@@ -31,14 +36,14 @@ All parameters live in `config/preprocess.json`. Both sides read that file; no l
 }
 ```
 
-`scale` is exactly `1/255`. Written out to avoid a float literal mismatch between languages.
+`scale` is exactly `1/255`, written out in full so the stored value is exact.
 
 ## 2. Pipeline
 
 Ordered. No step may be reordered, skipped or fused.
 
 1. **Decode** → RGBA, 8-bit, sRGB. EXIF orientation applied then stripped; ICC profile
-   discarded (force sRGB). See §5.4.
+   discarded (force sRGB). See §5.1.
 2. **ROI / geometric normalisation** → warp the plate to a `512×512` square.
    - `mode: "homography"` — the four plate corners are fixed by the rig (zenithal iPhone 11
      mount, d = 210 mm, ≈14.5 px/mm — see `docs/02-dataset-spec.md`). The homography is
@@ -46,10 +51,21 @@ Ordered. No step may be reordered, skipped or fused.
      stored in `data/calib/<session_id>.json`.
    - Fallback `mode: "center_crop"` — largest centred square, for images with no calibration.
      Records `roi_mode` in metadata so mixed-provenance data is auditable.
-   - `cv2.warpPerspective(..., flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)`
+   - `cv2.warpPerspective(..., flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)`.
+     Both flags come from `config/preprocess.json` (`roi.interpolation`, `roi.border_mode`) as of
+     spec 1.1.0 — they used to live only in this prose, which meant a reader could not rebuild
+     the pipeline from the config alone.
+   - **Destination quad is `[0, size-1]`, not `[0, size]`.** Pinned by
+     `test_roi_of_a_frame_already_at_roi_size_is_an_identity_warp`. The other convention shifts
+     everything by a sub-pixel and is silent.
+   - `center_crop` goes through the *same* `warpPerspective` call as the homography path, so the
+     two ROI modes cannot drift apart.
+   - **Fewer than 4 markers raises `CalibrationError`** — never a silent fallback to
+     `center_crop`. `roi_mode` has to stay auditable, and `docs/02-dataset-spec.md` §6 requires
+     the image be rejected as `partial`. The caller decides, not the transform.
 3. **Grayscale** — `cv2.cvtColor(src, cv2.COLOR_RGBA2GRAY)`.
    OpenCV uses ITU-R BT.601 luma: `0.299 R + 0.587 G + 0.114 B`, computed in fixed-point.
-   **This is why we do not use canvas luma** — the rounding differs (§5.1).
+   This exact rounding is what the model was trained on; do not substitute a float formula.
 4. **CLAHE** — `cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(gray)`.
    *Deviation from the reference study, deliberate.* Kumar & Wani used a fixed lab lamp; our
    captures happen in classrooms with varying light. CLAHE makes Canny's fixed thresholds
@@ -58,7 +74,7 @@ Ordered. No step may be reordered, skipped or fused.
    **`cv2.Canny` does no smoothing of its own** — despite the textbook description of the
    algorithm, OpenCV's implementation goes straight to a `Sobel` of size `apertureSize`. This
    explicit blur is therefore the *only* smoothing in the pipeline, not a redundant one. It sets
-   the noise floor deterministically and identically on both sides. Do not remove it as
+   the noise floor deterministically. Do not remove it as
    "already done by Canny" — it is not.
 6. **Canny** — `cv2.Canny(src, 50, 150, apertureSize=3, L2gradient=False)` → binary `{0,255}`.
    The reference study reports that adding Canny after grayscale raised accuracy materially;
@@ -70,9 +86,30 @@ Ordered. No step may be reordered, skipped or fused.
 
 Output tensor: `float32[1,128,128,1]`, NHWC.
 
+### `preprocess_stages()` — the intermediates
+
+`preprocess_stages(image_rgba, calib, config=None)` returns the array after **each of steps 1–8**,
+as a `NamedTuple`: `source` `(H,W,3) uint8`, `roi` `(512,512,3) uint8`, `gray` / `clahe` / `blur` /
+`edges` `(512,512) uint8`, `resized` `(128,128) uint8`, `tensor` `(128,128,1) float32`.
+
+Steps 1 and 2 are included **for the pipeline viewer** (`docs/05-webapp-spec.md` §8), which shows a
+user what the machine did to their photo. They are also what makes a wrong prediction diagnosable
+and what generates annex 7. Exposing an intermediate is not a transform change: it does not touch
+the pipeline and does not invalidate a checkpoint.
+
+**Non-mutation contract.** `source` is the caller's input array itself, not a defensive copy —
+copying a full-resolution capture on every call does not pay for itself. `roi` is likewise the
+array that fed step 3. **Callers must not write to either.** If you need to draw on one, copy it
+first.
+
+This is not hypothetical. The pipeline viewer will want to draw the detected ROI quad on top of
+stage 1, and the ingest report will want to mark rejected regions. Both would silently corrupt
+the array the caller passed in, and the corruption would surface as a wrong prediction much later.
+Every overlay goes on `.copy()`.
+
 ## 3. Augmentation — training only, never at inference
 
-Applied **after** step 8, only to the training split. Never to val/test. Never in the browser.
+Applied **after** step 8, only to the training split. Never to val/test. Never at inference.
 
 | Transform | Range | Rationale |
 |---|---|---|
@@ -85,67 +122,51 @@ Applied **after** step 8, only to the training split. Never to val/test. Never i
 Augmentation runs offline into `data/processed/` so the exact augmented set is reproducible
 and can be shipped as a TDR annex.
 
-## 4. Parity gate
+## 4. Version consistency — the one guard
 
-`npm run parity` is a **merge blocker**. It runs `scripts/parity_check.py` + a headless
-Playwright page and compares.
+With a single implementation there is nothing to compare. What *can* still go wrong is serving a
+checkpoint trained under a different version of this spec.
 
-Golden set: `tests/golden/*.png` — 20 images, PNG only (§5.3), covering every frequency class,
-2 lighting conditions and both `roi_mode` values.
+1. Every checkpoint stores the fully resolved `config/preprocess.json` **and its SHA-256** in
+   `runs/<ts>/config.json`.
+2. The API asserts at startup that the hash of the running `config/preprocess.json` equals the
+   checkpoint's. On mismatch it **refuses to start** and prints both versions.
+3. `python tasks.py check-model` runs the same assertion from the command line.
 
-| Stage compared | Metric | Threshold |
-|---|---|---|
-| After step 3 (grayscale) | mean absolute difference | `≤ 1.0 / 255` |
-| After step 3 | max absolute difference | `≤ 2.0 / 255` |
-| After step 4 (CLAHE) | mean absolute difference | `≤ 1.0 / 255` |
-| After step 4 (CLAHE) | max absolute difference | `≤ 3.0 / 255` |
-| After step 6 (Canny binary) | IoU of edge pixels | `≥ 0.995` |
-| After step 7 (resize) | mean absolute difference | `≤ 1.0 / 255` |
-| After step 8 (tensor) | mean absolute difference | `≤ 2e-3` |
-| End-to-end (with model) | argmax class agreement | `100 %` |
-| End-to-end | max abs difference in softmax | `≤ 1e-3` |
+This is a hard failure, never a warning. It is the whole of what used to be a parity harness.
 
-A failure prints the first offending pixel coordinate and both values. Do not raise a
-threshold to make the gate pass — find the divergent step.
+## 5. Traps that still apply
 
-## 5. Known divergence traps
+Most of the old divergence traps concerned two implementations and are gone. Three survive
+because they are about the *input*, not about a second language.
 
-Read this before debugging any parity failure.
+**5.1 iPhone EXIF and HEIC.** iPhone 11 writes EXIF orientation and a Display P3 ICC profile.
+Untreated, the same photo arrives rotated and colour-shifted. Handled **once**, in the ingest
+layer: HEIC→PNG, orientation applied then stripped, P3→sRGB, profiles stripped. The API applies
+the identical normalisation to uploads before calling `preprocess` — this is the one place where
+"the same thing must happen in two code paths" still holds, so it lives in a single shared
+helper, `src/imageio.py`, used by both.
 
-**5.1 Canvas luma ≠ OpenCV luma.** `ctx.getImageData` then `0.299r+0.587g+0.114b` in float
-JS gives values that differ from `cv2.cvtColor` because OpenCV uses fixed-point arithmetic with
-specific rounding. The measured deviation is one level; the 2/255 tolerance above is deliberately
-conservative. Always go through `cv.cvtColor` in opencv.js.
+**5.2 JPEG is lossy and the camera is not.** Training images come from HEIC via a lossless PNG
+conversion. If a user later feeds a re-compressed JPEG, quantisation artefacts survive Canny as
+spurious edges. Test it (`tests/test_jpeg_robustness.py`) rather than assuming; if accuracy drops
+materially, say so in the TDR limitations.
 
-Note also that `opencv-python` wheels dispatch to IPP/AVX kernels that the WASM build does not
-have. Bit-identity is likely but not guaranteed — which is exactly why the tolerances above are
-non-zero rather than exact-equality assertions.
-
-**5.2 `drawImage` resizing is browser-defined.** Chrome, Firefox and Safari use different
-downscaling filters and none of them is `INTER_AREA`. Always use `cv.resize` with the
-explicit interpolation flag. Never resize via CSS or canvas dimensions.
-
-**5.3 JPEG decoders differ.** Pillow/libjpeg-turbo and the browser's decoder disagree by
-±1–2 levels on the same JPEG. The golden set is therefore **PNG only**. In production the
-browser decodes user JPEGs and this ±2 error is absorbed by the tolerance in step 3 — verify
-that claim with `tests/jpeg_robustness.py`, do not assume it.
-
-**5.4 iPhone EXIF and HEIC.** iPhone 11 writes EXIF orientation and a Display P3 ICC profile.
-Untreated, the same photo is rotated 90° on one side and colour-shifted on the other. Ingest
-converts HEIC→PNG, applies orientation, converts P3→sRGB and strips both, **once**, in
-`make ingest`. The browser path calls `createImageBitmap(blob, {imageOrientation: 'from-image',
-colorSpaceConversion: 'default'})`.
-
-**5.5 opencv.js version pinning.** `opencv.js` must be the same OpenCV minor version as
-`opencv-python`. Pin both in `config/versions.json` and assert at parity-check start. A minor
-version bump has changed CLAHE's tile interpolation before.
-
-**5.6 Float accumulation order.** Do the `*1/255` scale as the last operation on both sides,
-on the full `uint8` array, never fused into the resize.
+**5.3 OpenCV version pinning.** `opencv-python` is pinned in `config/versions.json` and asserted
+by `python tasks.py check-versions`. Not for cross-language parity any more, but for
+reproducibility across the three team members' machines and across time: CLAHE tile
+interpolation has changed between minor versions before, and a reader reproducing the work in a
+year needs the version.
 
 ## 6. Changing this spec
 
+0. First decide whether the pipeline actually changed. Exposing a new intermediate, renaming a
+   variable or adding a test does **not** change it. Moving a parameter out of prose and into
+   `config/preprocess.json` does not change the computed pixels either, but it *does* change the
+   config hash, so it needs a version bump and a retrain if any checkpoint already exists. Spec
+   1.1.0 did exactly this, before F4 had produced any checkpoint — which is the cheap moment.
 1. Bump `version` in `config/preprocess.json` (semver; any pipeline change is at least a minor).
 2. Update this file in the **same commit**.
-3. Re-run `npm run parity` and `make train` — a preprocessing change invalidates the model.
+3. Retrain. A preprocessing change invalidates every existing checkpoint, and the startup guard
+   in §4 will refuse to serve them — which is the intended behaviour, not an obstacle.
 4. Add an ADR under `docs/adr/` if the change alters the pipeline shape, not just a constant.

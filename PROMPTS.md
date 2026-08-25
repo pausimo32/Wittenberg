@@ -29,7 +29,7 @@ Do NOT read: <the rest of docs/>.
 - [ ] <a number that meets a threshold>
 
 ## Model
-<opus | sonnet | haiku> — <one clause of justification>
+<opus | sonnet | haiku | fable> — <one clause of justification>
 ```
 
 ## Why each block exists
@@ -48,8 +48,9 @@ that will drift.
 paragraph. Without this block, those twenty files land in the main window and stay there for
 the session.
 
-**Definition of done** must be machine-checkable. "Works correctly" is not a gate; `make eval &&
-test -f runs/latest/metrics.json` is.
+**Definition of done** must be machine-checkable. "Works correctly" is not a gate;
+`python tasks.py eval` exiting 0 and writing `metrics.json` into the directory named by
+`runs/latest.txt` is.
 
 **Model** — see the table below. Stating it stops the default from being wrong silently.
 
@@ -57,15 +58,21 @@ test -f runs/latest/metrics.json` is.
 
 | Model | Use for | Why |
 |---|---|---|
-| `opus` | architecture, spec changes, parity debugging, TDR prose, ablation design | deep reasoning; the mistakes here are expensive and slow to detect |
+| `opus` | architecture, spec changes, reproducibility audits, TDR prose, ablation design | deep reasoning; the mistakes here are expensive and slow to detect |
 | `sonnet` | implementation from a written spec, tests, refactors, UI components | the workhorse; a good spec makes the reasoning cheap |
 | `haiku` | renaming, formatting, mechanical edits, log grepping | no reasoning needed; fastest and cheapest |
 | `fable` | a phase-sized job in one go (F4 end-to-end), or a bug surviving two sonnet attempts | long-horizon; **check whether it bills usage credits on your plan first** |
 
+**Pinning vs `inherit` in a subagent.** Pin the model when the agent's job has a stable
+difficulty of its own (`wittenberg-repro-auditor` is always hard; a frontend specialist is always
+implementation). Use `inherit` when the agent is a general helper whose difficulty tracks the
+parent task. If you run out of Opus quota mid-phase, temporarily flip the opus-pinned agents to
+`inherit` and keep working on Sonnet.
+
 On Max, Opus has a separate quota from the shared session/weekly limits, so switching to
 `sonnet` when you hit the Opus wall keeps you working. Fan-outs default to `sonnet`.
 
-`/effort xhigh` for parity audits and architecture. `high` (the default) otherwise.
+`/effort xhigh` for reproducibility audits and architecture. `high` (the default) otherwise.
 
 ## Token discipline — the rules that actually matter
 
@@ -83,36 +90,42 @@ On Max, Opus has a separate quota from the shared session/weekly limits, so swit
 
 ## Worked example
 
+Phase F5, the local serving API:
+
 ```
 ## Context
-Phase F6. Python preprocessing (src/preprocess.py) is done and its unit tests pass.
-The browser side does not exist yet.
-Read: docs/03-preprocessing-spec.md, docs/05-webapp-spec.md.
-Do NOT read: docs/01, 02, 04, 06, 07.
+Phase F5. src/preprocess.py is done and tested. wittenberg_v1 is trained and
+runs/latest.txt points at a passing run. No API exists yet.
+Read: docs/05-webapp-spec.md.
+Do NOT read: docs/01, 02, 03, 04, 06, 07.
 
 ## Task
-Implement web/lib/preprocess.ts so it reproduces src/preprocess.py exactly.
+Implement the FastAPI backend described in §3.
 
 ## Constraints
-- Follow docs/03-preprocessing-spec.md §2, all 8 steps, in order, no fusion.
-- All parameters read from config/preprocess.json. Zero numeric literals in the transform code.
-- opencv.js only. No canvas 2D, no drawImage, no hand-written pixel loops (§5.1, §5.2).
-- Runs in a Web Worker. Must not block the main thread.
-- Do not modify src/preprocess.py.
-
-## Delegate
-- wittenberg-parity-auditor once a first version compiles.
-- Use the preprocessing-parity skill to run and read the gate.
+- /api/predict MUST call src.preprocess.preprocess directly. Do not
+  reimplement, inline, wrap or "optimise" any transform step. This is the
+  property the whole architecture exists to guarantee (docs/adr/0004).
+- Assert at startup that the checkpoint's preprocess_hash equals the SHA-256
+  of the current config/preprocess.json. On mismatch, refuse to start and
+  print both. Never downgrade this to a warning.
+- Bind 127.0.0.1 explicitly. No CORS wildcard. Images processed in memory,
+  never written to disk.
+- Load the model once at startup, .to('cuda').eval(). Single worker.
+- EXIF/HEIC/P3 normalisation comes from the shared src/imageio.py helper —
+  the same one ingest uses. Do not write a second copy (spec §5.1).
 
 ## Definition of done
-- [ ] npm run parity exits 0
-- [ ] every stage meets its §4 threshold; report the actual numbers
-- [ ] no numeric literal in the transform path (grep it)
-- [ ] tsc --noEmit clean
+- [ ] python tasks.py check-model exits 0
+- [ ] pytest: /api/predict on a tests/fixtures/ image returns exactly what calling
+      preprocess + model directly returns
+- [ ] pytest: mutating config/preprocess.json makes startup fail
+- [ ] /api/health reports run id, preprocess version, device = cuda
+- [ ] elapsed_ms < 200 on the local GPU
 
 ## Model
-sonnet — the spec is complete, this is transcription. Escalate to opus only if parity fails
-for a reason not listed in §5.
+sonnet — the spec is complete; this is assembly. Escalate to opus only if the
+startup guard design turns out to be ambiguous.
 ```
 
 ## Anti-patterns
@@ -121,7 +134,8 @@ for a reason not listed in §5.
 |---|---|
 | "Improve the preprocessing" | name the step, the parameter, and the metric that should move |
 | "Make the model better" | one ablation from `docs/04-model-spec.md` §5, with its acceptance gate |
+| "Deploy it" / "make it work on phones" | out of scope — the app is local-only (`docs/adr/0004`) |
 | "Read all the docs and then..." | name the two docs |
-| "Fix the parity test" | "find the first divergent stage" — fixing the test is the failure mode |
+| "Make the startup check pass" | fix the mismatch or retrain — weakening a guard is the failure mode |
 | pasting a spec table into the prompt | cite the section |
 | a prompt spanning two phases | one prompt per phase |

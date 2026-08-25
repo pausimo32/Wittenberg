@@ -1,6 +1,11 @@
 {
-  "version": "1.0.0",
-  "roi": { "mode": "homography", "output_size": 512 },
+  "version": "1.1.0",
+  "roi": {
+    "mode": "homography",
+    "output_size": 512,
+    "interpolation": "INTER_LINEAR",
+    "border_mode": "BORDER_REPLICATE"
+  },
   "grayscale": { "code": "COLOR_RGBA2GRAY" },
   "clahe": { "enabled": true, "clip_limit": 2.0, "tile_grid_size": [8, 8] },
   "blur": { "ksize": [5, 5], "sigma_x": 1.4, "sigma_y": 1.4, "border": "BORDER_DEFAULT" },

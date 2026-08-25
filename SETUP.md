@@ -1,31 +1,46 @@
-# Setup — installing the Claude Code environment for Wittenberg
+# Setup — Wittenberg on native Windows with an NVIDIA GPU
 
-Do this once, before phase F0. Requires Claude Code v2.1.219+ (Opus 5 is not offered by older
-versions). Check with `claude --version`.
+Environment this file assumes: **Windows, VSCode with the Claude Code extension, NVIDIA GPU,
+no WSL.** See `docs/adr/0003` for why the training framework is PyTorch and not TensorFlow.
+
+## 0. Prerequisites
+
+| | Check |
+|---|---|
+| Claude Code | extension ≥ 2.1.219 (Opus 5 needs it). The version is the folder name under `%USERPROFILE%\.vscode\extensions\anthropic.claude-code-*` |
+| Python 3.11 | `python --version` |
+| Node 20 | `node --version` |
+| NVIDIA driver | `nvidia-smi` — note the CUDA version it reports |
+| Git | `git --version` |
+
+**The CLI is optional.** `claude --version` failing because there is no binary on PATH is
+expected when only the VSCode extension is installed, and nothing in this project needs the
+CLI. Install it (`npm i -g @anthropic-ai/claude-code`) only if you later want headless runs —
+for example `claude -p` to batch the F4 ablations overnight.
+
+**There is no `make`.** The task runner is `tasks.py`. Everything is `python tasks.py <target>`;
+`python tasks.py --list` shows them all.
 
 ## 1. Drop the kit into the repo
 
 ```
-CLAUDE.md
-PROMPTS.md
-SETUP.md
-config/preprocess.json
+CLAUDE.md            PROMPTS.md          SETUP.md            tasks.py
+requirements.txt     config/preprocess.json   config/versions.json
 docs/00-master-plan.md … docs/07-glossary-ca-en.md
-docs/adr/0001-…, 0002-…
-.claude/agents/wittenberg-{parity-auditor,dataset-curator,tdr-writer}.md
-.claude/skills/{preprocessing-parity,dataset-ingest,tdr-annex-export}/SKILL.md
+docs/adr/0001-…  0002-…  0003-…  0004-…
+.claude/agents/wittenberg-{repro-auditor,dataset-curator,tdr-writer}.md
+.claude/skills/{dataset-ingest,tdr-annex-export}/SKILL.md
 ```
 
-Commit before running anything.
+`git init && git add -A && git commit` before running anything else.
 
-## 2. Install plugins
+## 2. Plugins — the one step no agent can do for you
 
-Run inside `claude` in the repo root.
+`/plugin` is an interactive slash command. It cannot be run from Bash, from a skill, or by a
+subagent. Paste these six lines into the Claude Code chat yourself:
 
 ```
-/plugin marketplace add anthropics/skills
 /plugin install document-skills@anthropic-agent-skills
-
 /plugin install superpowers@claude-plugins-official
 /plugin install pyright-lsp@claude-plugins-official
 /plugin install typescript-lsp@claude-plugins-official
@@ -33,66 +48,133 @@ Run inside `claude` in the repo root.
 /plugin install frontend-design@claude-plugins-official
 ```
 
-`claude-plugins-official` is added automatically on first interactive start. If it is missing:
-`/plugin marketplace add anthropics/claude-plugins-official`.
-
-## 3. Install the third-party subagents
-
-These are community repos. Copy only the agent files you need into `.claude/agents/` rather
-than installing whole collections — every agent's description sits in context permanently.
-
-```bash
-mkdir -p /tmp/ext && cd /tmp/ext
-
-git clone --depth 1 https://github.com/wshobson/agents
-cp agents/plugins/machine-learning-ops/agents/ml-engineer.md   <repo>/.claude/agents/
-cp agents/plugins/machine-learning-ops/agents/data-scientist.md <repo>/.claude/agents/
-
-git clone --depth 1 https://github.com/rohitg00/awesome-claude-code-toolkit
-cp awesome-claude-code-toolkit/agents/data-ai/computer-vision-engineer.md <repo>/.claude/agents/
-
-git clone --depth 1 https://github.com/VoltAgent/awesome-claude-code-subagents
-cp awesome-claude-code-subagents/categories/02-language-specialists/nextjs-developer.md \
-   <repo>/.claude/agents/
-```
-
-**Then open each copied file and check its `name:` field.** In `wshobson/agents` the frontmatter
-name does not reliably match the filename — some are plugin-prefixed
-(`comprehensive-review-code-reviewer`), some are not (`ml-engineer`). Claude Code resolves
-agents by `name`, not by path.
-
-Also check for a hardcoded legacy `model:` (e.g. `claude-sonnet-4-20250514`) and change it to
-`inherit` or `sonnet`, or the agent will silently run on an old model.
-
-## 4. Verify
+Both marketplaces (`anthropic-agent-skills`, `claude-plugins-official`) are normally already
+registered in `~/.claude/settings.json` — check before adding them. If one is missing:
 
 ```
-/agents          # the three wittenberg-* plus the four imported ones
-/context         # baseline cost of CLAUDE.md + skill descriptions
-/doctor          # skill listing budget
+/plugin marketplace add anthropics/skills
+/plugin marketplace add anthropics/claude-plugins-official
 ```
 
-Budget check: if the Skills row in `/context` is large, the cheapest fix is
-`disable-model-invocation: true` on skills you only ever invoke by hand — that drops their
-description cost to zero.
+Verify afterwards: `enabledPlugins` in `~/.claude/settings.json` should list all six. `null`
+means nothing installed.
 
-## 5. Session defaults
+## 3. Import the four external subagents
+
+Copy individual files. Do **not** install whole collections — every agent's description costs
+context on every request, permanently.
+
+```powershell
+$tmp = "$env:TEMP\wb-agents"
+git clone --depth 1 https://github.com/wshobson/agents $tmp\wshobson
+git clone --depth 1 https://github.com/rohitg00/awesome-claude-code-toolkit $tmp\rohitg00
+git clone --depth 1 https://github.com/VoltAgent/awesome-claude-code-subagents $tmp\voltagent
+
+copy $tmp\wshobson\plugins\machine-learning-ops\agents\ml-engineer.md    .claude\agents\
+copy $tmp\wshobson\plugins\machine-learning-ops\agents\data-scientist.md .claude\agents\
+copy $tmp\rohitg00\agents\data-ai\computer-vision-engineer.md            .claude\agents\
+copy $tmp\voltagent\categories\02-language-specialists\react-specialist.md  .claude\agents\
+```
+
+Clone outside the repo. Verify with `git status` that nothing was cloned inside it.
+
+## 4. Frontmatter hygiene — check every imported file
+
+**a) `name` must be what you think it is.** Claude Code resolves agents by the `name` field,
+not by the filename. In `wshobson/agents` the two do not always match: `ml-engineer.md`
+declares `name: ml-engineer`, but `code-reviewer.md` declares
+`name: comprehensive-review-code-reviewer`. The four files above happen to match — verify
+anyway, and re-verify after any re-import.
+
+**b) No pinned legacy model IDs.** A hardcoded `model: claude-sonnet-4-20250514` silently runs
+the agent on an obsolete model. Replace it with a tier name or `inherit`.
+
+Tier pins (`opus`, `sonnet`, `haiku`) are **not** legacy IDs and should be left alone. The rule:
+
+> Pin when the agent's job has a stable difficulty of its own. Use `inherit` when the agent is
+> a general helper whose difficulty tracks the parent task.
+
+So `computer-vision-engineer: opus` stays (it works F2, where errors are expensive) and a
+frontend specialist stays on `sonnet` (F6 and F7 implement a written spec, and the pin keeps it
+cheap even when the main session is on Opus). The three `wittenberg-*` agents are pinned for the
+same reason. If you exhaust the Opus quota mid-phase, flip the opus-pinned agents to `inherit`
+temporarily and carry on with Sonnet.
+
+**If you already imported `nextjs-developer`**, replace it with `react-specialist` from the same
+repository — the app is Vite + React now, not Next.js (`docs/adr/0004`). Delete the old file;
+leaving both means two overlapping descriptions competing for the same context budget.
+
+**c) Descriptions ≤ ~300 characters.** They live in context permanently. Shorten while keeping
+the trigger words.
+
+**d) Permission policy — permanent rule for this repo.**
+
+> No file in `.claude/agents/` may declare `permissionMode` with the value
+> `bypassPermissions`, `dontAsk` or `auto`. If an imported agent carries one, delete the line
+> (the default is `default`) and report it. The only values allowed here are `default` and
+> `plan`.
+>
+> Reason: these agents run against a repository that will contain photographs taken by minors
+> and credentials for the study questionnaires. No third-party agent runs actions unconfirmed.
+
+## 5. Python and Node environment
+
+```powershell
+python tasks.py setup
+```
+
+That creates `.venv`, installs `requirements.txt`, runs `npm install`, and then asserts two
+things that are easy to get silently wrong:
+
+- **OpenCV is the pinned version.** Not for cross-language parity — there is only one
+  implementation now — but so that all three of you, and a reader reproducing this in a year,
+  get the same pixels (`docs/03-preprocessing-spec.md` §5.3).
+- **The GPU is visible.** `cuda available: True` plus the device name.
+
+If it prints `cuda available: False`, pip installed the CPU-only wheel. Reinstall from the CUDA
+index, matching the CUDA version `nvidia-smi` reported:
+
+```powershell
+.venv\Scripts\python -m pip uninstall -y torch torchvision
+.venv\Scripts\python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+python tasks.py check-gpu
+```
+
+## 6. Verify Claude Code
+
+```
+/agents     # 7: the three wittenberg-* plus the four imported
+/context    # record the baseline cost of CLAUDE.md + skill descriptions
+/doctor     # skill listing budget
+```
+
+If the Skills row in `/context` is large, add `disable-model-invocation: true` to skills you
+only ever invoke by hand — that drops their description cost to zero.
+
+## 7. Session defaults and hygiene
 
 ```
 /model opus          # architecture and specs
-/effort high         # xhigh only for parity audits
+/effort high         # xhigh only for reproducibility audits
 ```
 
 Switch to `/model sonnet` for implementation phases. On Max, Opus has its own quota separate
-from the shared session and weekly limits, so hitting the Opus wall does not stop you working —
-switch model and continue.
-
-Before fanning out subagents, know that `fable` may bill to usage credits depending on plan and
-seat tier; the `/model` picker marks it. Default fan-outs to `sonnet`.
-
-## 6. Hygiene
+from the shared session and weekly limits, so hitting the Opus wall does not stop you — switch
+model and continue. `fable` may bill to usage credits depending on plan and seat tier; the
+`/model` picker marks it. Default fan-outs to `sonnet`.
 
 - `/clear` between phases. Phase boundaries are context boundaries.
 - Re-read `PROMPTS.md` before writing a prompt for a new phase.
 - Once a skill is invoked its full text stays in context for the rest of the session — invoke
   deliberately, not to see what it says.
+
+## 8. Windows gotchas that will cost you an afternoon
+
+| Symptom | Cause |
+|---|---|
+| `UnicodeDecodeError` reading a `.md` or `.csv` | Windows still defaults to cp1252 in places. Pass `encoding="utf-8"` on **every** open/read/write. |
+| `OSError: symbolic link privilege not held` | Something tried `os.symlink`. This repo uses `runs/latest.txt`, a pointer file. Never symlink. |
+| A script works for one team member, not another | a shell-only utility (`grep`, `sed`, `rm`) leaked into a script. Keep those out of anything the team runs. |
+| Paths break with long project names | enable long paths: `git config --system core.longpaths true`. |
+| Training suddenly on CPU after `pip install -U` | plain PyPI overwrote the CUDA wheel. Re-run the §5 reinstall and `check-gpu`. |
+| `pillow-heif` fails to import | install the wheel, not a source build; confirm the Python version matches the wheel. |
