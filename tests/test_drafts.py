@@ -336,3 +336,187 @@ def test_a_frame_without_markers_does_not_calibrate_anything(drafts_root):
     assert info["n_markers"] == 0
     assert not drafts.is_calibrated(drafts.read(drafts_root, "20260830-01"))
     assert not (draft.root / "calibration.json").exists()
+
+
+# --------------------------------------------------------------------------- #
+# the boundary — either the draft exists or the session exists
+# --------------------------------------------------------------------------- #
+
+HEADER = (
+    "image_id,session_id,freq_hz,split,material,grain_mass_g,distance_mm,lighting,"
+    "dwell_s,roi_mode,quality,notes\n"
+)
+
+
+def dir_fingerprint(root: Path) -> dict[str, str]:
+    """Every file under `root`, by relative path and content hash."""
+    return {
+        str(p.relative_to(root)).replace("\\", "/"): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+@pytest.fixture
+def data_root(tmp_path) -> Path:
+    root = tmp_path / "data"
+    (root / "raw").mkdir(parents=True)
+    (root / "metadata.csv").write_text(HEADER, encoding="utf-8")
+    return root
+
+
+def calibrated(drafts_root, session=None):
+    from calibrate import load_calibration_config
+
+    cfg = load_calibration_config()
+    draft = drafts.create(drafts_root, session or SESSION)
+    drafts.store_calibration(draft, marker_board(cfg), cfg)
+    return draft
+
+
+def one_frame(drafts_root):
+    draft = calibrated(drafts_root)
+    record = drafts.store_frame(draft, 440, "IMG_4711.JPG", a_jpeg())
+    drafts.record_verdict(draft, record, "ok", None, {})
+    return draft
+
+
+def test_abandoning_a_draft_leaves_data_byte_identical(drafts_root, data_root):
+    """`docs/05` §9, acceptance test 2. True by construction: nothing was ever written there."""
+    before = dir_fingerprint(data_root)
+
+    draft = calibrated(drafts_root)
+    for i in range(5):
+        record = drafts.store_frame(draft, 440, f"IMG_{i}.JPG", a_jpeg(i))
+        drafts.record_verdict(draft, record, "ok", None, {})
+    drafts.discard(drafts_root, "20260830-01", data_root)
+
+    assert dir_fingerprint(data_root) == before
+
+
+def test_stage_moves_the_captures_under_a_staging_name(drafts_root, data_root):
+    draft = one_frame(drafts_root)
+
+    staged = drafts.stage(draft, data_root)
+
+    assert staged == data_root / "raw" / ".incoming-20260830-01"
+    assert (staged / "440" / "IMG_0001.jpg").is_file()
+    assert json.loads((staged / "session.json").read_text("utf-8")) == SESSION
+    assert (staged / "calibration.json").is_file()
+    # Not yet a session, and not yet a committed calibration.
+    assert not (data_root / "raw" / "20260830-01").exists()
+    assert not (data_root / "calib").exists()
+
+
+def test_finish_renames_the_staging_directory_and_places_the_calibration(drafts_root, data_root):
+    draft = one_frame(drafts_root)
+    drafts.stage(draft, data_root)
+
+    session_dir = drafts.finish(draft, data_root)
+
+    assert session_dir == data_root / "raw" / "20260830-01"
+    assert (session_dir / "440" / "IMG_0001.jpg").is_file()
+    assert json.loads((session_dir / "session.json").read_text("utf-8")) == SESSION
+    assert (data_root / "calib" / "20260830-01.json").is_file()
+    assert not drafts.staging_dir(data_root, "20260830-01").exists()
+
+
+def test_a_failed_ingest_leaves_no_session(drafts_root, data_root):
+    """Requirement 6. The staging name is what the captures are called between "the draft has
+    them" and "the session has them", and nothing in `data/` answers to the session id until
+    the ingest that could have failed has already not failed."""
+    draft = one_frame(drafts_root)
+
+    drafts.stage(draft, data_root)
+    # ...and here `ingest_session` raises. `finish` is never reached.
+
+    assert not (data_root / "raw" / "20260830-01").exists()
+    assert not (data_root / "calib" / "20260830-01.json").exists()
+    assert drafts.staging_dir(data_root, "20260830-01").is_dir()
+    assert drafts.read(drafts_root, "20260830-01").log["staged"] is True
+
+
+def test_staging_again_after_a_failure_does_not_lose_the_captures(drafts_root, data_root):
+    """The resume path. `stage` is only called again when `draft.raw` still exists; a draft
+    already staged is resumed from where its captures are."""
+    draft = one_frame(drafts_root)
+    drafts.stage(draft, data_root)
+
+    staged = drafts.staging_dir(data_root, "20260830-01")
+
+    assert (staged / "440" / "IMG_0001.jpg").is_file()
+    assert not draft.raw.exists()
+
+
+def test_discarding_a_staged_draft_takes_its_captures_with_it(drafts_root, data_root):
+    before = dir_fingerprint(data_root)
+    draft = one_frame(drafts_root)
+    drafts.stage(draft, data_root)
+
+    drafts.discard(drafts_root, "20260830-01", data_root)
+
+    assert dir_fingerprint(data_root) == before
+
+
+def test_discard_without_a_data_root_still_removes_the_draft(drafts_root):
+    """The command-line shape: no dataset in sight, nothing staged, nothing to clean up."""
+    drafts.create(drafts_root, SESSION)
+
+    drafts.discard(drafts_root, "20260830-01")
+
+    assert drafts.listing(drafts_root) == []
+
+
+def test_commit_guard_refuses_an_existing_session_unless_replace(drafts_root, data_root):
+    """`docs/05` §9 says re-ingesting replaces rows; requirement 4 says say so first."""
+    (data_root / "metadata.csv").write_text(
+        HEADER
+        + "20260830-01_440_0001,20260830-01,440,train,sand,6.0,210,lamp_diffuse,3.0,"
+        "homography,ok,\n",
+        encoding="utf-8",
+    )
+    draft = one_frame(drafts_root)
+
+    assert drafts.existing_rows(data_root, "20260830-01") == 1
+    with pytest.raises(drafts.DraftConflict, match="already"):
+        drafts.commit_guard(draft, data_root, replace=False)
+
+    drafts.commit_guard(draft, data_root, replace=True)   # confirmed: allowed
+
+
+def test_commit_guard_refuses_mixed_provenance(drafts_root, data_root):
+    """`docs/05` §9, acceptance test 4."""
+    from metadata import MixedProvenanceError
+
+    (data_root / "metadata.csv").write_text(
+        HEADER
+        + "SYNTH-20260101-01_440_0001,SYNTH-20260101-01,440,train,sand,6.0,210,"
+        "lamp_diffuse,3.0,homography,ok,\n",
+        encoding="utf-8",
+    )
+    draft = one_frame(drafts_root)
+
+    with pytest.raises(MixedProvenanceError):
+        drafts.commit_guard(draft, data_root, replace=False)
+
+
+def test_commit_guard_refuses_an_empty_draft(drafts_root, data_root):
+    draft = calibrated(drafts_root)
+
+    with pytest.raises(drafts.DraftConflict, match="no frames"):
+        drafts.commit_guard(draft, data_root, replace=False)
+
+
+def test_commit_guard_refuses_an_uncalibrated_draft(drafts_root, data_root):
+    """The order is imposed here too, not only at the route: a session with no validated
+    geometry has nothing the gate could have measured."""
+    draft = drafts.create(drafts_root, SESSION)
+    record = drafts.store_frame(draft, 440, "IMG_4711.JPG", a_jpeg())
+    drafts.record_verdict(draft, record, "ok", None, {})
+
+    with pytest.raises(drafts.DraftConflict, match="calibration"):
+        drafts.commit_guard(draft, data_root, replace=False)
+
+
+def test_existing_rows_is_zero_without_a_metadata_file(tmp_path):
+    assert drafts.existing_rows(tmp_path / "nothing", "20260830-01") == 0

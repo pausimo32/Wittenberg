@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import threading
 from collections.abc import Mapping
@@ -37,7 +38,7 @@ import numpy as np
 from calibrate import calibrate, write_calibration
 from imageio import SUPPORTED_SUFFIXES, thumbnail
 from ingest import SESSION_LOG, read_session_log
-from metadata import validate_session_id
+from metadata import check_provenance, read_metadata, validate_session_id
 
 #: Repo root / drafts. Ignored by git; never inside `data/`.
 DRAFTS_ROOT = Path(__file__).resolve().parents[1] / "drafts"
@@ -177,12 +178,147 @@ def read(drafts_root: Path | str, draft_id: str) -> Draft:
     return Draft(root.name, root, json.loads(path.read_text("utf-8")))
 
 
-def discard(drafts_root: Path | str, draft_id: str) -> None:
+def discard(
+    drafts_root: Path | str, draft_id: str, data_root: Path | str | None = None
+) -> None:
     """Delete the draft and everything in it.
 
-    `data/` is not touched, because nothing of this draft was ever in `data/`.
+    `data/` is not touched, because nothing of this draft was ever in `data/` — unless it was
+    staged, in which case its captures *are* under `data/raw/.incoming-<id>` and go with it.
+    Discarding a staged draft is how someone gives up on a session whose ingest kept failing,
+    and leaving its captures behind would leave exactly the third thing the staging name exists
+    to prevent.
     """
-    shutil.rmtree(_within(drafts_root, draft_id), ignore_errors=True)
+    root = _within(drafts_root, draft_id)
+    if data_root is not None and (root / DRAFT_LOG).is_file():
+        log = json.loads((root / DRAFT_LOG).read_text('utf-8'))
+        if log.get('staged'):
+            shutil.rmtree(staging_dir(data_root, str(log['session_id'])), ignore_errors=True)
+    shutil.rmtree(root, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------- #
+# into data/ — either the draft exists or the session exists
+# --------------------------------------------------------------------------- #
+
+def existing_rows(data_root: Path | str, session_id: str) -> int:
+    path = Path(data_root) / "metadata.csv"
+    if not path.is_file():
+        return 0
+    return sum(1 for r in read_metadata(path) if r["session_id"] == session_id)
+
+
+def check_provenance_for(data_root: Path | str, session_id: str) -> None:
+    """`metadata.check_provenance`, at the door rather than at the commit.
+
+    Finding out that a `SYNTH-*` session cannot join this dataset before uploading six hundred
+    frames is the whole reason this is not left to `ingest_session`.
+    """
+    path = Path(data_root) / "metadata.csv"
+    check_provenance(read_metadata(path) if path.is_file() else [], session_id)
+
+
+def commit_guard(draft: Draft, data_root: Path | str, replace: bool) -> None:
+    """Everything that must be true before a byte of `data/` changes. Raises, never warns.
+
+    `ingest_session` is idempotent, and that is the right default for a command line where
+    re-running is what you meant. From a browser it is not: an id typed one digit wrong lands on
+    a session someone else captured, and idempotent then means the old rows are gone without
+    anyone being asked. So the replacement is offered, not performed.
+    """
+    root = Path(data_root)
+    check_provenance_for(root, draft.session_id)
+
+    if not frame_records(draft):
+        raise DraftConflict("this draft has no frames yet")
+    if not is_calibrated(draft):
+        raise DraftConflict("this draft has no validated calibration")
+
+    rows = existing_rows(root, draft.session_id)
+    if rows and not replace:
+        raise DraftConflict(
+            f"session {draft.session_id} already has {rows} row(s) in metadata.csv. "
+            f"Committing replaces every one of them, and the captures under "
+            f"data/raw/{draft.session_id} as well. Confirm the replacement or use a "
+            f"different session id."
+        )
+
+
+def staging_dir(data_root: Path | str, session_id: str) -> Path:
+    """Where a session's captures live between the draft and the session.
+
+    A dotted name under `data/raw/`, so it is on the same volume as its destination and the last
+    step is a rename rather than a copy. Ingest is handed this path explicitly, so nothing
+    globs its way into it, and `.gitignore` already excludes all of `data/raw/`.
+    """
+    return Path(data_root) / "raw" / f".incoming-{session_id}"
+
+
+def stage(draft: Draft, data_root: Path | str) -> Path:
+    """Move the draft's captures under the staging name, with everything ingest will need.
+
+    A move, not a copy: the draft is on the same volume as `data/`, so six hundred 12 MP
+    captures change directory in milliseconds. On Windows a cross-volume `os.rename` fails
+    outright, which is the second reason the drafts directory sits beside `data/` and not in
+    `%TEMP%`.
+
+    The `session.json` copied here is the exact file `create` validated, and `calibration.json`
+    travels *inside* the staging directory rather than going to `data/calib/`: that directory is
+    committed to git, and an orphan calibration for a session whose ingest then failed would be
+    a file in the repository describing something that does not exist.
+    """
+    root = Path(data_root)
+    staged = staging_dir(root, draft.session_id)
+    if staged.exists():
+        # A previous attempt that failed *before* moving anything. Its captures are the ones
+        # about to be re-staged, so this is not a loss — `dataset_api.commit` resumes from the
+        # staging directory instead of calling this when the draft is already staged.
+        shutil.rmtree(staged)
+    staged.parent.mkdir(parents=True, exist_ok=True)
+
+    draft.log["status"] = STATUS_COMMITTING
+    draft.log["staged"] = True
+    save(draft)
+
+    shutil.move(str(draft.raw), str(staged))
+    shutil.copyfile(draft.root / SESSION_LOG, staged / SESSION_LOG)
+    shutil.copyfile(draft.root / CALIB_LOG, staged / CALIB_LOG)
+    return staged
+
+
+def finish(draft: Draft, data_root: Path | str) -> Path:
+    """Rename the staged captures to the session and place the calibration.
+
+    Called only after `ingest_session` has returned. This is the instant the session comes into
+    being: before it, `data/raw/<session_id>` and `data/calib/<session_id>.json` do not exist,
+    so a failed ingest leaves a draft and not a half-session nobody can name.
+
+    `os.replace` rather than `shutil.move`, because the destination is guaranteed absent by
+    `commit_guard` — or emptied here under a confirmed replacement — and a rename within one
+    directory is the closest thing to an instant this can be.
+
+    One window remains and is not papered over: `ingest_session` writes `metadata.csv` as its
+    last act, so a crash between that write and this rename leaves rows whose captures are still
+    under the staging name. Re-running the commit converges, because `_clear_session_processed`
+    and `replace_session_rows` both key on the session id. That is the recovery, not a claim
+    that the window does not exist.
+    """
+    root = Path(data_root)
+    staged = staging_dir(root, draft.session_id)
+    session_dir = root / "raw" / draft.session_id
+    if session_dir.exists():
+        # Only reachable once `commit_guard(replace=True)` has passed.
+        shutil.rmtree(session_dir)
+
+    os.replace(staged, session_dir)
+
+    calib_dir = root / "calib"
+    calib_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(session_dir / CALIB_LOG, calib_dir / f"{draft.session_id}.json")
+
+    draft.log["staged"] = False
+    save(draft)
+    return session_dir
 
 
 # --------------------------------------------------------------------------- #
