@@ -812,3 +812,43 @@ def test_the_matrix_is_empty_before_there_is_a_dataset(client):
 
     assert matrix["sessions"] == []
     assert matrix["classes"] == []
+
+
+def test_the_committed_report_points_at_files_that_exist(client, roots):
+    """The failure mode the staging name could have introduced, through the whole HTTP path.
+
+    `data/ingest_report.json` is a committed file that records each rejected frame's path. The
+    browser commit ingests from `data/raw/.incoming-<session_id>/` and renames that directory
+    away the moment it finishes, so a path recorded from where the file *was* would be a file
+    in the repository pointing at nothing.
+
+    `test_ingest.py` covers the same property at the ingest level. This one covers it where it
+    would actually happen: a session committed through `/dades`, containing a frame the gate
+    refuses, audited after the rename.
+    """
+    import json
+
+    import numpy as np
+
+    data_root, _drafts_root = roots
+    calibrated_draft(client)
+    for i in range(3):
+        upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg(i), f"IMG_{i}.jpg")
+    # No markers at all in a calibrated session: `docs/02` §6 rejects it as `partial`.
+    blank = a_png(np.full((400, 400, 3), 128, np.uint8))
+    refused = upload(
+        client, "/api/drafts/20260830-01/frames?freq_hz=440", blank, "blank.png", "image/png"
+    ).json()
+    assert refused["reason"] == "partial", refused
+
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    assert wait_for_commit(client)["status"] == "done"
+
+    report = json.loads((data_root / "ingest_report.json").read_text("utf-8"))
+    listed = report["sessions"]["20260830-01"]["rejected_images"]
+
+    assert listed, "the rejected frame should be in the report"
+    for item in listed:
+        assert ".incoming" not in item["path"], item["path"]
+        assert (data_root / item["path"]).is_file(), item["path"]
+        assert item["reason"]
