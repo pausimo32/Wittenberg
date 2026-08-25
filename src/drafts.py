@@ -21,14 +21,20 @@ how a form comes to accept a session that ingest then rejects.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
+import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import cv2
+import numpy as np
+
+from imageio import SUPPORTED_SUFFIXES, thumbnail
 from ingest import SESSION_LOG, read_session_log
 from metadata import validate_session_id
 
@@ -36,6 +42,19 @@ from metadata import validate_session_id
 DRAFTS_ROOT = Path(__file__).resolve().parents[1] / "drafts"
 
 DRAFT_LOG = "draft.json"
+
+FRAMES_LOG = "frames.json"
+DUPLICATES_LOG = "duplicates.json"
+
+#: Rejection thumbnails, not a gallery: they exist so someone can see *why* photo three
+#: failed without leaving the view. 320 px is enough to see that the plate is out of frame
+#: or that the pattern is smeared, and six hundred of them cost nothing.
+PREVIEW_MAX_SIDE = 320
+
+#: A frame whose bytes are on disk but whose verdict has not come back yet. A real state,
+#: not a placeholder: the upload and the gate are two steps of one request, and a frame
+#: that never reached the second one must be visible as something rather than as nothing.
+QUALITY_PENDING = "pending"
 
 STATUS_NEW = "new"
 STATUS_CALIBRATED = "calibrated"
@@ -48,6 +67,18 @@ class DraftError(ValueError):
 
 class DraftConflict(DraftError):
     """The draft cannot do that *because of state the user can see and decide about*."""
+
+
+class DraftDuplicate(DraftConflict):
+    """This frame is already in the draft."""
+
+
+class DuplicateName(DraftDuplicate):
+    """Same filename, same class — the folder was dropped twice."""
+
+
+class DuplicateContent(DraftDuplicate):
+    """Same bytes as a frame already in the draft, under any name, in any class."""
 
 
 @dataclass(frozen=True)
@@ -145,6 +176,232 @@ def discard(drafts_root: Path | str, draft_id: str) -> None:
     `data/` is not touched, because nothing of this draft was ever in `data/`.
     """
     shutil.rmtree(_within(drafts_root, draft_id), ignore_errors=True)
+
+
+# --------------------------------------------------------------------------- #
+# the frames
+# --------------------------------------------------------------------------- #
+
+#: `frames.json` is a read-modify-write and the upload route runs in Starlette's thread pool
+#: with three uploads in flight. Without this, two frames stored in the same instant read the
+#: same log and the second write drops the first — silently, and in exactly the situation the
+#: whole view exists for. One process, one lock; it is held for a file write and a JSON dump,
+#: never across the 560 ms decode.
+_LOG_LOCK = threading.Lock()
+
+
+def store_frame(draft: Draft, freq_hz: int, filename: str, data: bytes) -> dict[str, Any]:
+    """Write one upload to the draft, **byte for byte**.
+
+    The bytes are not decoded, re-encoded, rotated, stripped of EXIF or resized on the way in.
+    `docs/02` §4 calls `data/raw/` "untouched, straight off the phone", and a draft is what
+    becomes `data/raw/`. Every preview this module writes is generated from the file *after*
+    it has been written, so the picture on screen can never be evidence about bytes that were
+    not stored.
+
+    The stored name is `IMG_<nnnn><ext>` by arrival order within the class, because ingest
+    derives `image_id` from the trailing number of the stem (`docs/02` §4) and two phones will
+    happily both produce `IMG_0001`. The name the file arrived with is kept in the record.
+
+    **The same bytes are refused, whatever they are called.** Six hundred uploads over a
+    connection that stumbles means someone retries a batch. A repeated frame trips no threshold
+    and quietly unbalances the classes, and with a burst whose frames are already near-identical
+    to each other, nobody is going to catch it by looking. The SHA-256 is being computed for the
+    integrity check anyway, so this costs nothing: the upload is recorded as a duplicate — a
+    third category, neither accepted nor rejected by quality — and the bytes are not stored.
+
+    The record is written here rather than when the verdict comes back, because the index the
+    frame is numbered with and the hash it is checked against are both read from a log that the
+    two uploads running beside it have not written to yet.
+    """
+    suffix = Path(filename).suffix.lower()
+    if suffix not in SUPPORTED_SUFFIXES:
+        raise DraftError(
+            f"{filename}: suffix {suffix!r} is not one of {', '.join(SUPPORTED_SUFFIXES)}"
+        )
+
+    freq = int(freq_hz)
+    digest = hashlib.sha256(data).hexdigest()
+
+    with _LOG_LOCK:
+        log = _frames_log(draft)
+        entries = log.setdefault(str(freq), [])
+
+        if any(r["original_filename"] == filename for r in entries):
+            raise DuplicateName(
+                f"{filename} is already in the {freq} Hz class of this draft — the folder was "
+                f"probably dropped twice"
+            )
+
+        # Draft-wide, not class-wide: one photograph is one frequency, so the same capture
+        # appearing under a second label is a mistake wherever it lands.
+        for other in (r for rows in log.values() for r in rows):
+            if other["sha256"] == digest:
+                _record_duplicate(draft, filename, freq, digest, other)
+                raise DuplicateContent(
+                    f"{filename} has the same bytes as {other['name']} "
+                    f"({other['original_filename']}, {other['freq_hz']} Hz) — it is the same "
+                    f"capture uploaded twice, and a repeated frame is not a second observation"
+                )
+
+        freq_dir = draft.raw / str(freq)
+        freq_dir.mkdir(parents=True, exist_ok=True)
+
+        # `len(entries) + 1` is not enough on its own: `remove_frame` leaves a hole in the
+        # numbering on purpose — the names are the image_ids ingest will derive, and closing a
+        # gap would change the identity of frames that were already gated.
+        taken = {r["name"] for r in entries}
+        index = len(entries) + 1
+        while f"IMG_{index:04d}{suffix}" in taken:
+            index += 1
+        path = freq_dir / f"IMG_{index:04d}{suffix}"
+        path.write_bytes(data)
+
+        record = {
+            "name": path.name,
+            "original_filename": filename,
+            "freq_hz": freq,
+            "quality": QUALITY_PENDING,
+            "reason": None,
+            "metrics": {},
+            "sha256": digest,
+            "preview": False,
+        }
+        log[str(freq)] = sorted([*entries, record], key=lambda r: r["name"])
+        _write_frames_log(draft, log)
+        return dict(record)
+
+
+def record_verdict(
+    draft: Draft,
+    record: Mapping[str, Any],
+    quality: str,
+    reason: str | None,
+    metrics: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Fill in one live-gate verdict, so a reload does not re-decode six hundred photos.
+
+    An update to the row `store_frame` already wrote, never an insert: the bytes and the verdict
+    arrive at different moments and only one of them can be lost.
+    """
+    freq, name = str(int(record["freq_hz"])), str(record["name"])
+    with _LOG_LOCK:
+        log = _frames_log(draft)
+        updated: dict[str, Any] | None = None
+        for row in log.get(freq, []):
+            if row["name"] == name:
+                row.update(
+                    quality=quality,
+                    reason=reason,
+                    metrics=dict(metrics),
+                    preview=preview_path(draft, int(freq), name, "original").exists(),
+                )
+                updated = row
+        if updated is None:
+            raise DraftError(f"no frame {name} in the {freq} Hz class of {draft.draft_id}")
+        _write_frames_log(draft, log)
+        return dict(updated)
+
+
+def frame_records(draft: Draft, freq_hz: int | None = None) -> list[dict[str, Any]]:
+    log = _frames_log(draft)
+    if freq_hz is not None:
+        return list(log.get(str(int(freq_hz)), []))
+    return [r for freq in sorted(log, key=int) for r in log[freq]]
+
+
+def frame_path(draft: Draft, record: Mapping[str, Any]) -> Path:
+    return draft.raw / str(int(record["freq_hz"])) / str(record["name"])
+
+
+def duplicate_records(draft: Draft) -> list[dict[str, Any]]:
+    """Uploads refused for being bytes the draft already has.
+
+    Kept rather than discarded: a retried batch is a fact about the afternoon, and the count is
+    what tells you it happened.
+    """
+    path = draft.root / DUPLICATES_LOG
+    return json.loads(path.read_text("utf-8")) if path.is_file() else []
+
+
+def write_previews(
+    draft: Draft, path: Path, freq_hz: int, original: np.ndarray, edges: np.ndarray | None
+) -> None:
+    """Both previews of a rejected frame, from arrays decoded out of `path`.
+
+    `edges` is `None` for a `partial` frame: without four markers there is no rectified plate,
+    so there is no edge map that means anything. Showing one anyway would be showing a
+    rectification that did not happen.
+    """
+    target = preview_path(draft, freq_hz, path.name, "original")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    bgr = (
+        cv2.cvtColor(original, cv2.COLOR_RGBA2BGR)
+        if original.ndim == 3 and original.shape[2] == 4
+        else original
+    )
+    cv2.imwrite(str(target), thumbnail(bgr, PREVIEW_MAX_SIDE))
+    if edges is not None:
+        cv2.imwrite(
+            str(preview_path(draft, freq_hz, path.name, "edges")),
+            thumbnail(edges, PREVIEW_MAX_SIDE),
+        )
+
+
+def preview_path(draft: Draft, freq_hz: int, name: str, kind: str) -> Path:
+    return draft.root / "preview" / str(int(freq_hz)) / f"{Path(name).stem}.{kind}.png"
+
+
+def remove_frame(draft: Draft, freq_hz: int, name: str) -> None:
+    """Take one frame back out.
+
+    The names of the frames after it are left alone — they are already in `frames.json`, and
+    renumbering them would change their `image_id`s.
+    """
+    freq = str(int(freq_hz))
+    (draft.raw / freq / Path(name).name).unlink(missing_ok=True)
+    for kind in ("original", "edges"):
+        preview_path(draft, freq_hz, name, kind).unlink(missing_ok=True)
+    with _LOG_LOCK:
+        log = _frames_log(draft)
+        log[freq] = [r for r in log.get(freq, []) if r["name"] != name]
+        _write_frames_log(draft, log)
+
+
+def size_on_disk(draft: Draft) -> int:
+    """Bytes under the draft directory.
+
+    Walked, not cached: a cached number goes stale on the first removal and then lies quietly.
+    Three open drafts are a few gigabytes, and whoever has to delete one wants to know which.
+    """
+    return sum(p.stat().st_size for p in draft.root.rglob("*") if p.is_file())
+
+
+def _record_duplicate(
+    draft: Draft, filename: str, freq_hz: int, digest: str, matches: Mapping[str, Any]
+) -> None:
+    """Called with `_LOG_LOCK` held."""
+    path = draft.root / DUPLICATES_LOG
+    entries = json.loads(path.read_text("utf-8")) if path.is_file() else []
+    entries.append(
+        {
+            "original_filename": filename,
+            "freq_hz": int(freq_hz),
+            "sha256": digest,
+            "matches": matches["name"],
+            "matches_freq_hz": matches["freq_hz"],
+        }
+    )
+    path.write_text(json.dumps(entries, indent=2, ensure_ascii=False), "utf-8")
+
+
+def _frames_log(draft: Draft) -> dict[str, list[dict[str, Any]]]:
+    path = draft.root / FRAMES_LOG
+    return json.loads(path.read_text("utf-8")) if path.is_file() else {}
+
+
+def _write_frames_log(draft: Draft, log: Mapping[str, Any]) -> None:
+    (draft.root / FRAMES_LOG).write_text(json.dumps(log, indent=2, ensure_ascii=False), "utf-8")
 
 
 def _within(drafts_root: Path | str, draft_id: str) -> Path:

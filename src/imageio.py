@@ -29,6 +29,7 @@ import io
 from pathlib import Path
 from typing import NamedTuple
 
+import cv2
 import numpy as np
 from PIL import Image, ImageCms, UnidentifiedImageError
 
@@ -75,6 +76,24 @@ class Decoded(NamedTuple):
     orientation: int
     source_profile: str | None
     format: str
+
+
+def thumbnail(image: np.ndarray, max_side: int) -> np.ndarray:
+    """A display copy with its longest side capped. Never returned to the pipeline.
+
+    One implementation, because there are now two callers — the pipeline viewer's stage 1 and
+    `/dades`'s rejection thumbnails — and a resize that differed between them would be a
+    difference nobody would ever see reported.
+    """
+    height, width = image.shape[:2]
+    longest = max(height, width)
+    if longest <= max_side:
+        return image
+    scale = max_side / longest
+    return cv2.resize(
+        image, (max(1, round(width * scale)), max(1, round(height * scale))),
+        interpolation=cv2.INTER_AREA,
+    )
 
 
 def decode(path: Path | str) -> Decoded:
