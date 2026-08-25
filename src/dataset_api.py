@@ -17,6 +17,7 @@ Three rules shape every route here:
 from __future__ import annotations
 
 import base64
+import threading
 from pathlib import Path
 from typing import Annotated, Any, NamedTuple
 
@@ -28,12 +29,55 @@ from fastapi.responses import FileResponse, Response
 import drafts as drafts_module
 from calibrate import ROI_MODE_HOMOGRAPHY
 from imageio import UnsupportedImageError, decode_bytes, thumbnail
-from ingest import IngestError, assess_frame, verdict_of
+from ingest import IngestError, assess_frame, ingest_session, verdict_of
 from metadata import MixedProvenanceError
+from split import SplitError, split_dataset
 
 #: The calibration preview is the one picture in this view someone squints at, so it gets
 #: twice a rejection thumbnail's side and no more.
 CALIBRATION_PREVIEW_MAX_SIDE = drafts_module.PREVIEW_MAX_SIDE * 2
+
+
+class CommitJob:
+    """One commit, running on a thread, with a counter the view can poll.
+
+    `progress` is called from the worker thread and only ever rebinds two integers; the route
+    only ever reads them. No lock, because there is nothing to keep consistent between them —
+    a `done` read one frame stale is a progress bar one frame stale, and the terminal states
+    are set after the fields they describe.
+    """
+
+    def __init__(self, total: int) -> None:
+        self.status = "running"
+        self.phase = "stage"
+        self.done = 0
+        self.total = total
+        self.report: dict[str, Any] | None = None
+        self.error: dict[str, str] | None = None
+
+    def progress(self, done: int, total: int) -> None:
+        self.done, self.total, self.phase = done, total, "ingest"
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "phase": self.phase,
+            "done": self.done,
+            "total": self.total,
+            "report": self.report,
+            "error": self.error,
+        }
+
+
+#: What a draft nobody has committed answers. Copied before returning, never handed out.
+IDLE: dict[str, Any] = {
+    "status": "idle",
+    "phase": None,
+    "done": 0,
+    "total": 0,
+    "report": None,
+    "error": None,
+}
 
 
 class DatasetState(NamedTuple):
@@ -243,6 +287,139 @@ def dataset_router(state: DatasetState) -> APIRouter:
         if not path.is_file():
             raise conflict("no_preview", f"no {kind} preview for {name}", status=404)
         return FileResponse(path, media_type="image/png")
+
+    @router.post("/drafts/{draft_id}/commit", status_code=202)
+    def commit(
+        draft_id: str,
+        replace: bool = False,
+        jobs: Annotated[
+            int | None, Query(description="worker processes; 1 forces everything serial")
+        ] = None,
+    ) -> dict[str, Any]:
+        """Step 5. Stage, ingest, and only then a session.
+
+        Every guard runs on this thread, before the worker starts, so a refusal is an HTTP
+        status the view can act on rather than a job that fails somewhere later — and so that a
+        refused commit leaves the session it refused to replace exactly as it was.
+
+        The order inside the worker is the property this whole round is built around: the
+        captures move to `data/raw/.incoming-<session_id>/`, `ingest_session` runs *there*, and
+        only once it returns does `finish` rename the directory to the session's own name and
+        place the calibration. At any instant either the draft exists or the session exists,
+        never a third thing. A draft left `staged` by an attempt that died in the ingest is
+        resumed from where its captures already are rather than staged again.
+        """
+        draft = load(draft_id)
+        running = jobs_registry.get(draft_id)
+        if running is not None and running.status == "running":
+            raise conflict("commit_running", "this draft is already being committed")
+
+        try:
+            drafts_module.commit_guard(draft, state.data_root, replace)
+        except MixedProvenanceError as exc:
+            raise conflict("mixed_provenance", str(exc)) from exc
+        except drafts_module.DraftConflict as exc:
+            rows = drafts_module.existing_rows(state.data_root, draft.session_id)
+            if rows:
+                code = "session_exists"
+            elif not drafts_module.frame_records(draft):
+                code = "no_frames"
+            else:
+                code = "not_calibrated"
+            raise HTTPException(
+                status_code=409,
+                detail={"code": code, "message": str(exc), "existing_rows": rows},
+            ) from exc
+
+        job = CommitJob(total=len(drafts_module.frame_records(draft)))
+        jobs_registry[draft_id] = job
+        staged_already = bool(draft.log.get("staged")) and drafts_module.staging_dir(
+            state.data_root, draft.session_id
+        ).is_dir()
+
+        def work() -> None:
+            try:
+                staged = (
+                    drafts_module.staging_dir(state.data_root, draft.session_id)
+                    if staged_already
+                    else drafts_module.stage(draft, state.data_root)
+                )
+                report = ingest_session(
+                    draft.session_id,
+                    state.data_root,
+                    jobs=jobs,
+                    progress=job.progress,
+                    session_dir=staged,
+                )
+                # Only now does the session come into being.
+                job.phase = "rename"
+                drafts_module.finish(draft, state.data_root)
+                job.report = {
+                    "session_id": report.session_id,
+                    "total": report.total,
+                    "accepted": report.accepted,
+                    "rejected": report.rejected,
+                    "by_reason": report.by_reason,
+                    "by_class": report.by_class,
+                    "roi_mode": report.roi_mode,
+                    "flags": report.flags,
+                }
+                # The draft has served its purpose and its captures are now in `data/`.
+                job.phase = "finished"
+                drafts_module.discard(state.drafts_root, draft_id, state.data_root)
+                # `done` last, and deliberately: it is the flag a polling client stops on, so
+                # anything set after it is work the client has already been told is finished.
+                job.status = "done"
+            except Exception as exc:                    # noqa: BLE001 — reported, not swallowed
+                job.status = "failed"
+                job.error = {"type": type(exc).__name__, "message": str(exc)}
+
+        threading.Thread(target=work, name=f"commit-{draft_id}", daemon=True).start()
+        return job.as_dict()
+
+    @router.get("/drafts/{draft_id}/commit")
+    def commit_status(draft_id: str) -> dict[str, Any]:
+        """Where the commit has got to. Polled, not streamed.
+
+        Requirement 2 says a reload must find the session where it was, and a reload drops an
+        `EventSource` exactly as it drops React state. A number that can be asked for again
+        survives what a stream does not, and there is one client on the far side of
+        `127.0.0.1`.
+        """
+        job = jobs_registry.get(draft_id)
+        if job is not None:
+            return job.as_dict()
+
+        # No job in this process. A draft still marked `committing` means the server was
+        # restarted mid-commit; saying "idle" there would invite someone to start again over a
+        # staging directory nobody mentioned.
+        try:
+            draft = drafts_module.read(state.drafts_root, draft_id)
+        except (drafts_module.DraftError, ValueError):
+            return dict(IDLE)
+        if draft.status == drafts_module.STATUS_COMMITTING:
+            return {
+                **IDLE,
+                "status": "interrupted",
+                "error": {
+                    "type": "Interrupted",
+                    "message": (
+                        f"the commit of {draft_id} was interrupted. Its captures are staged at "
+                        f"{drafts_module.staging_dir(state.data_root, draft_id)} and no session "
+                        f"{draft_id} exists yet. Committing again resumes from there; "
+                        f"discarding the draft removes the staged captures with it."
+                    ),
+                },
+            }
+        return dict(IDLE)
+
+    @router.post("/dataset/split")
+    def run_split() -> dict[str, Any]:
+        """Step 6. `src/split.py`, seed 42, grouped by session — never random (hard rule 3)."""
+        try:
+            return split_dataset(state.data_root)
+        except SplitError as exc:
+            raise conflict("split_failed", str(exc)) from exc
 
     return router
 

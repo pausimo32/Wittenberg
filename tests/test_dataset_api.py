@@ -12,6 +12,8 @@ mount unconditional, so the assertion cannot pass by the fallback simply being a
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import pytest
 from fastapi.testclient import TestClient
 from test_drafts import HEADER, SESSION, a_jpeg, dir_fingerprint, marker_board
@@ -516,3 +518,265 @@ def test_uploading_a_frame_writes_nothing_under_data(client, roots):
     upload(client, "/api/drafts/20260830-01/frames?freq_hz=440", a_jpeg())
 
     assert dir_fingerprint(data_root) == before
+
+
+# --------------------------------------------------------------------------- #
+# the commit — stage, ingest, and only then a session
+# --------------------------------------------------------------------------- #
+
+def fill(client, classes=(440, 620), per_class=3):
+    calibrated_draft(client)
+    n = 0
+    for freq in classes:
+        for _ in range(per_class):
+            upload(
+                client,
+                f"/api/drafts/20260830-01/frames?freq_hz={freq}",
+                a_jpeg(n),
+                f"IMG_{n}.jpg",
+            )
+            n += 1
+    return n
+
+
+def wait_for_commit(client, draft_id="20260830-01", limit=4000):
+    for _ in range(limit):
+        status = client.get(f"/api/drafts/{draft_id}/commit").json()
+        if status["status"] in {"done", "failed"}:
+            return status
+    raise AssertionError("the commit never finished")
+
+
+def test_commit_ingests_the_session_and_clears_the_draft(client, roots):
+    data_root, drafts_root = roots
+    total = fill(client)
+
+    started = client.post("/api/drafts/20260830-01/commit?jobs=1")
+    assert started.status_code == 202, started.text
+    status = wait_for_commit(client)
+
+    assert status["status"] == "done", status
+    assert status["report"]["total"] == total
+    assert (data_root / "raw" / "20260830-01" / "session.json").is_file()
+    assert (data_root / "calib" / "20260830-01.json").is_file()
+    assert (data_root / "metadata.csv").is_file()
+    assert not (drafts_root / "20260830-01").exists()
+    assert not (data_root / "raw" / ".incoming-20260830-01").exists()
+
+
+def test_the_committed_rows_are_the_ones_ingest_would_have_written(client, roots):
+    """The commit calls `ingest_session`; this is what says so. Every row carries the session
+    id, the class it was labelled with, and a `quality` from the §6 vocabulary."""
+    from metadata import QUALITY_VALUES, read_metadata
+
+    data_root, _drafts_root = roots
+    total = fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+
+    rows = read_metadata(data_root / "metadata.csv")
+
+    assert len(rows) == total
+    assert {r["session_id"] for r in rows} == {"20260830-01"}
+    assert {int(r["freq_hz"]) for r in rows} == {440, 620}
+    assert all(r["quality"] in QUALITY_VALUES for r in rows)
+    assert all(r["material"] == "sand" for r in rows)     # the session log became the columns
+
+
+def test_a_failed_commit_leaves_no_session_and_can_be_resumed(client, roots, monkeypatch):
+    """Requirement 6, end to end. A disk that fills up or one corrupt capture must not leave a
+    half-moved session that nobody can name."""
+    import dataset_api
+
+    data_root, drafts_root = roots
+    total = fill(client)
+
+    real = dataset_api.ingest_session
+
+    def explode(*_args, **_kwargs):
+        raise OSError("no space left on device")
+
+    monkeypatch.setattr(dataset_api, "ingest_session", explode)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    failed = wait_for_commit(client)
+
+    assert failed["status"] == "failed"
+    assert failed["error"]["type"] == "OSError"
+    assert not (data_root / "raw" / "20260830-01").exists()
+    assert not (data_root / "calib" / "20260830-01.json").exists()
+    assert (data_root / "raw" / ".incoming-20260830-01").is_dir()
+    assert (drafts_root / "20260830-01").is_dir()
+
+    monkeypatch.setattr(dataset_api, "ingest_session", real)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    done = wait_for_commit(client)
+
+    assert done["status"] == "done", done
+    assert done["report"]["total"] == total
+    assert (data_root / "raw" / "20260830-01" / "session.json").is_file()
+    assert not (data_root / "raw" / ".incoming-20260830-01").exists()
+    assert not (drafts_root / "20260830-01").exists()
+
+
+def test_an_interrupted_commit_is_reported_as_interrupted(client, roots, tmp_path, config, monkeypatch):
+    """The server restarted mid-commit: no job in this process, a draft stuck in `committing`.
+    Saying "idle" there would invite someone to start again over a staged directory."""
+    import dataset_api
+
+    data_root, drafts_root = roots
+    fill(client)
+    monkeypatch.setattr(
+        dataset_api,
+        "ingest_session",
+        lambda *_a, **_k: (_ for _ in ()).throw(OSError("boom")),
+    )
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+
+    fresh = make_app(tmp_path, "restarted", config, data_root, drafts_root)
+    with TestClient(fresh) as other:
+        status = other.get("/api/drafts/20260830-01/commit").json()
+
+    assert status["status"] == "interrupted"
+    assert ".incoming-20260830-01" in status["error"]["message"]
+
+
+def test_discarding_a_failed_commit_takes_the_staged_captures(client, roots, monkeypatch):
+    import dataset_api
+
+    data_root, _drafts_root = roots
+    fill(client)
+    monkeypatch.setattr(
+        dataset_api,
+        "ingest_session",
+        lambda *_a, **_k: (_ for _ in ()).throw(OSError("boom")),
+    )
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+
+    assert client.delete("/api/drafts/20260830-01").status_code == 204
+
+    assert not (data_root / "raw" / ".incoming-20260830-01").exists()
+    assert list((data_root / "raw").iterdir()) == []
+
+
+def test_commit_refuses_an_existing_session_without_replace(client):
+    """Requirement 4. Idempotent means repeating does not duplicate, not that repeating was
+    what anyone wanted."""
+    fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+    fill(client)   # the same session id, a second draft
+
+    refused = client.post("/api/drafts/20260830-01/commit?jobs=1")
+
+    assert refused.status_code == 409
+    assert refused.json()["detail"]["code"] == "session_exists"
+    assert refused.json()["detail"]["existing_rows"] > 0
+
+
+def test_a_refused_commit_does_not_touch_the_session_it_refused_to_replace(client, roots):
+    """The refusal happens before anything moves, so the afternoon that is already in the
+    dataset is exactly as it was."""
+    data_root, drafts_root = roots
+    fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+    before = dir_fingerprint(data_root)
+
+    fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+
+    assert dir_fingerprint(data_root) == before
+    assert (drafts_root / "20260830-01" / "raw").is_dir()   # its captures are still its own
+
+
+def test_re_ingesting_a_session_twice_produces_one_set_of_rows(client, roots):
+    """`docs/05` §9, acceptance test 3."""
+    from metadata import read_metadata
+
+    data_root, _drafts_root = roots
+    total = fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+    fill(client)
+    client.post("/api/drafts/20260830-01/commit?replace=true&jobs=1")
+    wait_for_commit(client)
+
+    rows = read_metadata(data_root / "metadata.csv")
+
+    assert len(rows) == total
+    assert len({r["image_id"] for r in rows}) == total
+
+
+def test_commit_reports_progress(client):
+    """Requirement 5: six hundred files are not six, so the number has to move."""
+    total = fill(client, per_class=4)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+
+    seen = []
+    for _ in range(4000):
+        status = client.get("/api/drafts/20260830-01/commit").json()
+        seen.append(status["done"])
+        if status["status"] in {"done", "failed"}:
+            break
+
+    assert seen[-1] == total
+    assert all(a <= b for a, b in pairwise(seen))
+
+
+def test_commit_refuses_a_draft_with_no_frames(client):
+    calibrated_draft(client)
+
+    response = client.post("/api/drafts/20260830-01/commit")
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "no_frames"
+
+
+def test_commit_refuses_an_uncalibrated_draft(client):
+    client.post("/api/drafts", json=SESSION)
+
+    response = client.post("/api/drafts/20260830-01/commit")
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] in {"no_frames", "not_calibrated"}
+
+
+def test_a_second_commit_while_one_is_running_is_refused(client):
+    fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+
+    second = client.post("/api/drafts/20260830-01/commit?jobs=1")
+
+    # Either the first is still running (409) or it finished between the two calls, in which
+    # case the draft is gone and this is a 404. Both are refusals; neither starts a second job.
+    assert second.status_code in (404, 409)
+    if second.status_code == 409:
+        assert second.json()["detail"]["code"] == "commit_running"
+    wait_for_commit(client)
+
+
+def test_commit_status_is_idle_for_a_draft_nobody_has_committed(client):
+    calibrated_draft(client)
+
+    status = client.get("/api/drafts/20260830-01/commit").json()
+
+    assert status["status"] == "idle"
+    assert status["report"] is None
+
+
+def test_split_runs_by_session(client, roots):
+    fill(client)
+    client.post("/api/drafts/20260830-01/commit?jobs=1")
+    wait_for_commit(client)
+
+    response = client.post("/api/dataset/split")
+
+    # One session cannot be partitioned three ways; the refusal is the correct answer and it
+    # has to be legible rather than a 500.
+    assert response.status_code in (200, 409)
+    if response.status_code == 409:
+        assert response.json()["detail"]["code"] == "split_failed"
+    else:
+        assert response.json()["seed"] == 42
