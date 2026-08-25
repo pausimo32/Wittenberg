@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
-from test_drafts import HEADER, SESSION, a_jpeg, dir_fingerprint
+from test_drafts import HEADER, SESSION, a_jpeg, dir_fingerprint, marker_board
 
 import api
 import drafts
@@ -219,3 +219,100 @@ def test_the_serving_half_is_untouched(client):
 
     assert response.status_code == 200
     assert response.json()["model"] == "wittenberg_v1"
+
+
+def a_png(image) -> bytes:
+    import cv2
+
+    ok, buffer = cv2.imencode(".png", image)
+    assert ok
+    return buffer.tobytes()
+
+
+def upload(client, url, data: bytes, name: str = "IMG_4711.jpg", kind: str = "image/jpeg"):
+    return client.post(url, files={"file": (name, data, kind)})
+
+
+def test_calibration_returns_the_quad_and_a_preview(client, roots):
+    from calibrate import load_calibration_config
+
+    data_root, _drafts_root = roots
+    before = dir_fingerprint(data_root)
+    client.post("/api/drafts", json=SESSION)
+    board = marker_board(load_calibration_config())
+
+    response = upload(
+        client, "/api/drafts/20260830-01/calibration",
+        a_png(board[..., :3]), "calib.png", "image/png",
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["calibration"]["ok"] is True
+    assert response.json()["calibration"]["n_markers"] == 4
+    assert response.json()["preview"]
+    assert client.get("/api/drafts/20260830-01").json()["calibrated"] is True
+    # `data/calib/` gets its copy at commit; a draft that is abandoned here leaves nothing.
+    assert dir_fingerprint(data_root) == before
+
+
+def test_calibration_without_markers_reports_how_many_were_found(client):
+    import numpy as np
+
+    client.post("/api/drafts", json=SESSION)
+
+    response = upload(
+        client, "/api/drafts/20260830-01/calibration",
+        a_png(np.full((400, 400, 3), 255, np.uint8)), "blank.png", "image/png",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["calibration"]["ok"] is False
+    assert response.json()["calibration"]["n_markers"] == 0
+    # The picture comes back even though the detection failed: "no markers found" is what the
+    # person at the rig has to act on, and they act on it by looking at the frame.
+    assert response.json()["preview"]
+    assert client.get("/api/drafts/20260830-01").json()["calibrated"] is False
+
+
+def test_the_quad_is_drawn_where_the_markers_are(client):
+    """The preview is the only evidence anyone has that the calibration is right.
+
+    A capture is larger than the preview, so the quad has to be scaled by exactly the factor
+    the thumbnail used. Asserting that a PNG came back would pass with the outline drawn
+    somewhere the markers are not — at full-resolution coordinates, for one, which on this
+    frame lands almost entirely outside the picture.
+    """
+    import base64
+
+    import cv2
+    import numpy as np
+
+    from calibrate import load_calibration_config
+    from dataset_api import CALIBRATION_PREVIEW_MAX_SIDE
+
+    client.post("/api/drafts", json=SESSION)
+    # Bigger than the preview, so `thumbnail` really resizes and the scale is under test.
+    side = CALIBRATION_PREVIEW_MAX_SIDE * 3
+    board = cv2.resize(
+        marker_board(load_calibration_config())[..., :3], (side, side),
+        interpolation=cv2.INTER_NEAREST,
+    )
+
+    body = upload(
+        client, "/api/drafts/20260830-01/calibration", a_png(board), "calib.png", "image/png"
+    ).json()
+
+    preview = cv2.imdecode(
+        np.frombuffer(base64.b64decode(body["preview"]), np.uint8), cv2.IMREAD_COLOR
+    )
+    assert max(preview.shape[:2]) == CALIBRATION_PREVIEW_MAX_SIDE
+    scale = preview.shape[1] / side
+    expected = np.array(body["calibration"]["corners"], np.float64) * scale
+
+    ys, xs = np.nonzero(np.all(preview == (0, 190, 0), axis=2))
+    assert xs.size, "no quad was drawn on the preview"
+    # The outline is 2 px thick, so its extent may exceed the corners by a pixel either way.
+    assert abs(xs.min() - expected[:, 0].min()) <= 2
+    assert abs(xs.max() - expected[:, 0].max()) <= 2
+    assert abs(ys.min() - expected[:, 1].min()) <= 2
+    assert abs(ys.max() - expected[:, 1].max()) <= 2

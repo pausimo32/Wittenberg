@@ -16,15 +16,23 @@ Three rules shape every route here:
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Annotated, Any, NamedTuple
 
-from fastapi import APIRouter, HTTPException
+import cv2
+import numpy as np
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 
 import drafts as drafts_module
+from imageio import UnsupportedImageError, decode_bytes, thumbnail
 from ingest import IngestError
 from metadata import MixedProvenanceError
+
+#: The calibration preview is the one picture in this view someone squints at, so it gets
+#: twice a rejection thumbnail's side and no more.
+CALIBRATION_PREVIEW_MAX_SIDE = drafts_module.PREVIEW_MAX_SIDE * 2
 
 
 class DatasetState(NamedTuple):
@@ -118,7 +126,61 @@ def dataset_router(state: DatasetState) -> APIRouter:
         jobs_registry.pop(draft_id, None)
         return Response(status_code=204)
 
+    @router.post("/drafts/{draft_id}/calibration")
+    def calibrate_draft(draft_id: str, file: Annotated[UploadFile, File()]) -> dict[str, Any]:
+        """Step 2. A failed detection is a 200 with `ok: false`, not an error.
+
+        Three markers found is information — it tells the person at the rig where to move the
+        board — and the view needs the picture to act on it. An HTTP error would throw that
+        picture away.
+
+        Declared `def` and not `async def`, for the same reason the frames route is: decoding a
+        12 MP capture and running the ArUco detector over it is most of a second of CPU, and on
+        the event loop that is most of a second in which this process answers nothing at all
+        (hard rule 2). Starlette runs a sync handler in a worker thread instead.
+
+        Nothing is written under `data/`: the calibration lands inside the draft, and only the
+        commit moves it. `docs/05` §9, "uploading is not committing".
+        """
+        draft = load(draft_id)
+        data = file.file.read()
+        if not data:
+            raise conflict("empty_upload", "empty upload", status=400)
+        try:
+            decoded = decode_bytes(data, file.filename)
+        except UnsupportedImageError as exc:
+            raise conflict("unsupported_image", str(exc), status=415) from exc
+
+        # The full-resolution array, every time: the geometry is measured on the pixels the
+        # camera produced, and only the picture that illustrates it is ever made smaller.
+        info = drafts_module.store_calibration(draft, decoded.pixels, state.calibration_config)
+        return {"calibration": info, "preview": _calibration_preview(decoded.pixels, info)}
+
     return router
+
+
+def _calibration_preview(pixels: np.ndarray, info: dict[str, Any]) -> str:
+    """The frame with the plate quad drawn on it, or the bare frame when there is no quad.
+
+    Drawn on a *display-sized copy*: this picture is for looking at, and the calibration it
+    illustrates was computed from the full-resolution array before this function was called.
+    The quad is scaled by the same factor the thumbnail used, so what is outlined on screen is
+    where the markers actually were — an outline drawn at the wrong scale would be the only
+    evidence anyone has about the calibration, saying something that is not true.
+    """
+    bgr = cv2.cvtColor(pixels, cv2.COLOR_RGBA2BGR)
+    view = thumbnail(bgr, CALIBRATION_PREVIEW_MAX_SIDE)
+    scale = view.shape[1] / bgr.shape[1]
+    if info.get("corners"):
+        # `thumbnail` returns its argument untouched when the frame is already small enough,
+        # so draw on a copy rather than into the array it was handed.
+        view = view.copy()
+        quad = (np.array(info["corners"], np.float32) * scale).astype(np.int32)
+        cv2.polylines(view, [quad], isClosed=True, color=(0, 190, 0), thickness=2)
+    ok, buffer = cv2.imencode(".png", view)
+    if not ok:
+        raise RuntimeError("cv2.imencode failed for the calibration preview")
+    return base64.b64encode(buffer.tobytes()).decode("ascii")
 
 
 def _summary(draft: drafts_module.Draft) -> dict[str, Any]:
