@@ -157,14 +157,15 @@ def _region_of_interest(
         raise ValueError(f"unknown roi_mode: {mode!r}")
 
     # Both modes go through the same warp so the two ROI paths cannot drift apart.
-    # Flags are fixed by spec §2 step 2 and deliberately absent from the config.
+    # Both flags come from the config as of spec 1.1.0 (§2 step 2): leaving them in
+    # code meant the pipeline could not be rebuilt from config/preprocess.json alone.
     matrix = cv2.getPerspectiveTransform(source, _destination_quad(size))
     return cv2.warpPerspective(
         image,
         matrix,
         (size, size),
-        flags=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_REPLICATE,
+        flags=_cv_flag(params["roi"]["interpolation"]),
+        borderMode=_cv_flag(params["roi"]["border_mode"]),
     )
 
 

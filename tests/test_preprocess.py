@@ -198,6 +198,7 @@ def test_scale_is_driven_by_the_config(plate_photo, calib_homography, config):
 #: (config section, key, a value differing from the committed one, affected stage).
 #: Every tunable of §2 steps 3 to 7 — none of them may be hardcoded in the module.
 TUNABLES = [
+    ("roi", "interpolation", "INTER_NEAREST", "roi"),
     ("grayscale", "code", "COLOR_BGRA2GRAY", "gray"),
     ("clahe", "clip_limit", 40.0, "clahe"),
     ("clahe", "tile_grid_size", [2, 2], "clahe"),
@@ -242,6 +243,31 @@ def test_unknown_opencv_constant_in_the_config_raises(plate_photo, calib_homogra
     config["resize"]["interpolation"] = "INTER_MAGIC"
 
     with pytest.raises(ValueError, match="INTER_MAGIC"):
+        preprocess(plate_photo, calib_homography, config)
+
+
+#: A quad deliberately hanging off the top-left of `plate_photo` (800x600), so the warp
+#: has to sample outside the frame and the border mode is observable at all. With a quad
+#: entirely inside the image every border mode gives the same pixels.
+_OVERHANGING_QUAD = [[-120.0, -90.0], [520.0, 70.0], [560.0, 430.0], [90.0, 470.0]]
+
+
+def test_roi_border_mode_is_read_from_the_config(plate_photo, config):
+    calib = {"roi_mode": "homography", "corners": _OVERHANGING_QUAD}
+    replicate = preprocess_stages(plate_photo, calib, config).roi
+
+    config["roi"]["border_mode"] = "BORDER_CONSTANT"
+    constant = preprocess_stages(plate_photo, calib, config).roi
+
+    # BORDER_CONSTANT fills the overhang with zeros; BORDER_REPLICATE extends the edge.
+    assert not np.array_equal(constant, replicate)
+    assert constant[0, 0].max() == 0
+
+
+def test_unknown_roi_border_mode_in_the_config_raises(plate_photo, calib_homography, config):
+    config["roi"]["border_mode"] = "BORDER_MAGIC"
+
+    with pytest.raises(ValueError, match="BORDER_MAGIC"):
         preprocess(plate_photo, calib_homography, config)
 
 
