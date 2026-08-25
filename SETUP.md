@@ -1,7 +1,11 @@
-# Setup — Wittenberg on native Windows with an NVIDIA GPU
+# Setup — Wittenberg on any computer, CPU only
 
-Environment this file assumes: **Windows, VSCode with the Claude Code extension, NVIDIA GPU,
-no WSL.** See `docs/adr/0003` for why the training framework is PyTorch and not TensorFlow.
+Environment this file assumes: **Windows, VSCode with the Claude Code extension, no WSL.** The
+app itself needs **no GPU on any machine**. See `docs/adr/0003` for why the framework is PyTorch, and `docs/adr/0005` for why the app
+needs no GPU at all: inference is ≈ 12 ms on CPU and the checkpoint is 1.17 MB.
+
+Training is the only step that wants a GPU. It runs on the team's RTX 5070 a handful of times,
+on that machine only, and is not part of the app (`docs/00-master-plan.md`, F4). See §5b.
 
 ## 0. Prerequisites
 
@@ -10,7 +14,6 @@ no WSL.** See `docs/adr/0003` for why the training framework is PyTorch and not 
 | Claude Code | extension ≥ 2.1.219 (Opus 5 needs it). The version is the folder name under `%USERPROFILE%\.vscode\extensions\anthropic.claude-code-*` |
 | Python 3.11 | `python --version` |
 | Node 20 | `node --version` |
-| NVIDIA driver | `nvidia-smi` — note the CUDA version it reports |
 | Git | `git --version` |
 
 **The CLI is optional.** `claude --version` failing because there is no binary on PATH is
@@ -129,16 +132,29 @@ things that are easy to get silently wrong:
 - **OpenCV is the pinned version.** Not for cross-language parity — there is only one
   implementation now — but so that all three of you, and a reader reproducing this in a year,
   get the same pixels (`docs/03-preprocessing-spec.md` §5.3).
-- **The GPU is visible.** `cuda available: True` plus the device name.
+- **The device is reported.** `python tasks.py check-device` prints `cuda: False` on a machine
+  without a GPU, and that is a **PASS**. CPU is the supported configuration: ≈ 24 ms
+  preprocessing + ≈ 12 ms inference per image.
 
-If it prints `cuda available: False`, pip installed the CPU-only wheel. Reinstall from the CUDA
-index, matching the CUDA version `nvidia-smi` reported:
+Do not install CUDA wheels. They weigh hundreds of megabytes, the app never uses them, and they
+make the repository fail to install on the next computer you try it on — which is the one thing
+this setup is designed to avoid.
+
+## 5b. The training machine only — RTX 5070
+
+Skip this on any computer that just runs the app; it needs nothing but `requirements.txt`.
 
 ```powershell
-.venv\Scripts\python -m pip uninstall -y torch torchvision
-.venv\Scripts\python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
-python tasks.py check-gpu
+.venv\Scripts\python -m pip install -r requirements-train.txt
+python tasks.py check-device
 ```
+
+`check-device` must print the device **and** `gpu op OK`. It runs a real matrix multiply on
+purpose: RTX 50-series is Blackwell (sm_120), and `cu121`/`cu124` PyTorch builds report
+`cuda: True`, print the card's name correctly, and then fail on the first actual operation with
+`no kernel image is available for execution on the device`. No driver update fixes that — the
+build has to be **cu128 or newer**. Check the current index URL at
+<https://pytorch.org/get-started/locally/> before installing.
 
 ## 6. Verify Claude Code
 
@@ -176,5 +192,4 @@ model and continue. `fable` may bill to usage credits depending on plan and seat
 | `OSError: symbolic link privilege not held` | Something tried `os.symlink`. This repo uses `runs/latest.txt`, a pointer file. Never symlink. |
 | A script works for one team member, not another | a shell-only utility (`grep`, `sed`, `rm`) leaked into a script. Keep those out of anything the team runs. |
 | Paths break with long project names | enable long paths: `git config --system core.longpaths true`. |
-| Training suddenly on CPU after `pip install -U` | plain PyPI overwrote the CUDA wheel. Re-run the §5 reinstall and `check-gpu`. |
 | `pillow-heif` fails to import | install the wheel, not a source build; confirm the Python version matches the wheel. |

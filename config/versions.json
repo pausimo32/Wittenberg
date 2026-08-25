@@ -1,4 +1,5 @@
 {
+  "opencv_package": "opencv-contrib-python",
   "opencv_python": "4.12.0",
-  "_note": "Pinned for reproducibility across the three team members' machines and across time. Checked by `python tasks.py check-versions`. See docs/03-preprocessing-spec.md \u00a75.3."
+  "_note": "MUST be the contrib build: cv2.aruco is not in plain opencv-python and the session calibration depends on it. Never install both. Pinned for reproducibility across machines and across time. Checked by `python tasks.py check-versions`."
 }

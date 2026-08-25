@@ -1,0 +1,21 @@
+# Training only — the team's RTX 5070. NOT installed on machines that just run the app.
+# The app never imports anything from here (ADR 0005).
+#
+# ══════════════════════════════════════════════════════════════════════════════
+#  RTX 50-series is Blackwell, compute capability sm_120.
+#  cu121 and cu124 builds contain NO KERNELS for it. They install fine,
+#  torch.cuda.is_available() returns True, the device name prints — and then the
+#  first real operation dies with:
+#      RuntimeError: CUDA error: no kernel image is available for execution
+#  No driver update fixes this. The build must be cu128 or newer.
+#
+#  Verify the index URL below is still the current one before installing:
+#      https://pytorch.org/get-started/locally/
+# ══════════════════════════════════════════════════════════════════════════════
+--index-url https://download.pytorch.org/whl/cu128
+
+torch>=2.7
+torchvision
+
+# then, from the normal index:
+#   pip install -r requirements.txt --no-deps  (for cv2, pandas, sklearn, matplotlib)

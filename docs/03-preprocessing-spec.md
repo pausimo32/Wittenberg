@@ -152,7 +152,36 @@ conversion. If a user later feeds a re-compressed JPEG, quantisation artefacts s
 spurious edges. Test it (`tests/test_jpeg_robustness.py`) rather than assuming; if accuracy drops
 materially, say so in the TDR limitations.
 
-**5.3 OpenCV version pinning.** `opencv-python` is pinned in `config/versions.json` and asserted
+**5.3a Resolve the version pin BEFORE the first real ingest — not after.**
+
+The pin in `config/versions.json` and the version actually installed must agree, and the moment
+to make them agree is *now*, while no real dataset and no checkpoint exist.
+
+Preprocessing output **is** the dataset. Ingest 4 000 real photographs under one OpenCV version
+and later "fix" the pin to another, and every processed image changes: the edge maps differ, the
+trained model no longer matches them, and the only honest remedy is to re-ingest and re-train.
+Before F3b that costs nothing; after it, it costs the dataset.
+
+The same applies to the Python version. A major-version gap (4.x → 5.x) can change CLAHE tile
+interpolation and Canny's internals; `pytest` passing proves the code runs, **not** that the
+pixels match what an earlier version produced.
+
+Two acceptable resolutions, and only two:
+
+1. **Align the pin to the environment** (usually right — do not fight the toolchain). Update
+   `config/versions.json`, re-run the fixtures, and record in `docs/adr/` that the baseline moved
+   and why. Bump `config/preprocess.json` if any fixture output changed.
+2. **Align the environment to the pin.** Install the pinned versions in the venv.
+
+What is *not* acceptable is leaving `check-versions` red and continuing. A red version check that
+everyone has learned to ignore is worse than no check at all.
+
+**5.3 OpenCV: the contrib build, pinned.** The package is **`opencv-contrib-python`**, not
+`opencv-python`. `cv2.aruco` — which the per-session calibration in step 2 depends on — ships
+only in the contrib build. Plain `opencv-python` imports fine and then raises
+`AttributeError: module 'cv2' has no attribute 'aruco'` the first time a real session is
+ingested, i.e. *after* the lab work. Never install both packages: they conflict, and which one
+wins depends on install order. `opencv-python` is pinned in `config/versions.json` and asserted
 by `python tasks.py check-versions`. Not for cross-language parity any more, but for
 reproducibility across the three team members' machines and across time: CLAHE tile
 interpolation has changed between minor versions before, and a reader reproducing the work in a

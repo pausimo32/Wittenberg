@@ -1,13 +1,17 @@
-# Wittenberg — Python dependencies (Windows native + NVIDIA CUDA)
+# Wittenberg — Python dependencies for the APP (any computer, CPU only)
 #
-# PyTorch must come from the CUDA index, NOT from plain PyPI, or pip installs the
-# CPU-only wheel and training silently falls back to CPU. See SETUP.md and ADR 0003.
---index-url https://download.pytorch.org/whl/cu124
+# CPU PyTorch ON PURPOSE (ADR 0005). The app runs inference on CPU in ~12 ms and must
+# install on any computer with no GPU. CUDA wheels weigh hundreds of MB and buy nothing
+# here. GPU wheels live in requirements-train.txt, used only in the cloud notebook.
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 torch==2.6.0
 torchvision==0.21.0
 
-opencv-python==4.12.0.88
+# aruco lives in the contrib build ONLY. The calibration path (4 markers per
+# session) needs it. Never install opencv-python alongside this one — they
+# conflict. contrib is a strict superset.
+opencv-contrib-python==4.12.0.88
 numpy==2.1.3
 pandas==2.2.3
 scikit-learn==1.6.1

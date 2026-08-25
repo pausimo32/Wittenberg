@@ -10,10 +10,11 @@ green: every gate exists because failing it silently costs more than failing it 
 | F0 | Repo + Claude Code configured | `tasks.py setup` green, GPU seen, 7 agents listed | sonnet |
 | F1 | Modes found, classes fixed | `data/modes.csv` ≥ 10 modes | lab + haiku |
 | F2 | Python preprocessing | unit tests green on `tests/fixtures/` | opus → sonnet |
-| F3 | ≥ 4 ingested sessions | curator says READY TO TRAIN | sonnet |
+| F3a | Ingest pipeline built | synthetic sessions ingest + split; curator READY | sonnet |
+| F3b | ≥ 4 real sessions ingested | curator says READY TO TRAIN | sonnet |
 | F4 | Trained + evaluated model | acceptance gates in model-spec §6 | opus |
-| F5 | Local serving API | `check-model` green, API == direct call | sonnet |
-| F6 | Vite + React app | analyse flow works end to end | sonnet |
+| F5 | Local serving API (CPU) | `check-model` green, API == direct call, ≤ 150 ms | sonnet |
+| F6 | Vite + React app + `/dades` | analyse flow end to end; a session can be labelled and committed | sonnet |
 | F7 | Didactic module + field prep | E2E green, reset clean, `v1.0-field` tagged | sonnet |
 
 The critical path is **F2 → F4** — the science. Nothing after F4 can make the results better;
@@ -37,17 +38,21 @@ Do NOT read: docs/.
 
 ## Task
 Finish the toolchain so `python tasks.py setup` produces a working Python and Node environment
-on native Windows with CUDA.
+on native Windows, CPU-only. No CUDA anywhere in the app path (ADR 0005).
 
 ## Constraints
-- ENVIRONMENT: native Windows, NVIDIA GPU, no WSL. No `make`, no symlinks. tasks.py is the
+- ENVIRONMENT: native Windows, no WSL. The APP must run CPU-only on any
+  computer; training uses the team's RTX 5070 and is separate. No `make`, no
+  symlinks. tasks.py is the
   runner and already exists — extend it, do not replace it, and never add a Makefile.
-- Python 3.11. requirements.txt is written; do not swap PyTorch for TensorFlow (ADR 0003) and
-  do not drop the --index-url line, or pip installs the CPU-only wheel silently.
+- Python 3.11. requirements.txt is written and installs **CPU PyTorch on purpose** (ADR 0005).
+  Do not add CUDA wheels: the app does not need them and they weigh hundreds of MB.
+  GPU wheels belong in requirements-train.txt, used only in the cloud notebook.
 - Node 20, Vite + React + TypeScript + Tailwind under web/. No Next.js, no SSR, no static-export
   config — the app is local-only (ADR 0004).
-- `tasks.py check-versions` must fail loudly when opencv-python is not the pinned version
-  (reproducibility across three machines). `tasks.py check-gpu` must report the CUDA device.
+- `tasks.py check-versions` must fail loudly when opencv-contrib-python is not the pinned
+  version. `tasks.py check-device` reports the device; **CPU is a PASS, not a warning** — it is
+  the supported configuration (ADR 0005). Never make CUDA a requirement anywhere.
 - Unimplemented targets print "NOT IMPLEMENTED (Fn)" and exit 1 — never exit 0.
 - .gitignore: data/raw, data/processed, runs/, *.pt, *.pth, web/dist, node_modules, .venv.
   There is no served model artefact: the API loads runs/<id>/model.pt directly (ADR 0004).
@@ -57,7 +62,7 @@ on native Windows with CUDA.
 
 ## Definition of done
 - [ ] `python tasks.py setup` exits 0 on a clean clone
-- [ ] `python tasks.py check-gpu` prints "cuda available: True" and the device name
+- [ ] `python tasks.py check-device` runs on a machine with no GPU and exits 0
 - [ ] `python tasks.py check-versions` passes, and fails when the versions are made to disagree
 - [ ] `npm run build` in web/ produces `web/dist/`
 - [ ] no Makefile, no os.symlink anywhere in the repo
@@ -199,9 +204,58 @@ sonnet — small, but the allow-list and the failure mode need care.
 
 ---
 
-## F3 — Data collection and ingest
+## F2.5 — Dry run on synthetic captures (before any lab work)
 
-**Do externally — the phase that takes real calendar time**
+The labelled database cannot be produced by software: it needs four capture sessions on four
+different days with the physical rig. What software **can** do is make sure that on the day the
+photos exist, nothing is unknown.
+
+`tools/synth_capture.py` generates fake sessions in `data/raw/SYNTH-*` with real ArUco markers,
+per-session lighting and material, and camera jitter. They exercise the entire chain: marker
+detection, homography, the quality gate, metadata rows, session-wise splitting and the curator
+audit. Build and green the whole F3 ingest against them, then delete them.
+
+```bash
+python tools/synth_capture.py --sessions 4 --frames 20 --classes 6
+python tasks.py ingest --session SYNTH-20260101-01
+python tasks.py split
+# curator audit -> READY TO TRAIN
+rm -rf data/raw/SYNTH-*        # before the first real ingest
+```
+
+**Never train a reported model on synthetic data.** The images come from a closed-form mode
+shape; a CNN reaches ~100 % on them and the number means nothing about a real plate. Ingest must
+refuse to mix `SYNTH-*` sessions with real ones in a single dataset, and the curator must report
+any synthetic session as a blocking finding once real data exists.
+
+---
+
+## F3a — Build the ingest pipeline (code, NOT blocked by the lab)
+
+**This phase does not wait for a single photograph.** Its inputs are the synthetic sessions from
+F2.5. Conflating "the dataset needs captures" with "the code that ingests it needs captures"
+idles weeks of work waiting on lab availability — they are different things.
+
+What F3a builds, in dependency order:
+
+| # | Piece | Why it is here |
+|---|---|---|
+| 1 | `tasks.py modes` | validates `data/modes.csv` → `config/classes.json`; everything downstream needs the class list |
+| 2 | **`src/imageio.py`** | decode, EXIF orientation, Display P3 → sRGB, HEIC **and** PNG. `docs/03-preprocessing-spec.md` §5.1 delegates step 1 here and no phase claimed it — a real gap |
+| 3 | `tasks.py ingest` | ArUco calibration (§1.1), the quality gate (§6, interior margin), `metadata.csv` rows, `ingest_report.json` |
+| 4 | `tasks.py split` | `GroupShuffleSplit` on `session_id` |
+
+Gate: the four synthetic sessions ingest, split, and the curator returns READY TO TRAIN. Then
+`rm -rf data/raw/SYNTH-*` and the pipeline waits for real photographs.
+
+`src/imageio.py` is shared by ingest and the API (`docs/05-webapp-spec.md` §3). One
+implementation, two callers — the same discipline as `src/preprocess.py`.
+
+---
+
+## F3b — Data collection (lab, the phase that takes calendar time)
+
+**Do externally**
 
 Four sessions minimum, on **different days**, each covering every class. Per session:
 
@@ -209,11 +263,41 @@ Four sessions minimum, on **different days**, each covering every class. Per ses
 2. Lock exposure and focus. Photograph the ArUco calibration frame first.
 3. Per frequency: set it, wait for the dwell time, capture ≥ 60 frames.
 4. Log material, grain mass, distance, lighting, dwell, anything anomalous.
-5. Vary lighting **between** sessions, never within one.
-6. Session 4 uses a different granular material, for ablation A8.
+5. Lighting is constant **within** a session and varies **between** sessions — but every
+   lighting value must appear in **at least two** sessions. See the warning below.
+6. Material likewise: do not give one single session a different granular material.
 
 Do not shortcut this by taking 240 frames in one sitting. Four sittings of 60 is a dataset;
 one sitting of 240 is one observation photographed 240 times.
+
+### The trap this plan used to contain — read before booking the lab
+
+An earlier version of this plan said "vary lighting between sessions" and "session 4 uses a
+different material". **Combined with a session-wise split, that makes the condition predict the
+split perfectly.** Every test image would then be the only one shot under its lighting, and the
+reported accuracy would measure generalisation to an unseen lamp angle rather than to an unseen
+pattern. The number would be wrong and nothing in the pipeline would say so.
+
+This was caught on synthetic data — the F2.5 dry run reproduced it exactly, and the curator's
+condition-confound check flagged it before a single real photograph existed. That is what F2.5 is
+for.
+
+**Assign conditions so each value straddles the split.** With four sessions and a 2/1/1 split:
+
+| Session | Lighting | Material |
+|---|---|---|
+| 1 | `lamp_diffuse` | sand |
+| 2 | `lamp_grazing` | sand |
+| 3 | `lamp_diffuse` | semolina |
+| 4 | `lamp_grazing` | semolina |
+
+Two lighting values × two materials, each in two sessions. Any 2/1/1 split then puts both
+lighting values and both materials on both sides. **Two conditions balanced beats three
+conditions confounded** — a third lighting value across four sessions cannot be balanced, and
+buys less than it costs.
+
+Ablation A8 (material) still works: it compares materials *within* a balanced design instead of
+comparing session 4 against the rest, which was never a material comparison at all.
 
 **Prompt** (per session)
 
@@ -246,7 +330,26 @@ sonnet.
 
 ---
 
-## F4 — Train and evaluate
+## F4 — Train and evaluate (the team's RTX 5070)
+
+Training is the only step that wants a GPU. It runs on the team's own card, a handful of times,
+and the app never touches it (`docs/adr/0005`). Nothing is uploaded anywhere.
+
+**The card is not the constraint.** Training peak is ≈ 474 MB of the 12 GB — 4 %. Two things
+follow, and both are easy to get wrong:
+
+- **Preload the whole dataset into VRAM.** 4 000 images as uint8 is 65 MB. A `DataLoader`
+  reading files every epoch would leave the GPU idling on Python; indexing a resident tensor with
+  a random permutation removes that entirely. Seconds per epoch, all 27 runs in under an hour.
+- **Do not let 64 GB of RAM justify anything.** Bigger batches, bigger images and a bigger model
+  need a reason from the ablations, never from the hardware.
+
+**Before the first run, verify the GPU actually executes.** RTX 50-series is Blackwell, sm_120;
+`cu121`/`cu124` PyTorch builds have no kernels for it, report `cuda: True`, and then die on the
+first operation. `python tasks.py check-device` runs a real matmul precisely to catch this. Use
+`requirements-train.txt` (cu128 or newer) on the training machine only.
+
+
 
 **Prompt**
 
@@ -289,12 +392,12 @@ A4 (random vs session split) first: its result determines how every other number
 
 ## F5 — Local serving API
 
-FastAPI on `127.0.0.1`, PyTorch model on the GPU, calling `src/preprocess.py`. Prompt: the
+FastAPI on `127.0.0.1`, PyTorch model **on CPU**, calling `src/preprocess.py`. Prompt: the
 worked example in `PROMPTS.md`.
 
 **Gate** — `python tasks.py check-model` green; `/api/predict` on a reference image returns exactly
 what calling `preprocess` + the model directly returns; mutating `config/preprocess.json` makes
-startup fail; `elapsed_ms` < 200 on the GPU.
+startup fail; `elapsed_ms` < 150 ms on an ordinary CPU.
 
 Two rules that matter:
 
@@ -317,7 +420,8 @@ Do NOT read: docs/01, 02, 03, 04, 06, 07.
 
 ## Task
 Build the Vite + React frontend: routes, the /analitza flow including the
-pipeline viewer, and the shell for /apren, /galeria and /sobre.
+full 13-stage pipeline viewer, the /dades labelling view, and the shell for
+/apren, /galeria and /sobre.
 
 ## Constraints
 - Vite + React + TypeScript + Tailwind, react-router. No Next.js, no SSR.
@@ -325,10 +429,15 @@ pipeline viewer, and the shell for /apren, /galeria and /sobre.
 - Result presentation follows §4 exactly: top-3 with probabilities, the three
   confidence tiers, and the edge map beside the original. Never a bare number,
   never a rounded "nicer" one, never a hidden low confidence.
-- Pipeline viewer per §8: eight stages from ONE request, animated at ~1.1 s per
-  step with play/pause, arrows and a thumbnail rail. Do NOT stream the stages —
-  the pipeline finishes in ~24 ms, so there is nothing to watch live. Show each
-  step's real measured time. Steps 7 and 8 render pixelated.
+- Pipeline viewer per §8: THIRTEEN stages from ONE request — 8 preprocessing,
+  3 feature-map, 1 Grad-CAM, 1 probabilities — animated at ~1.1 s per step with
+  play/pause, arrows and a thumbnail rail. Do NOT stream them: preprocessing is
+  ~24 ms and the network ~12 ms, so there is nothing to watch live. Show each
+  step's real measured time. Steps 7-8 render pixelated.
+- /dades per §9: draft session, calibration frame, one label per class, the
+  gate applied AS IMAGES ARRIVE with the reason shown for each rejection, and
+  nothing written until commit. It must call the SAME ingest code as
+  `tasks.py ingest` — a second implementation of the gate is forbidden.
 - The OpenCV call and parameters shown in the viewer are read from
   config/preprocess.json, never retyped into the UI.
 - Catalan UI strings via docs/07-glossary-ca-en.md. English code.
@@ -337,7 +446,11 @@ pipeline viewer, and the shell for /apren, /galeria and /sobre.
 ## Definition of done
 - [ ] upload -> prediction works against the real API
 - [ ] the three confidence tiers render correctly (unit-tested on fixed inputs)
-- [ ] the viewer walks all 8 stages; arrows and space work; 7-8 are pixelated
+- [ ] the viewer walks all 13 stages; arrows and space work; 7-8 are pixelated
+- [ ] /dades: a session can be labelled, gated and committed; abandoning it
+      leaves data/ byte-identical; the gate agrees with tasks.py ingest on
+      tests/fixtures/
+- [ ] the whole app starts and predicts on a machine with NO GPU and NO network
 - [ ] tsc --noEmit clean; npm run build succeeds
 - [ ] `python tasks.py app` serves the built app at 127.0.0.1:8000
 

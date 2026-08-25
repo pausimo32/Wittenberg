@@ -29,7 +29,7 @@ The Pla de treball lists 12 annexes. These are produced by `python tasks.py anne
 | 7. Preprocessing code and stages | `src/preprocess.py` syntax-highlighted, plus the 8-stage strip rendered for one image per class |
 | 8. Model code | `src/model.py`, `src/train.py` |
 | 9. Full model results | `runs/<ts>/report/` |
-| 10. App screenshots | Playwright against the built local app, fixed viewport |
+| 10. App screenshots | Playwright against the built local app, fixed viewport — include the 13-stage viewer and the /dades summary matrix |
 
 Annexes 1, 2, 5, 11, 12 (schematics, photos, protocol, questionnaires) are produced by hand.
 
@@ -52,7 +52,9 @@ retyped from memory.
 
 Every claim below must be true at submission:
 
-1. `git clone` + `python tasks.py setup` + `python tasks.py train` reproduces reported metrics within ±1 % (seed 42).
+1. `git clone` + `python tasks.py setup` + `python tasks.py app` gives a working tool on any
+   computer, with no GPU and no internet. Re-training reproduces reported metrics within ±1 %
+   (seed 42) on the same GPU, and the card is named in the methodology.
 2. Every reported figure regenerates from `runs/` with one command.
 3. The preprocessing used at inference **is** the one used at training — the API calls
    `src/preprocess.py`, the same function that built the dataset, and refuses to start if the

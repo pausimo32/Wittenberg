@@ -32,9 +32,16 @@ Note the input is **NCHW** here while the preprocessing spec produces **NHWC** `
 The permute happens in the dataset loader, never inside `preprocess.py` — the preprocessing
 contract is framework-agnostic and must stay that way.
 
-**289 134 parameters**, plus 896 non-trainable BatchNorm buffers (`running_mean`/`running_var`
-for 448 channels), which PyTorch counts as buffers rather than parameters. Verify before
-quoting: `sum(p.numel() for p in model.parameters())` → 289 134.
+**Parameter count depends on the number of classes.** The convolutional trunk is 287 328; the
+head adds `128·n + n`. Measured on this exact architecture: **288 876 parameters for 12 classes**,
+289 134 for 14. There are also 902 non-trainable BatchNorm buffers (`running_mean` /
+`running_var`), which PyTorch counts separately from parameters.
+
+Verify before quoting, and say which class count the figure is for:
+`sum(p.numel() for p in model.parameters())`.
+
+The checkpoint is **1.17 MB** on disk. That is the number that makes the app portable: it lives
+in the repository and travels with a `git clone` (`docs/adr/0005`).
 
 ## 2. Design decisions worth defending in the TDR
 
@@ -58,7 +65,7 @@ quoting: `sum(p.numel() for p in model.parameters())` → 289 134.
 | Optimizer | `torch.optim.AdamW`, `lr=1e-3`, `CosineAnnealingLR` to `1e-5` |
 | Batch | 32 |
 | Epochs | 80, early stopping patience 12 on `val_loss`, restore best weights |
-| Device | CUDA. `tasks.py check-gpu` must report the GPU before any run counted in the TDR |
+| Device | training: the team's RTX 5070, peak ≈ 474 MB of 12 GB (`docs/adr/0005`). Inference: **CPU**, ≈ 12 ms/image measured |
 | AMP | off. Mixed precision costs determinism and buys nothing at this model size |
 | Loss | `nn.CrossEntropyLoss(label_smoothing=0.05)` (takes logits — no softmax in the model) |
 | Seed | 42 for `random`/`numpy`/`torch`, plus `torch.use_deterministic_algorithms(True)` and `CUBLAS_WORKSPACE_CONFIG=:4096:8` |
@@ -67,8 +74,8 @@ quoting: `sum(p.numel() for p in model.parameters())` → 289 134.
 Every run writes `runs/<timestamp>/` containing `config.json` (full resolved config incl.
 preprocessing version and the framework/CUDA versions), `metrics.json`, `history.csv`,
 `model.pt`, `report/`. It also updates `runs/latest.txt` — a pointer file, not a symlink
-(Windows). **Nine variants × 3 seeds = 27 runs** is the F4 budget; on the GPU each is minutes,
-so run all of §5.
+(Windows). **Nine variants × 3 seeds = 27 runs** is the F4 budget. With the dataset preloaded in VRAM
+(65 MB as uint8) each run is minutes, so run all of §5 (`docs/adr/0005`).
 
 ## 4. Evaluation — mandatory outputs
 
@@ -112,14 +119,15 @@ TDR discussion.
 | Worst-class recall | ≥ 60 % — no class may be effectively unrecognisable |
 | Grad-CAM | mass concentrated on nodal lines in ≥ 80 % of inspected samples |
 | Config hash | `python tasks.py check-model` green (`docs/03-preprocessing-spec.md` §4) |
-| Latency | `elapsed_ms` ≤ 200 ms on the local GPU. Above that the model is probably on the CPU |
+| Latency | `elapsed_ms` ≤ 150 ms on an ordinary CPU (≈ 24 ms preprocessing + ≈ 12 ms inference) |
 
 If a gate fails, the honest move is to report it in the TDR, not to loosen it.
 
 ## 7. Serving
 
-There is no export step. The local API loads `runs/<id>/model.pt` directly onto the GPU
-(`docs/adr/0004`). ONNX, INT8 quantisation and a served model artefact were consequences of
+There is no export step. The local API loads `runs/<id>/model.pt` — 1.17 MB — onto the CPU
+(`docs/adr/0004`, `0005`). The checkpoint is small enough to live in the repository, which is
+what makes the app portable to any computer. ONNX, INT8 quantisation and a served model artefact were consequences of
 shipping to a browser; none of them apply now.
 
 Every checkpoint records the resolved `config/preprocess.json` and its SHA-256. The API
