@@ -43,6 +43,11 @@ data/raw/
 data/processed/
 !data/metadata.csv
 
+# ── Drafts ───────────────────────────────────────────────────────────────
+# A capture session in progress in /dades: raw uploads, previews and gate
+# verdicts, outside data/ until the user commits. Same rule as data/raw/.
+drafts/
+
 # ── Training runs ────────────────────────────────────────────────────────
 # Everything in runs/ is ignored except metrics.json and config.json, which
 # are the reportable trace of a run. The two-step pattern below is required:
