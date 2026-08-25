@@ -48,7 +48,7 @@ def rows_for(sessions, per_session=4):
     return out
 
 
-FOUR = ["SYNTH-01", "SYNTH-02", "SYNTH-03", "SYNTH-04"]
+FOUR = [f"SYNTH-2026010{n}-01" for n in (1, 2, 3, 4)]
 
 
 def with_rejects(rows, every=3, quality="blurred"):
@@ -147,7 +147,7 @@ def test_all_frames_of_a_session_share_its_split():
 
 def test_uneven_session_sizes_do_not_split_a_session():
     """A big session must not be carved up to balance the proportions."""
-    rows = rows_for(["SYNTH-01"], 40) + rows_for(["SYNTH-02", "SYNTH-03", "SYNTH-04"], 2)
+    rows = rows_for(FOUR[:1], 40) + rows_for(FOUR[1:], 2)
     assigned = assign_splits(rows)
     for session in FOUR:
         assert len({r["split"] for r in assigned if r["session_id"] == session}) == 1

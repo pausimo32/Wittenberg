@@ -2,7 +2,8 @@
 #
 # CPU PyTorch ON PURPOSE (ADR 0005). The app runs inference on CPU in ~12 ms and must
 # install on any computer with no GPU. CUDA wheels weigh hundreds of MB and buy nothing
-# here. GPU wheels live in requirements-train.txt, used only in the cloud notebook.
+# here. GPU wheels live in requirements-train.txt, installed only on the machine that
+# trains — the team's own RTX 5070, offline. There is no cloud notebook (ADR 0005).
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 torch==2.6.0

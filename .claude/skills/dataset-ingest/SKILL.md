@@ -17,16 +17,21 @@ exits 1 with actionable advice if Canny is not seeing the pattern. One second th
 ## Preconditions — check before running anything
 
 - `data/raw/<session_id>/` exists, `session_id` matches `YYYYMMDD-NN`
+- `data/raw/<session_id>/session.json` is complete — `session_id`, `date`, `operator`, `plate`,
+  `material`, `grain_mass_g`, `distance_mm`, `lighting`, `dwell_s`, `notes`, plus `synthetic`
+  on a `SYNTH-*` session. **Ingest refuses without it**, and refuses rather than warns: five of
+  those are `metadata.csv` columns and none can be reconstructed from the images afterwards
+  (`docs/02-dataset-spec.md` §4)
 - `data/calib/<session_id>.json` exists (4 ArUco corners + px/mm), or the session is
   explicitly `center_crop`
-- The session log records: material, grain mass, distance, lighting, dwell
 - Subfolders are named by integer Hz and all appear in `config/classes.json`
 
-Sessions whose id starts with `SYNTH-` are synthetic (`tools/synth_capture.py`). Ingest them to
-test the plumbing, never to train a reported model, and never in the same dataset as real ones.
+Sessions whose id starts with `SYNTH-` are synthetic (`tools/synth_capture.py`) and are named
+`SYNTH-YYYYMMDD-NN` — a real id with a prefix. Ingest them to test the plumbing, never to train
+a reported model, and never in the same dataset as real ones.
 
 A session missing calibration is not blocked — it is ingested with `roi_mode: center_crop` and
-flagged. A session missing `session_id` is blocked; those images cannot be used at all.
+flagged. A session missing `session.json` is blocked; those images cannot be labelled at all.
 
 ## Run
 
@@ -51,6 +56,17 @@ Which does, in order:
    `quality` in {ok, blurred, partial, reject} and `split` empty for anything not `ok`. Also
    write `data/ingest_report.json`. Writing only the accepted rows makes `quality` a column
    that is always `ok` and moves the yield figure into a file that is not committed.
+
+## Read the report's `flags` before moving on
+
+`data/ingest_report.json` carries, per session, `config/quality_gate.json` verbatim (a yield
+figure without its thresholds is not reproducible), the whole `session.json`, and `flags`.
+
+A flag is a warning, not a failure, and the one worth stopping for reads *"marker(s) N: the
+corner touching the plate is not the one the nominal zenithal rig produces"*. The calibration
+is correct regardless — the corner is chosen geometrically — but it means a marker is taped on
+rotated or the plate is turned in the frame. Ask the operator on the day of the session, while
+the rig is still standing.
 
 Idempotent. Re-running a session replaces its rows; it never duplicates them.
 

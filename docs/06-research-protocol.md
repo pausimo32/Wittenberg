@@ -62,6 +62,24 @@ Every claim below must be true at submission:
    not as a test result.
 4. The dataset split is by session and stated as such, with the naive-split number reported
    alongside for comparison.
+5. Every reported acceptance yield carries the gate that produced it. `python tasks.py ingest`
+   copies `config/quality_gate.json` verbatim into `data/ingest_report.json`, so the thresholds
+   travel with the figure instead of having to be read out of whichever commit is checked out.
+
+### Yield is a reported number, so it has reported inputs
+
+Research question S4 is answered from `data/ingest_report.json`. A sentence like "27.5 % of
+frames were rejected" is not reproducible on its own: it depends entirely on four thresholds.
+The report therefore carries, per session:
+
+- `gate` — `config/quality_gate.json`, verbatim, as applied to that ingest
+- `session_log` — the whole of `data/raw/<session_id>/session.json`, including `operator` and
+  `plate`, which are not `metadata.csv` columns and live nowhere else that is committed
+- `rejected` — the count by reason, and every rejected frame by path with its measurements
+- `flags` — anything the calibration reported about the rig, such as a marker taped on rotated
+  (`docs/02-dataset-spec.md` §1.1)
+
+Quote the rejection rate with its thresholds, or do not quote it.
 
 ## 5. Writing
 

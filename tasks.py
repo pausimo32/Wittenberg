@@ -106,54 +106,165 @@ def setup(argv: list[str]):
     npm("install")
 
     check_versions([])
-    check_gpu([])
+    check_device([])
     print("\nsetup OK")
 
 
-@target("check-versions", "assert opencv-python matches the pinned version")
+@target("check-versions", "assert the pinned OpenCV BUILD is the one installed")
 def check_versions(argv: list[str]):
+    """`config/versions.json` names a package, not just a version — check the package.
+
+    `docs/03-preprocessing-spec.md` §5.3 requires `opencv-contrib-python`, because
+    `cv2.aruco` ships only in the contrib build and every session calibration depends on
+    it. Plain `opencv-python` imports fine, reports the same `cv2.__version__`, and then
+    raises `AttributeError: module 'cv2' has no attribute 'aruco'` the first time a real
+    session is calibrated — i.e. after the lab work, not before it. Comparing the version
+    string alone measures the wrong thing and passes on that machine.
+
+    Three separate facts are asserted: the pinned distribution is installed, no
+    conflicting OpenCV distribution is installed alongside it (§5.3 — they provide the
+    same `cv2` and which one wins depends on install order), and `cv2.aruco` answers.
+    """
     vfile = CONFIG / "versions.json"
     if not vfile.exists():
         die("config/versions.json missing")
     v = json.loads(vfile.read_text(encoding="utf-8"))
-    want_py = v["opencv_python"]
+    want_package = v["opencv_package"]
+    want_version = v["opencv_python"]
 
-    got = subprocess.run(
-        [venv_python(), "-c", "import cv2; print(cv2.__version__)"],
-        capture_output=True, text=True, cwd=ROOT,
-    )
-    if got.returncode != 0:
-        die(f"cannot import cv2:\n{got.stderr.strip()}")
-    installed = got.stdout.strip()
+    probe = _probe_opencv()
+    if probe.get("import_error"):
+        die(f"cannot import cv2:\n  {probe['import_error']}")
+
+    installed = probe["distributions"]
+    if want_package not in installed:
+        die(
+            f"config/versions.json pins {want_package}, which is not installed "
+            f"(found: {', '.join(installed) or 'no OpenCV distribution at all'}). "
+            f"cv2.aruco ships only in the contrib build and src/calibrate.py needs it for "
+            f"every session calibration — see docs/03-preprocessing-spec.md §5.3."
+        )
+
+    conflicting = sorted(set(installed) - {want_package})
+    if conflicting:
+        die(
+            f"{want_package} and {', '.join(conflicting)} are both installed. They provide "
+            f"the same `cv2` module and which one wins depends on install order, so the "
+            f"pipeline is not reproducible on this machine. Uninstall "
+            f"{', '.join(conflicting)} — docs/03-preprocessing-spec.md §5.3."
+        )
+
+    if probe.get("aruco_error"):
+        die(
+            f"{want_package} is installed but cv2.aruco does not work:\n"
+            f"  {probe['aruco_error']}\n"
+            f"src/calibrate.py cannot detect a single marker in this environment."
+        )
 
     def minor(s: str) -> str:
         return ".".join(s.split(".")[:2])
 
-    if minor(installed) != minor(want_py):
+    if minor(probe["cv2_version"]) != minor(want_version):
         die(
-            f"opencv-python is {installed}, config/versions.json pins {want_py}. "
-            "Reproducibility across machines and across time depends on this — CLAHE "
-            "tile interpolation has changed between minor versions. "
-            "See docs/03-preprocessing-spec.md §5.3."
+            f"{want_package} is {probe['cv2_version']}, config/versions.json pins "
+            f"{want_version}. Reproducibility across machines and across time depends on "
+            f"this: the ROI warp changes between major versions, and the measurement is in "
+            f"docs/adr/0006-opencv-version-baseline.md. "
+            f"See docs/03-preprocessing-spec.md §5.3a for the two acceptable resolutions."
         )
-    print(f"  opencv-python {installed}  OK (pinned {want_py})")
+
+    print(f"  {want_package} {probe['distribution_version']}  OK (pinned {want_version})")
+    print(f"  cv2 {probe['cv2_version']}, cv2.aruco answers  OK")
 
 
-@target("check-gpu", "report whether PyTorch sees the GPU")
-def check_gpu(argv: list[str]):
+#: Every distribution that installs a module called `cv2`. Exactly one may be present.
+OPENCV_DISTRIBUTIONS = (
+    "opencv-python",
+    "opencv-contrib-python",
+    "opencv-python-headless",
+    "opencv-contrib-python-headless",
+)
+
+
+def _probe_opencv() -> dict:
+    """Ask the venv what it actually has installed and whether cv2.aruco works."""
     code = (
-        "import torch;"
-        "print('  torch', torch.__version__);"
-        "print('  cuda available:', torch.cuda.is_available());"
-        "print('  device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+        "import json\n"
+        "from importlib import metadata\n"
+        f"names = {OPENCV_DISTRIBUTIONS!r}\n"
+        "out = {'distributions': {}}\n"
+        "for n in names:\n"
+        "    try:\n"
+        "        out['distributions'][n] = metadata.version(n)\n"
+        "    except metadata.PackageNotFoundError:\n"
+        "        pass\n"
+        "try:\n"
+        "    import cv2\n"
+        "    out['cv2_version'] = cv2.__version__\n"
+        "except Exception as exc:\n"
+        "    out['import_error'] = f'{type(exc).__name__}: {exc}'\n"
+        "    print(json.dumps(out))\n"
+        "    raise SystemExit(0)\n"
+        "try:\n"
+        "    import cv2.aruco\n"
+        "    cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)\n"
+        "except Exception as exc:\n"
+        "    out['aruco_error'] = f'{type(exc).__name__}: {exc}'\n"
+        "print(json.dumps(out))\n"
     )
     r = subprocess.run([venv_python(), "-c", code], capture_output=True, text=True, cwd=ROOT)
+    if r.returncode != 0 or not r.stdout.strip():
+        die(f"could not inspect the OpenCV installation:\n{r.stderr.strip()}")
+    probe = json.loads(r.stdout.strip().splitlines()[-1])
+    probe["distribution_version"] = next(iter(probe["distributions"].values()), "?")
+    probe["distributions"] = sorted(probe["distributions"])
+    return probe
+
+
+@target("check-device", "report the inference device; CPU is a PASS (ADR 0005)")
+def check_device(argv: list[str]):
+    """`torch.cuda.is_available()` is not the question. Whether a kernel runs is.
+
+    A `cu121`/`cu124` wheel on a Blackwell card (RTX 50-series, sm_120) installs cleanly,
+    reports `is_available() == True`, prints the device name — and then dies on the first
+    real operation with `no kernel image is available for execution on the device`. A
+    check that only calls `is_available()` passes on exactly the machine it exists to
+    protect, so this one runs a real matmul and synchronises.
+
+    CPU is a **pass**, not a warning: ADR 0005 makes CPU the supported configuration of
+    the app, ≈ 12 ms per inference. Only a GPU that is present and broken fails here.
+    """
+    code = r"""
+import torch
+print("  torch    ", torch.__version__)
+print("  threads  ", torch.get_num_threads())
+if not torch.cuda.is_available():
+    print("  device    CPU")
+    raise SystemExit(0)
+name = torch.cuda.get_device_name(0)
+cap = torch.cuda.get_device_capability(0)
+print(f"  device    {name}  (sm_{cap[0]}{cap[1]})")
+# torch.cuda.is_available() is NOT sufficient: a build without kernels for this
+# architecture reports True and then dies on the first real op. See ADR 0005.
+try:
+    (torch.randn(64, 64, device="cuda") @ torch.randn(64, 64, device="cuda")).sum().item()
+    torch.cuda.synchronize()
+    print("  gpu op    OK")
+except RuntimeError as exc:
+    print(f"  gpu op    FAILED: {exc}")
+    print(f"  This build has no kernels for sm_{cap[0]}{cap[1]}. Blackwell (RTX 50xx) needs")
+    print("  a cu128 or newer build. See requirements-train.txt.")
+    raise SystemExit(1)
+"""
+    r = subprocess.run([venv_python(), "-c", code], capture_output=True, text=True, cwd=ROOT)
     print(r.stdout.rstrip() or r.stderr.rstrip())
-    if "cuda available: False" in r.stdout:
+    if r.returncode != 0:
+        die("GPU present but unusable — see above", 1)
+    if "device    CPU" in r.stdout:
         print(
-            "  NOTE: training will run on CPU. On native Windows this usually means the\n"
-            "  CPU-only torch wheel was installed. Reinstall from the CUDA index URL —\n"
-            "  see SETUP.md §5."
+            "  CPU is the supported configuration for the APP (ADR 0005), not a fallback.\n"
+            "  Expected: ~24 ms preprocessing + ~12 ms inference per image.\n"
+            "  Training wants the GPU machine; the app never needs one."
         )
 
 
@@ -163,10 +274,13 @@ def check_gpu(argv: list[str]):
 
 @target("modes", "validate data/modes.csv, write config/classes.json  [F1]")
 def modes(argv):
-    from modes import build_classes, read_modes, write_classes
+    from modes import ModesError, build_classes, read_modes, write_classes
 
     provenance = "synthetic" if (DATA / "SYNTHETIC").exists() else "capture"
-    result = build_classes(read_modes(DATA / "modes.csv"), provenance)
+    try:
+        result = build_classes(read_modes(DATA / "modes.csv"), provenance)
+    except ModesError as exc:
+        die(str(exc))
     for warning in result["warnings"]:
         print(f"  WARNING: {warning}")
     for r in result["rejected"]:
@@ -179,7 +293,7 @@ def modes(argv):
         die("no usable modes — nothing to train on")
 
 
-@target("ingest", "raw captures -> data/processed + metadata.csv  [F3]")
+@target("ingest", "raw captures -> data/processed + metadata.csv  [F3a]")
 def ingest(argv):
     """`python tasks.py ingest [--session ID | --all]`."""
     from ingest import ingest_session
@@ -205,7 +319,7 @@ def ingest(argv):
     print("  next: `python tasks.py split`")
 
 
-@target("split", "assign train/val/test by session_id  [F3]")
+@target("split", "assign train/val/test by session_id  [F3a]")
 def split(argv):
     from split import split_dataset
 

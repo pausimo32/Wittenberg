@@ -42,13 +42,23 @@ def mode(freq, **kw):
             "symmetry": "diagonal", "quality": "clear", **kw}
 
 
+def rule(path, rows):
+    """Run the separation rule on a short mode list.
+
+    Declared `synthetic` on purpose: the >= 10 modes floor in `docs/00` F1 is a gate on
+    the *rig*, and a four-row fixture written to exercise the 40 Hz rule is not a sweep
+    of a plate. Mixing the two would mean every test of the separation rule had to carry
+    ten modes it does not use. The gate itself is tested in its own section below.
+    """
+    return build_classes(read_modes(write_csv(path, rows)), "synthetic")
+
+
 # --------------------------------------------------------------------------- #
 # the 40 Hz separation rule
 # --------------------------------------------------------------------------- #
 
 def test_well_separated_modes_are_all_kept(tmp_path):
-    rows = [mode(f) for f in (400, 600, 900, 1300)]
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", [mode(f) for f in (400, 600, 900, 1300)])
     assert [c["freq_hz"] for c in result["classes"]] == [400, 600, 900, 1300]
     assert result["rejected"] == []
 
@@ -56,15 +66,13 @@ def test_well_separated_modes_are_all_kept(tmp_path):
 def test_a_close_pair_drops_both_members(tmp_path):
     """The rule is symmetric. Dropping only the higher one would keep a class whose
     neighbour is 25 Hz away — exactly what §3 forbids."""
-    rows = [mode(f) for f in (400, 600, 2760, 2785)]
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", [mode(f) for f in (400, 600, 2760, 2785)])
     assert [c["freq_hz"] for c in result["classes"]] == [400, 600]
     assert sorted(r["freq_hz"] for r in result["rejected"]) == [2760, 2785]
 
 
 def test_rejection_records_the_offending_distance(tmp_path):
-    rows = [mode(f) for f in (400, 600, 2760, 2785)]
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", [mode(f) for f in (400, 600, 2760, 2785)])
     for r in result["rejected"]:
         assert r["nearest_neighbour_hz"] == 25
         assert "40" in r["reason"]
@@ -72,20 +80,17 @@ def test_rejection_records_the_offending_distance(tmp_path):
 
 def test_exactly_forty_hz_apart_is_kept(tmp_path):
     """The spec says '>= 40 Hz away', so 40 is inside the rule, not outside it."""
-    rows = [mode(f) for f in (400, 440)]
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", [mode(f) for f in (400, 440)])
     assert [c["freq_hz"] for c in result["classes"]] == [400, 440]
 
 
 def test_thirty_nine_hz_apart_is_rejected(tmp_path):
-    rows = [mode(f) for f in (400, 439)]
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", [mode(f) for f in (400, 439)])
     assert result["classes"] == []
 
 
 def test_a_chain_of_close_modes_drops_entirely(tmp_path):
-    rows = [mode(f) for f in (400, 420, 440, 900)]
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", [mode(f) for f in (400, 420, 440, 900)])
     assert [c["freq_hz"] for c in result["classes"]] == [900]
 
 
@@ -95,20 +100,20 @@ def test_a_chain_of_close_modes_drops_entirely(tmp_path):
 
 def test_classes_are_sorted_ascending_with_dense_indices(tmp_path):
     rows = [mode(f) for f in (1300, 400, 900, 600)]        # deliberately unsorted input
-    result = build_classes(read_modes(write_csv(tmp_path / "modes.csv", rows)))
+    result = rule(tmp_path / "modes.csv", rows)
     assert [c["freq_hz"] for c in result["classes"]] == [400, 600, 900, 1300]
     assert [c["index"] for c in result["classes"]] == [0, 1, 2, 3]
 
 
 def test_index_order_does_not_depend_on_row_order(tmp_path):
-    a = build_classes(read_modes(write_csv(tmp_path / "a.csv", [mode(f) for f in (900, 400, 600)])))
-    b = build_classes(read_modes(write_csv(tmp_path / "b.csv", [mode(f) for f in (400, 600, 900)])))
+    a = rule(tmp_path / "a.csv", [mode(f) for f in (900, 400, 600)])
+    b = rule(tmp_path / "b.csv", [mode(f) for f in (400, 600, 900)])
     assert a["classes"] == b["classes"]
 
 
 def test_written_file_declares_the_index_is_frozen(tmp_path):
     """A reader of the artefact must not have to consult the source to learn this."""
-    result = build_classes(read_modes(write_csv(tmp_path / "m.csv", [mode(f) for f in (400, 600)])))
+    result = rule(tmp_path / "m.csv", [mode(f) for f in (400, 600)])
     path = write_classes(result, tmp_path / "classes.json")
     text = path.read_text("utf-8")
     assert "frozen" in text.lower()
@@ -156,16 +161,35 @@ def test_missing_file_is_refused(tmp_path):
 # the F1 phase gate
 # --------------------------------------------------------------------------- #
 
-def test_thin_mode_list_is_flagged_but_not_fatal(tmp_path):
-    """`docs/00` F1 wants >= 10 modes. That is a phase gate a human clears, not a
-    reason for this target to refuse to write a file — the synthetic sessions run on
-    six classes on purpose."""
-    result = build_classes(read_modes(write_csv(tmp_path / "m.csv", [mode(f) for f in (400, 600)])))
-    assert result["warnings"]
+def test_a_thin_real_sweep_is_fatal(tmp_path):
+    """`docs/00` F1: "Fewer than 10 fails the phase gate". It is a gate on the rig."""
+    thin = write_csv(tmp_path / "m.csv", [mode(f) for f in (400, 600)])
+    with pytest.raises(ModesError) as exc:
+        build_classes(read_modes(thin), "capture")
+    assert "10" in str(exc.value)
+
+
+def test_the_thin_sweep_message_names_the_rig_not_the_filter(tmp_path):
+    """The operator has to be told what to change, and it is not this file.
+
+    F1 states the two causes; repeating them at the point of failure is the difference
+    between "go back to the plate" and "go and loosen a threshold somewhere".
+    """
+    thin = write_csv(tmp_path / "m.csv", [mode(f) for f in (400, 600)])
+    with pytest.raises(ModesError) as exc:
+        build_classes(read_modes(thin), "capture")
+    message = str(exc.value).lower()
+    assert "amplitude" in message
+    assert "over-constrained" in message
+
+
+def test_a_thin_synthetic_list_is_a_warning(tmp_path):
+    """Six synthetic classes are enough for the pipeline and are not a mode sweep."""
+    result = rule(tmp_path / "m.csv", [mode(f) for f in (400, 600)])
     assert any("10" in w for w in result["warnings"])
 
 
 def test_a_full_mode_list_raises_no_warning(tmp_path):
     rows = [mode(400 + 100 * i) for i in range(12)]
-    result = build_classes(read_modes(write_csv(tmp_path / "m.csv", rows)))
+    result = build_classes(read_modes(write_csv(tmp_path / "m.csv", rows)), "capture")
     assert result["warnings"] == []

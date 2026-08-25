@@ -12,6 +12,16 @@ both wrong by a knowable amount — at the nominal 210 mm working distance (`doc
 of rig into the ROI on every side and the *outer* corner drags ~25 mm. Either shrinks
 the plate in the warped image and shifts every nodal line the model is asked to read.
 
+**The table in `docs/02` §1.1 audits that choice; it does not make it.** On the nominal
+zenithal rig, marker `i`'s touching corner is at a fixed index into its `detectMarkers`
+quad — `{0: 2, 1: 3, 2: 0, 3: 1}`, carried as `nominal_corner_index` in
+`config/calibration.json`. Selecting by that index instead would be *less* robust:
+a marker taped on rotated 90° still has a well-defined innermost corner, and its index
+is no longer the tabulated one. So geometry decides and the table is compared against
+the result. A divergence is reported — not raised — because a plate legitimately turned
+within the frame produces one, and the operator is the only one who can tell that from
+a mis-taped marker. What matters is hearing about it on the day, not three weeks later.
+
 **Which marker is which.** By id, never by geometry: `config/calibration.json` maps
 id -> plate corner. Sorting detected markers by position instead would silently
 mis-order a frame shot at an angle, and a mis-ordered quad warps to a mirrored or
@@ -47,6 +57,10 @@ class Calibration(NamedTuple):
 
     `corners` is `None` when fewer than four markers were found — the caller must
     treat that as a `partial` rejection, not as a reason to change `roi_mode`.
+
+    `nominal_mismatch` lists the marker ids whose geometrically selected corner is not
+    the one `config/calibration.json`'s `nominal_corner_index` predicts. Empty is the
+    normal case. Non-empty is a rig report, not an error — see the module docstring.
     """
 
     session_id: str
@@ -55,10 +69,25 @@ class Calibration(NamedTuple):
     px_per_mm: float | None
     n_markers: int
     marker_ids: list[int]
+    nominal_mismatch: list[int] = []
 
     @property
     def usable(self) -> bool:
         return self.roi_mode == ROI_MODE_CENTER_CROP or self.corners is not None
+
+    @property
+    def flags(self) -> list[str]:
+        """Human-readable warnings for the session log and `data/ingest_report.json`."""
+        if not self.nominal_mismatch:
+            return []
+        ids = ", ".join(str(i) for i in self.nominal_mismatch)
+        return [
+            f"marker(s) {ids}: the corner touching the plate is not the one the nominal "
+            f"zenithal rig produces (docs/02 §1.1). The calibration used the geometric "
+            f"corner and is correct either way, but this means a marker is taped on "
+            f"rotated, or the plate is turned within the frame. Check the rig before the "
+            f"next session; if the plate is deliberately turned, say so in session.json."
+        ]
 
 
 def load_calibration_config(path: Path | str | None = None) -> dict[str, Any]:
@@ -87,7 +116,8 @@ def calibrate(
         return Calibration(session_id, roi_mode, None, None, len(found), sorted(found))
 
     centroid = np.mean([found[i].mean(axis=0) for i in wanted], axis=0)
-    quad = [_innermost_corner(found[i], centroid) for i in wanted]
+    chosen = [_innermost_index(found[i], centroid) for i in wanted]
+    quad = [found[i][k] for i, k in zip(wanted, chosen)]
 
     return Calibration(
         session_id=session_id,
@@ -96,6 +126,7 @@ def calibrate(
         px_per_mm=_px_per_mm(np.array(quad, np.float32), float(params["plate_size_mm"])),
         n_markers=len(found),
         marker_ids=sorted(found),
+        nominal_mismatch=_nominal_mismatch(wanted, chosen, params),
     )
 
 
@@ -139,6 +170,8 @@ def write_calibration(calib: Calibration, directory: Path | str) -> Path:
                 "marker_ids": calib.marker_ids,
                 "dictionary": cfg["dictionary"],
                 "corner_rule": cfg["corner_rule"],
+                "nominal_mismatch": calib.nominal_mismatch,
+                "flags": calib.flags,
                 "calibration_config_version": cfg["version"],
             },
             indent=2,
@@ -165,14 +198,37 @@ def _dictionary(cfg: Mapping[str, Any]):
     return cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, name))
 
 
-def _innermost_corner(marker: np.ndarray, centroid: np.ndarray) -> np.ndarray:
-    """The corner of this marker that touches the plate.
+def _innermost_index(marker: np.ndarray, centroid: np.ndarray) -> int:
+    """Index of the corner of this marker that touches the plate.
 
     The plate lies between the markers, so its corner is the marker corner closest to
     the centre of the marker constellation. This holds under perspective too: the warp
     is projective, and projective maps preserve which corner is nearest the interior.
     """
-    return marker[int(np.argmin(np.linalg.norm(marker - centroid, axis=1)))]
+    return int(np.argmin(np.linalg.norm(marker - centroid, axis=1)))
+
+
+def _innermost_corner(marker: np.ndarray, centroid: np.ndarray) -> np.ndarray:
+    """The corner itself. Kept as the module's stated rule in point form."""
+    return marker[_innermost_index(marker, centroid)]
+
+
+def _nominal_mismatch(
+    wanted: list[int], chosen: list[int], cfg: Mapping[str, Any]
+) -> list[int]:
+    """Marker ids where geometry and `docs/02` §1.1's table disagree.
+
+    The table describes the nominal rig, so a disagreement is a statement about the
+    *mounting*, not about the calibration: the geometric corner is used regardless.
+    """
+    nominal = cfg.get("nominal_corner_index")
+    if not nominal:
+        return []
+    return [
+        marker_id
+        for marker_id, index in zip(wanted, chosen)
+        if str(marker_id) in nominal and int(nominal[str(marker_id)]) != index
+    ]
 
 
 def _px_per_mm(quad: np.ndarray, plate_size_mm: float) -> float:

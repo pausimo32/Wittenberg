@@ -33,7 +33,12 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 from synth_capture import render_frame
 
 from calibrate import calibrate, write_calibration
-from ingest import IngestError, MixedProvenanceError, ingest_session
+from ingest import (
+    REQUIRED_SESSION_KEYS,
+    IngestError,
+    MixedProvenanceError,
+    ingest_session,
+)
 from metadata import (
     METADATA_COLUMNS,
     QUALITY_VALUES,
@@ -42,6 +47,7 @@ from metadata import (
     MetadataError,
     is_synthetic,
     read_metadata,
+    session_date,
     validate_session_id,
 )
 
@@ -54,6 +60,22 @@ CONDITIONS = {
     "lighting": "lamp_diffuse",
     "dwell_s": 3.0,
 }
+
+#: The rest of `session.json`. Ingest refuses a session without every one of these, so
+#: the helper writes a complete log and the tests that care remove a key on purpose.
+PROVENANCE = {"operator": "test", "plate": "test-200x200", "notes": ""}
+
+
+def session_log(session_id: str, conditions: dict | None = None) -> dict:
+    log = {
+        "session_id": session_id,
+        "date": session_date(session_id),
+        **PROVENANCE,
+        **(conditions or CONDITIONS),
+    }
+    if is_synthetic(session_id):
+        log["synthetic"] = True
+    return log
 
 
 # --------------------------------------------------------------------------- #
@@ -88,7 +110,7 @@ def build_session(
             cv2.imwrite(str(d / f"IMG_{k:04d}.png"), cv2.cvtColor(frame, cv2.COLOR_RGBA2BGRA))
 
     (session_dir / "session.json").write_text(
-        json.dumps({"session_id": session_id, **(conditions or CONDITIONS)}), encoding="utf-8"
+        json.dumps(session_log(session_id, conditions)), encoding="utf-8"
     )
     if with_calib:
         write_calibration(calibrate(good_frame, session_id=session_id), root / "calib")
@@ -110,8 +132,8 @@ def rows_of(data_root: Path) -> list[dict]:
 
 def test_ingest_writes_one_row_per_raw_image(data_root):
     """§4, literally: one row per raw image — rejected frames included."""
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    report = ingest_session("SYNTH-20260101-01", data_root)
 
     rows = rows_of(data_root)
     assert report.total == 6                     # 2 classes x 3 frames
@@ -120,8 +142,8 @@ def test_ingest_writes_one_row_per_raw_image(data_root):
 
 
 def test_rejected_frames_have_a_row(data_root):
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    report = ingest_session("SYNTH-20260101-01", data_root)
 
     rejected = [r for r in rows_of(data_root) if r["quality"] != "ok"]
     assert len(rejected) == report.rejected
@@ -129,8 +151,8 @@ def test_rejected_frames_have_a_row(data_root):
 
 
 def test_quality_column_uses_the_spec_vocabulary(data_root):
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    ingest_session("SYNTH-20260101-01", data_root)
     seen = {r["quality"] for r in rows_of(data_root)}
     assert seen <= set(QUALITY_VALUES)
     assert len(seen) > 1, "the column is pointless if it only ever says ok"
@@ -138,8 +160,8 @@ def test_quality_column_uses_the_spec_vocabulary(data_root):
 
 def test_a_rejected_row_carries_the_gate_reason(data_root):
     """`quality` collapses two reasons to `reject`; the notes keep them apart."""
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    ingest_session("SYNTH-20260101-01", data_root)
     partial = [r for r in rows_of(data_root) if r["quality"] == "partial"]
     assert partial
     assert all("gate:partial" in r["notes"] for r in partial)
@@ -147,45 +169,45 @@ def test_a_rejected_row_carries_the_gate_reason(data_root):
 
 def test_rejected_rows_have_no_split(data_root):
     """Empty, not `unassigned` — a rejected frame is in no partition at all."""
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    ingest_session("SYNTH-20260101-01", data_root)
     for r in rows_of(data_root):
         if r["quality"] != "ok":
             assert r["split"] == SPLIT_NONE
 
 
 def test_accepted_and_rejected_rows_account_for_every_raw_frame(data_root):
-    build_session(data_root, "SYNTH-01", frames=4, bad_frame_markers={1: 3, 2: 0})
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=4, bad_frame_markers={1: 3, 2: 0})
+    report = ingest_session("SYNTH-20260101-01", data_root)
     rows = rows_of(data_root)
     assert sum(1 for r in rows if r["quality"] == "ok") == report.accepted
     assert sum(1 for r in rows if r["quality"] != "ok") == report.rejected
 
 
 def test_image_ids_are_unique(data_root):
-    build_session(data_root, "SYNTH-01", frames=4)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=4)
+    ingest_session("SYNTH-20260101-01", data_root)
     ids = [r["image_id"] for r in rows_of(data_root)]
     assert len(ids) == len(set(ids))
 
 
 def test_image_id_follows_the_spec_format(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
     for r in rows_of(data_root):
         assert r["image_id"].startswith(f"{r['session_id']}_{r['freq_hz']}_")
 
 
 def test_columns_match_the_spec(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
     with (data_root / "metadata.csv").open(newline="", encoding="utf-8") as fh:
         assert next(csv.reader(fh)) == list(METADATA_COLUMNS)
 
 
 def test_conditions_come_from_the_session_log(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
     r = rows_of(data_root)[0]
     assert r["material"] == "sand"
     assert r["lighting"] == "lamp_diffuse"
@@ -195,17 +217,122 @@ def test_conditions_come_from_the_session_log(data_root):
 
 def test_split_is_left_for_the_splitter(data_root):
     """Ingest never assigns a split — `tasks.py split` does, by session."""
-    build_session(data_root, "SYNTH-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
     accepted = [r for r in rows_of(data_root) if r["quality"] == "ok"]
     assert {r["split"] for r in accepted} == {SPLIT_UNASSIGNED}
 
 
 def test_missing_session_log_is_refused(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
-    (data_root / "raw" / "SYNTH-01" / "session.json").unlink()
-    with pytest.raises(IngestError, match="session log"):
-        ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    (data_root / "raw" / "SYNTH-20260101-01" / "session.json").unlink()
+    with pytest.raises(IngestError, match="session.json"):
+        ingest_session("SYNTH-20260101-01", data_root)
+
+
+@pytest.mark.parametrize("key", REQUIRED_SESSION_KEYS)
+def test_every_required_session_key_is_refused_when_absent(data_root, key):
+    """A hard block, not a warning.
+
+    Five of these keys are columns of `metadata.csv` (§4) and none of them can be
+    reconstructed from the images four days later. A warning here reads as "carry on"
+    and the session is ingested without them, which is not recoverable once the rig has
+    been dismantled.
+    """
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    path = data_root / "raw" / "SYNTH-20260101-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    del log[key]
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    with pytest.raises(IngestError, match=key):
+        ingest_session("SYNTH-20260101-01", data_root)
+
+
+@pytest.mark.parametrize("key", [k for k in REQUIRED_SESSION_KEYS if k != "notes"])
+def test_an_empty_required_value_is_refused(data_root, key):
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    path = data_root / "raw" / "SYNTH-20260101-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    log[key] = ""
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    with pytest.raises(IngestError, match=key):
+        ingest_session("SYNTH-20260101-01", data_root)
+
+
+def test_empty_notes_are_accepted(data_root):
+    """`notes` must be present; empty means "nothing anomalous", which is information."""
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    report = ingest_session("SYNTH-20260101-01", data_root)
+    assert report.total > 0
+
+
+def test_a_session_log_copied_from_another_session_is_refused(data_root):
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    path = data_root / "raw" / "SYNTH-20260101-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    log["session_id"] = "SYNTH-20260102-01"
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    with pytest.raises(IngestError, match="copy-paste"):
+        ingest_session("SYNTH-20260101-01", data_root)
+
+
+def test_a_date_that_disagrees_with_the_session_id_is_refused(data_root):
+    """§2 makes one session one day. Two dates means two sessions or a typo."""
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    path = data_root / "raw" / "SYNTH-20260101-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    log["date"] = "2026-01-09"
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    with pytest.raises(IngestError, match="date"):
+        ingest_session("SYNTH-20260101-01", data_root)
+
+
+def test_a_hyphenated_date_is_accepted(data_root):
+    """`2026-01-01` and `20260101` are the same day written two ways."""
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    path = data_root / "raw" / "SYNTH-20260101-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    log["date"] = "2026-01-01"
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    assert ingest_session("SYNTH-20260101-01", data_root).total > 0
+
+
+def test_a_synth_session_without_the_synthetic_flag_is_refused(data_root):
+    """The flag is what keeps a rendered frame from later reading as a measurement."""
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    path = data_root / "raw" / "SYNTH-20260101-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    del log["synthetic"]
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    with pytest.raises(IngestError, match="synthetic"):
+        ingest_session("SYNTH-20260101-01", data_root)
+
+
+def test_a_real_session_flagged_synthetic_is_refused(data_root):
+    build_session(data_root, "20260916-01", frames=2)
+    path = data_root / "raw" / "20260916-01" / "session.json"
+    log = json.loads(path.read_text("utf-8"))
+    log["synthetic"] = True
+    path.write_text(json.dumps(log), encoding="utf-8")
+
+    with pytest.raises(IngestError, match="synthetic"):
+        ingest_session("20260916-01", data_root)
+
+
+def test_the_report_carries_the_whole_session_log(data_root):
+    """`operator` and `plate` are not metadata.csv columns, so this is where they live."""
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
+    logged = json.loads((data_root / "ingest_report.json").read_text("utf-8"))
+    logged = logged["sessions"]["SYNTH-20260101-01"]["session_log"]
+    assert set(logged) == set(REQUIRED_SESSION_KEYS)
+    assert logged["operator"] == "test"
 
 
 # --------------------------------------------------------------------------- #
@@ -213,11 +340,11 @@ def test_missing_session_log_is_refused(data_root):
 # --------------------------------------------------------------------------- #
 
 def test_reingesting_replaces_rows_and_never_duplicates(data_root):
-    build_session(data_root, "SYNTH-01", frames=3)
-    first = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3)
+    first = ingest_session("SYNTH-20260101-01", data_root)
     before = rows_of(data_root)
 
-    second = ingest_session("SYNTH-01", data_root)
+    second = ingest_session("SYNTH-20260101-01", data_root)
     after = rows_of(data_root)
 
     assert second.accepted == first.accepted
@@ -227,25 +354,25 @@ def test_reingesting_replaces_rows_and_never_duplicates(data_root):
 
 
 def test_reingesting_one_session_leaves_the_others_alone(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
-    build_session(data_root, "SYNTH-02", frames=2)
-    ingest_session("SYNTH-01", data_root)
-    ingest_session("SYNTH-02", data_root)
-    untouched = [r for r in rows_of(data_root) if r["session_id"] == "SYNTH-02"]
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    build_session(data_root, "SYNTH-20260102-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
+    ingest_session("SYNTH-20260102-01", data_root)
+    untouched = [r for r in rows_of(data_root) if r["session_id"] == "SYNTH-20260102-01"]
 
-    ingest_session("SYNTH-01", data_root)
-    assert [r for r in rows_of(data_root) if r["session_id"] == "SYNTH-02"] == untouched
-    assert {r["session_id"] for r in rows_of(data_root)} == {"SYNTH-01", "SYNTH-02"}
+    ingest_session("SYNTH-20260101-01", data_root)
+    assert [r for r in rows_of(data_root) if r["session_id"] == "SYNTH-20260102-01"] == untouched
+    assert {r["session_id"] for r in rows_of(data_root)} == {"SYNTH-20260101-01", "SYNTH-20260102-01"}
 
 
 def test_reingest_after_frames_are_removed_shrinks_the_session(data_root):
-    build_session(data_root, "SYNTH-01", frames=4)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=4)
+    ingest_session("SYNTH-20260101-01", data_root)
     n_before = len(rows_of(data_root))
 
-    for p in sorted((data_root / "raw" / "SYNTH-01" / "420").glob("*.png"))[:2]:
+    for p in sorted((data_root / "raw" / "SYNTH-20260101-01" / "420").glob("*.png"))[:2]:
         p.unlink()
-    ingest_session("SYNTH-01", data_root)
+    ingest_session("SYNTH-20260101-01", data_root)
     assert len(rows_of(data_root)) < n_before
 
 
@@ -254,14 +381,14 @@ def test_reingest_after_frames_are_removed_shrinks_the_session(data_root):
 # --------------------------------------------------------------------------- #
 
 def test_synthetic_and_real_sessions_are_told_apart():
-    assert is_synthetic("SYNTH-01")
+    assert is_synthetic("SYNTH-20260101-01")
     assert not is_synthetic("20260916-01")
 
 
 def test_a_real_session_cannot_join_synthetic_ones(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
     build_session(data_root, "20260916-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    ingest_session("SYNTH-20260101-01", data_root)
 
     with pytest.raises(MixedProvenanceError, match="SYNTH"):
         ingest_session("20260916-01", data_root)
@@ -269,17 +396,17 @@ def test_a_real_session_cannot_join_synthetic_ones(data_root):
 
 def test_a_synthetic_session_cannot_join_real_ones(data_root):
     build_session(data_root, "20260916-01", frames=2)
-    build_session(data_root, "SYNTH-01", frames=2)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
     ingest_session("20260916-01", data_root)
 
     with pytest.raises(MixedProvenanceError, match="SYNTH"):
-        ingest_session("SYNTH-01", data_root)
+        ingest_session("SYNTH-20260101-01", data_root)
 
 
 def test_the_refusal_leaves_the_existing_metadata_untouched(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
     build_session(data_root, "20260916-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    ingest_session("SYNTH-20260101-01", data_root)
     before = (data_root / "metadata.csv").read_bytes()
 
     with pytest.raises(MixedProvenanceError):
@@ -287,7 +414,10 @@ def test_the_refusal_leaves_the_existing_metadata_untouched(data_root):
     assert (data_root / "metadata.csv").read_bytes() == before
 
 
-@pytest.mark.parametrize("bad", ["nope", "2026-09-16", "SYNTH_01", "20260916", "synth-01"])
+@pytest.mark.parametrize(
+    "bad",
+    ["nope", "2026-09-16", "SYNTH_01", "20260916", "synth-01", "SYNTH-01", "SYNTH-2026-01-01"],
+)
 def test_malformed_session_ids_are_refused(bad):
     with pytest.raises(MetadataError):
         validate_session_id(bad)
@@ -300,7 +430,7 @@ def test_ingest_refuses_a_malformed_session_id(data_root):
         ingest_session("not-a-session", data_root)
 
 
-@pytest.mark.parametrize("good", ["SYNTH-01", "20260916-01", "20261231-99"])
+@pytest.mark.parametrize("good", ["SYNTH-20260101-01", "20260916-01", "20261231-99"])
 def test_well_formed_session_ids_are_accepted(good):
     validate_session_id(good)
 
@@ -310,18 +440,18 @@ def test_well_formed_session_ids_are_accepted(good):
 # --------------------------------------------------------------------------- #
 
 def test_rejected_frames_stay_in_raw(data_root):
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    before = sorted(p.name for p in (data_root / "raw" / "SYNTH-01").rglob("*.png"))
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    before = sorted(p.name for p in (data_root / "raw" / "SYNTH-20260101-01").rglob("*.png"))
+    report = ingest_session("SYNTH-20260101-01", data_root)
 
-    after = sorted(p.name for p in (data_root / "raw" / "SYNTH-01").rglob("*.png"))
+    after = sorted(p.name for p in (data_root / "raw" / "SYNTH-20260101-01").rglob("*.png"))
     assert after == before
     assert report.rejected > 0
 
 
 def test_a_three_marker_frame_is_partial_not_center_cropped(data_root):
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    report = ingest_session("SYNTH-20260101-01", data_root)
 
     assert report.by_reason.get("partial", 0) == 2       # one per class
     assert report.roi_mode == "homography"
@@ -329,11 +459,11 @@ def test_a_three_marker_frame_is_partial_not_center_cropped(data_root):
 
 
 def test_report_breaks_rejections_down_by_reason(data_root):
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={2: 0})
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={2: 0})
+    ingest_session("SYNTH-20260101-01", data_root)
 
     report = json.loads((data_root / "ingest_report.json").read_text("utf-8"))
-    session = report["sessions"]["SYNTH-01"]
+    session = report["sessions"]["SYNTH-20260101-01"]
     assert session["total"] == 6
     assert session["accepted"] + sum(session["rejected"].values()) == session["total"]
     # The report rounds to 4 dp so it stays readable; that is the only slack allowed.
@@ -344,8 +474,8 @@ def test_report_breaks_rejections_down_by_reason(data_root):
 
 def test_report_records_the_thresholds_that_were_applied(data_root):
     """A yield figure is meaningless without the gate that produced it."""
-    build_session(data_root, "SYNTH-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
     report = json.loads((data_root / "ingest_report.json").read_text("utf-8"))
     assert report["gate"]["laplacian_variance_min"] == 100.0
     assert report["gate"]["edge_density"]["interior_margin_frac"] == 0.02
@@ -353,11 +483,11 @@ def test_report_records_the_thresholds_that_were_applied(data_root):
 
 def test_report_lists_every_rejected_image_by_path(data_root):
     """Rejects are counted *and* traceable — someone has to be able to go and look."""
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    ingest_session("SYNTH-20260101-01", data_root)
     report = json.loads((data_root / "ingest_report.json").read_text("utf-8"))
 
-    listed = report["sessions"]["SYNTH-01"]["rejected_images"]
+    listed = report["sessions"]["SYNTH-20260101-01"]["rejected_images"]
     assert listed
     for item in listed:
         assert (data_root / item["path"]).exists()
@@ -365,12 +495,12 @@ def test_report_lists_every_rejected_image_by_path(data_root):
 
 
 def test_report_replaces_rather_than_appends_on_reingest(data_root):
-    build_session(data_root, "SYNTH-01", frames=3)
-    ingest_session("SYNTH-01", data_root)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3)
+    ingest_session("SYNTH-20260101-01", data_root)
+    ingest_session("SYNTH-20260101-01", data_root)
 
     report = json.loads((data_root / "ingest_report.json").read_text("utf-8"))
-    assert report["sessions"]["SYNTH-01"]["total"] == 6
+    assert report["sessions"]["SYNTH-20260101-01"]["total"] == 6
     assert report["totals"]["total"] == 6
 
 
@@ -380,8 +510,8 @@ def test_report_replaces_rather_than_appends_on_reingest(data_root):
 
 def test_a_session_without_calibration_falls_back_to_center_crop_and_says_so(data_root):
     """Allowed by the ingest skill — but flagged, never silent."""
-    build_session(data_root, "SYNTH-01", frames=2, with_calib=False)
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2, with_calib=False)
+    report = ingest_session("SYNTH-20260101-01", data_root)
 
     assert report.roi_mode == "center_crop"
     assert report.flags
@@ -391,8 +521,8 @@ def test_a_session_without_calibration_falls_back_to_center_crop_and_says_so(dat
 
 def test_uncalibrated_session_does_not_reject_frames_as_partial(data_root):
     """With no homography there is no marker requirement — §6 rule 2 is conditional."""
-    build_session(data_root, "SYNTH-01", frames=2, with_calib=False, )
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2, with_calib=False, )
+    report = ingest_session("SYNTH-20260101-01", data_root)
     assert report.by_reason.get("partial", 0) == 0
 
 
@@ -401,29 +531,29 @@ def test_uncalibrated_session_does_not_reject_frames_as_partial(data_root):
 # --------------------------------------------------------------------------- #
 
 def test_processed_images_are_written_for_accepted_frames_only(data_root):
-    build_session(data_root, "SYNTH-01", frames=3, bad_frame_markers={1: 3})
-    report = ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    report = ingest_session("SYNTH-20260101-01", data_root)
     written = list((data_root / "processed").rglob("*.png"))
     assert len(written) == report.accepted
 
 
 def test_processed_images_are_at_model_resolution(data_root):
-    build_session(data_root, "SYNTH-01", frames=2)
-    ingest_session("SYNTH-01", data_root)
+    build_session(data_root, "SYNTH-20260101-01", frames=2)
+    ingest_session("SYNTH-20260101-01", data_root)
     p = next((data_root / "processed").rglob("*.png"))
     assert cv2.imread(str(p), cv2.IMREAD_UNCHANGED).shape == (128, 128)
 
 
 def test_reingest_does_not_leave_orphaned_processed_images(data_root):
-    build_session(data_root, "SYNTH-01", frames=4)
-    ingest_session("SYNTH-01", data_root)
-    for p in sorted((data_root / "raw" / "SYNTH-01" / "420").glob("*.png"))[:2]:
+    build_session(data_root, "SYNTH-20260101-01", frames=4)
+    ingest_session("SYNTH-20260101-01", data_root)
+    for p in sorted((data_root / "raw" / "SYNTH-20260101-01" / "420").glob("*.png"))[:2]:
         p.unlink()
-    report = ingest_session("SYNTH-01", data_root)
+    report = ingest_session("SYNTH-20260101-01", data_root)
     assert len(list((data_root / "processed").rglob("*.png"))) == report.accepted
 
 
 def test_unknown_session_is_refused(data_root):
     (data_root / "raw").mkdir(parents=True)
     with pytest.raises(IngestError, match="not found"):
-        ingest_session("SYNTH-09", data_root)
+        ingest_session("SYNTH-20260109-01", data_root)

@@ -7,7 +7,8 @@ green: every gate exists because failing it silently costs more than failing it 
 
 | Phase | Outcome | Gate | Model |
 |---|---|---|---|
-| F0 | Repo + Claude Code configured | `tasks.py setup` green, GPU seen, 7 agents listed | sonnet |
+| F0 | Repo + Claude Code configured | `tasks.py setup` green, device reported, 7 agents listed | sonnet |
+| F3.5 | Docs and code reconciled | no contradiction left between a spec and the code that implements it | opus |
 | F1 | Modes found, classes fixed | `data/modes.csv` ≥ 10 modes | lab + haiku |
 | F2 | Python preprocessing | unit tests green on `tests/fixtures/` | opus → sonnet |
 | F3a | Ingest pipeline built | synthetic sessions ingest + split; curator READY | sonnet |
@@ -47,7 +48,8 @@ on native Windows, CPU-only. No CUDA anywhere in the app path (ADR 0005).
   runner and already exists — extend it, do not replace it, and never add a Makefile.
 - Python 3.11. requirements.txt is written and installs **CPU PyTorch on purpose** (ADR 0005).
   Do not add CUDA wheels: the app does not need them and they weigh hundreds of MB.
-  GPU wheels belong in requirements-train.txt, used only in the cloud notebook.
+  GPU wheels belong in requirements-train.txt, installed only on the team's own RTX 5070
+  (ADR 0005). There is no cloud notebook.
 - Node 20, Vite + React + TypeScript + Tailwind under web/. No Next.js, no SSR, no static-export
   config — the app is local-only (ADR 0004).
 - `tasks.py check-versions` must fail loudly when opencv-contrib-python is not the pinned
@@ -82,6 +84,37 @@ sonnet — mechanical scaffolding.
 4. `/agents` — confirm 7 agents: the three `wittenberg-*` plus the four imported.
 5. `/context` — record the baseline cost of CLAUDE.md + skill descriptions.
 6. `git init && git commit` the skeleton before anything else.
+
+---
+
+## F3.5 — Reconcile the documents and the code (before F1, despite the number)
+
+Numbered 3.5 because it settles what F3a built; scheduled **before F1** because every one of
+its six items is something the lab would hit on the first day. F1 assembles the rig, tapes the
+markers and photographs the calibration frame — the first time `cv2.aruco` touches a real
+photograph is F1, not F3b. A contradiction between a spec and its implementation costs nothing
+while it is on paper and costs a session once there are photographs.
+
+What it settles, and which side won:
+
+| # | Contradiction | Resolution |
+|---|---|---|
+| 1 | `SYNTH-NN` in code vs `SYNTH-YYYYMMDD-NN` in the plan | the document. A synthetic id must be a real id with a prefix, or the dry run never exercises the parsing of a real one |
+| 2 | `check-gpu` asks `is_available()` | the document. `check-device`, running a real matmul and `synchronize()` — the only check that catches a cu124 wheel on a Blackwell card |
+| 3 | `check-versions` compares `cv2.__version__` | the document. It must assert the *package*: `cv2.aruco` is contrib-only, and the version string is identical either way |
+| 4 | `tools/check_capture.py` in §6, absent from the repo | written, reading `config/quality_gate.json` and calling the same gate as ingest |
+| 5 | `[F3]` labels after F3 split | `[F3a]` |
+| 6 | geometric corner selection vs the §1.1 table | **the code.** Geometry decides; the table becomes an audit of the rig, and a divergence is a warning in `ingest_report.json` |
+
+Plus: `config/quality_gate.json` stays and is documented; `session.json` becomes a hard
+requirement at ingest; the F1 ≥ 10 modes gate becomes an error for real sweeps and a warning
+for synthetic ones; and `docs/adr/0006` records what the OpenCV pin is actually worth, in
+pixels.
+
+**The rule this phase encodes.** When a document and the code disagree, decide which is right
+and change the other — in one commit, with the reason written down. Neither "the code is the
+truth" nor "the spec is the truth" is a policy; a repository where the two disagree and nobody
+has decided is the only outcome that is always wrong.
 
 ---
 

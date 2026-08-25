@@ -1,5 +1,5 @@
 {
-  "session_id": "SYNTH-02",
+  "session_id": "SYNTH-20260102-01",
   "roi_mode": "homography",
   "corners": [
     [
@@ -29,5 +29,7 @@
   ],
   "dictionary": "DICT_4X4_50",
   "corner_rule": "innermost",
-  "calibration_config_version": "1.0.0"
+  "nominal_mismatch": [],
+  "flags": [],
+  "calibration_config_version": "1.1.0"
 }

@@ -49,8 +49,10 @@ from metadata import (
     MixedProvenanceError,
     check_provenance,
     is_accepted,
+    is_synthetic,
     read_metadata,
     replace_session_rows,
+    session_date,
     validate_session_id,
     write_metadata,
 )
@@ -62,6 +64,23 @@ SESSION_LOG = "session.json"
 #: §4 requires these on every row; they describe the capture conditions and cannot be
 #: reconstructed after the fact.
 REQUIRED_CONDITIONS = ("material", "grain_mass_g", "distance_mm", "lighting", "dwell_s")
+
+#: The whole of `data/raw/<session_id>/session.json`. Five of these become columns of
+#: `metadata.csv`; the rest are what makes a session auditable — who shot it, on what
+#: plate, on which day. Writing this file takes ten seconds at the bench and cannot be
+#: done four days later from memory, which is how a dataset stops being reportable.
+REQUIRED_SESSION_KEYS = (
+    "session_id",
+    "date",
+    "operator",
+    "plate",
+    *REQUIRED_CONDITIONS,
+    "notes",
+)
+
+#: `notes` is required to be *present* — an empty one means "nothing anomalous", which
+#: is information — but every other key must carry a value.
+OPTIONAL_VALUE_KEYS = ("notes",)
 
 
 class IngestError(MetadataError):
@@ -100,7 +119,7 @@ def ingest_session(session_id: str, data_root: Path | str) -> SessionReport:
     if not session_dir.is_dir():
         raise IngestError(f"{session_dir} not found")
 
-    conditions = _read_session_log(session_dir)
+    conditions = _read_session_log(session_dir, session_id)
     calib, roi_mode, flags = _session_calibration(root, session_id)
 
     existing = read_metadata(root / "metadata.csv")
@@ -254,18 +273,71 @@ def _freq_of(freq_dir: Path) -> int:
 # session inputs
 # --------------------------------------------------------------------------- #
 
-def _read_session_log(session_dir: Path) -> dict[str, Any]:
+def _read_session_log(session_dir: Path, session_id: str) -> dict[str, Any]:
+    """Read and validate `data/raw/<session_id>/session.json`. Refuse, never warn.
+
+    Five of these keys are columns of `metadata.csv` and cannot be recovered from the
+    images; the rest are what lets someone else audit the session later. A warning here
+    would be read as "carry on" and the session would be ingested without them — which
+    is not recoverable once the rig has been dismantled. Losing ten seconds before the
+    first shot beats losing the session after the last one.
+    """
     path = session_dir / SESSION_LOG
     if not path.exists():
         raise IngestError(
-            f"{path} not found — the session log records material, grain mass, distance, "
-            f"lighting and dwell, and §4 requires all five on every row. They cannot be "
-            f"reconstructed from the images."
+            f"{path} not found. Every session needs one, written BEFORE the first "
+            f"capture. Required keys: {', '.join(REQUIRED_SESSION_KEYS)}"
+            + (", synthetic" if is_synthetic(session_id) else "")
+            + f". Five of them are columns of metadata.csv (§4) and none of them can be "
+            f"reconstructed from the images four days after the lab."
         )
-    log = json.loads(path.read_text("utf-8"))
-    missing = [k for k in REQUIRED_CONDITIONS if log.get(k) in (None, "")]
-    if missing:
-        raise IngestError(f"{path}: session log is missing {', '.join(missing)}")
+
+    try:
+        log = json.loads(path.read_text("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise IngestError(f"{path}: not valid JSON — {exc}") from exc
+    if not isinstance(log, dict):
+        raise IngestError(f"{path}: expected a JSON object, got {type(log).__name__}")
+
+    absent = [k for k in REQUIRED_SESSION_KEYS if k not in log]
+    empty = [
+        k
+        for k in REQUIRED_SESSION_KEYS
+        if k in log and k not in OPTIONAL_VALUE_KEYS and log[k] in (None, "")
+    ]
+    if absent or empty:
+        problems = []
+        if absent:
+            problems.append(f"missing key(s) {', '.join(absent)}")
+        if empty:
+            problems.append(f"empty value(s) for {', '.join(empty)}")
+        raise IngestError(f"{path}: {'; '.join(problems)}")
+
+    if log["session_id"] != session_id:
+        raise IngestError(
+            f"{path}: session_id is {log['session_id']!r} but the directory is "
+            f"{session_id!r}. One of the two is a copy-paste from another session."
+        )
+
+    expected_date = session_date(session_id)
+    if str(log["date"]).replace("-", "") != expected_date:
+        raise IngestError(
+            f"{path}: date {log['date']!r} does not match the {expected_date} in the "
+            f"session id. `docs/02` §2 makes one session one day; if this really is a "
+            f"second run on another day, it needs its own session id."
+        )
+
+    synthetic = bool(log.get("synthetic", False))
+    if is_synthetic(session_id) and not synthetic:
+        raise IngestError(
+            f"{path}: a SYNTH-* session must carry \"synthetic\": true. That flag is what "
+            f"keeps a rendered frame from being read later as a measurement."
+        )
+    if synthetic and not is_synthetic(session_id):
+        raise IngestError(
+            f"{path}: \"synthetic\": true on session {session_id!r}, whose id is a real "
+            f"capture id. Rename the session SYNTH-{session_id} or drop the flag."
+        )
     return log
 
 
@@ -298,7 +370,11 @@ def _session_calibration(root: Path, session_id: str):
             f"{path} declares roi_mode=homography but carries no corners — recalibrate "
             f"the session rather than ingesting it uncalibrated"
         )
-    return calib, roi_mode, []
+    # `src/calibrate.py` compares the geometrically chosen corner against the nominal
+    # table in `docs/02` §1.1 and records any divergence. Surfacing it here is the whole
+    # point: it reaches the console the day the session is ingested and stays in
+    # `data/ingest_report.json` afterwards.
+    return calib, roi_mode, list(calib.get("flags") or [])
 
 
 def _clear_session_processed(root: Path, session_id: str) -> None:
@@ -339,6 +415,7 @@ def _write_report(
         "roi_mode": report.roi_mode,
         "flags": report.flags,
         "conditions": {k: conditions.get(k) for k in REQUIRED_CONDITIONS},
+        "session_log": {k: conditions.get(k) for k in REQUIRED_SESSION_KEYS},
         "by_class": report.by_class,
         "rejected_images": rejected_images,
     }
@@ -352,6 +429,8 @@ def _write_report(
 
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        # `config/quality_gate.json`, verbatim. `docs/02` §6: a yield figure without the
+        # thresholds that produced it is not reproducible, and the TDR reports the yield.
         "gate": gate,
         "preprocess_version": config.get("version"),
         "sessions": dict(sorted(sessions.items())),

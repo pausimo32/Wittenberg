@@ -35,8 +35,16 @@ from typing import Any
 #: docs/02-dataset-spec.md §3 step 4.
 MIN_SEPARATION_HZ = 40
 
-#: docs/00-master-plan.md, F1 gate. Advisory here — see `build_classes`.
+#: docs/00-master-plan.md F1: "Expect 10-18 usable modes. Fewer than 10 fails the phase
+#: gate". It is a gate on the *rig*, not on this code — see `build_classes`.
 EXPECTED_MIN_MODES = 10
+
+#: Why F1 sets the floor where it does, quoted so the failure says it at the bench.
+THIN_SWEEP_CAUSE = (
+    "it means the drive amplitude is too low or the plate is over-constrained at the "
+    "centre. Fix the rig and sweep again before continuing — this is not something the "
+    "40 Hz separation rule or any threshold in this file can be adjusted to fix."
+)
 
 REQUIRED_COLUMNS = ("freq_hz", "width_hz", "n_nodal_lines", "symmetry", "quality", "notes")
 
@@ -80,9 +88,16 @@ def build_classes(
 ) -> dict[str, Any]:
     """Apply the separation rule and assign the frozen class indices.
 
-    A thin mode list is reported in `warnings` rather than raised: the ">= 10 modes"
-    line in the F1 gate is cleared by a person looking at the plate, and this target
-    still has to run on the six-class synthetic sessions.
+    **A thin mode list is fatal for real captures and a warning for synthetic ones.**
+    `docs/00-master-plan.md` F1 states the gate — "Fewer than 10 fails the phase gate" —
+    and states its cause: too little drive amplitude, or a plate clamped too hard at the
+    centre. That is a fact about the rig, and the only correct response is to go back to
+    the rig, so this raises rather than printing something a person can walk past.
+
+    Six synthetic classes are enough to exercise the pipeline and are not a mode sweep at
+    all, so `provenance == "synthetic"` downgrades it to a warning. There is deliberately
+    no `--force`: if a real sweep ever yields nine good modes, the gate moves in a commit
+    with the reason written down, not at the command line at 11 p.m.
     """
     freqs = [m["freq_hz"] for m in modes]
     kept, rejected = [], []
@@ -119,14 +134,23 @@ def build_classes(
     ]
 
     warnings = []
-    if len(classes) < EXPECTED_MIN_MODES:
-        warnings.append(
-            f"only {len(classes)} usable modes; docs/00-master-plan.md F1 expects at least "
-            f"{EXPECTED_MIN_MODES}. Fewer than that usually means the drive amplitude is too "
-            f"low or the plate is over-constrained at the centre."
-        )
+    synthetic = provenance == "synthetic"
 
-    if provenance == "synthetic":
+    if len(classes) < EXPECTED_MIN_MODES:
+        thin = (
+            f"{len(classes)} usable mode(s); docs/00-master-plan.md F1 requires at least "
+            f"{EXPECTED_MIN_MODES}"
+        )
+        if synthetic:
+            warnings.append(
+                f"{thin}. Passed anyway because these are synthetic classes: six are "
+                f"enough to exercise the pipeline, and no gate on a real sweep applies "
+                f"to a renderer."
+            )
+        else:
+            raise ModesError(f"{thin} — {THIN_SWEEP_CAUSE}")
+
+    if synthetic:
         warnings.append(
             "these classes come from tools/synth_capture.py, not from a mode sweep. "
             "They are for exercising the pipeline only; regenerate config/classes.json "

@@ -1,5 +1,7 @@
-# Training only — the team's RTX 5070. NOT installed on machines that just run the app.
-# The app never imports anything from here (ADR 0005).
+# Training only — the team's RTX 5070, offline, on the team's own premises. NOT installed
+# on machines that just run the app; the app never imports anything from here (ADR 0005).
+# Training used to be planned for a cloud notebook; ADR 0005 moved it onto the team's card
+# and nothing here goes over the network any more.
 #
 # ══════════════════════════════════════════════════════════════════════════════
 #  RTX 50-series is Blackwell, compute capability sm_120.
