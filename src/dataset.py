@@ -111,10 +111,15 @@ def load_split(
                 f"current one rather than adding a class here."
             )
         path = root / "processed" / split / str(freq) / _processed_name(row)
-        image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
-        if image is None:
+        # Checked before `imread`, not after: `cv2.imread` prints its own `findDecoder`
+        # warning per missing file, so a stale metadata.csv would bury the one message
+        # that says what to do under one line of OpenCV noise per row.
+        if not path.exists():
             missing.append(str(path.relative_to(root)).replace("\\", "/"))
             continue
+        image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+        if image is None:
+            raise DatasetError(f"{path} exists but is not a readable image")
 
         images.append(image)
         labels.append(index[freq])
