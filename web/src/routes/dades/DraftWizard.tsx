@@ -26,6 +26,7 @@ import { getDraft } from '../../api/drafts'
 import { t } from '../../strings'
 import { Calibration } from './Calibration'
 import { Frames } from './Frames'
+import { Review } from './Review'
 
 /** The four steps, in order, with the state each one is waiting on. */
 const STEPS = [
@@ -110,14 +111,9 @@ export function DraftWizard() {
         </p>
       )}
 
-      {draft !== null && draft.status === 'committing' && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-warn-border bg-warn-surface p-4 text-warn-ink"
-        >
-          {t.data.drafts.interrupted}
-        </p>
-      )}
+      {/* The status word above is this draft's state; the sentence explaining what to do
+          about it lives in `Review`, beside the button that does it. Saying it twice on
+          one screen is two `role="alert"` paragraphs reading the same thing aloud. */}
 
       <ol className="mt-8 space-y-4">
         {STEPS.map((entry, index) => {
@@ -147,6 +143,14 @@ export function DraftWizard() {
               {entry.key === 'frames' && draft !== null && !locked && (
                 <Frames draft={draft} onChange={() => void reload()} />
               )}
+
+              {/* No `onChange`, unlike the two steps above it, and that is not an oversight: a
+                  successful commit *discards the draft* — its captures are in `data/` now —
+                  so re-reading it would answer 404 and replace the session that has just been
+                  incorporated with the sentence saying the esborrany no longer exists. The
+                  review reads the commit's own status from `GET /commit` instead, which is
+                  also what survives a reload of this page mid-commit. */}
+              {entry.key === 'review' && draft !== null && <Review draft={draft} />}
 
               {locked && <p className="mt-3 text-muted">{t.data.calibration.locked}</p>}
             </li>

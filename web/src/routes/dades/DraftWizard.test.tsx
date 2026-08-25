@@ -35,6 +35,14 @@ const DRAFT = {
   existing_rows: 0,
 }
 
+const EMPTY_MATRIX = {
+  sessions: [],
+  classes: [],
+  cells: {},
+  sessions_per_class: {},
+  min_sessions_per_class: 3,
+}
+
 function renderAt(id: string) {
   return render(
     <MemoryRouter initialEntries={[`/dades/${id}`]}>
@@ -78,9 +86,17 @@ describe('DraftWizard', () => {
   })
 
   it('shows the status in Catalan, not as the machine token', async () => {
+    // Answer each endpoint with its own shape. A stub that returns a Draft for every URL
+    // hands the matrix a Draft, and the component then only stays up because of defaults
+    // that exist for the pre-fetch case — a test propping up a component with the wrong
+    // data is a test that stops being about what it says it is about.
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify(DRAFT), { status: 200 })),
+      vi.fn(async (url: string) =>
+        url.includes('/api/dataset/matrix')
+          ? new Response(JSON.stringify(EMPTY_MATRIX), { status: 200 })
+          : new Response(JSON.stringify(DRAFT), { status: 200 }),
+      ),
     )
 
     renderAt('20260830-01')

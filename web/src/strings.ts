@@ -284,6 +284,7 @@ export const t = {
       sessionsShort: (freq: number, n: number, needed: number) =>
         `${freq} Hz només apareix en ${n} ${n === 1 ? 'sessió' : 'sessions'}; en calen ${needed}.`,
       cell: (accepted: number, total: number) => `${accepted}/${total}`,
+      emptyCell: 'Aquesta classe no s’ha fotografiat en aquesta sessió.',
     },
   },
 
