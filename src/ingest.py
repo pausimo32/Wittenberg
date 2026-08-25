@@ -190,7 +190,14 @@ def ingest_session(
             rejected_images.append(
                 {
                     "image_id": image_id,
-                    "path": str(image_path.relative_to(root)).replace("\\", "/"),
+                    # Built from the session id, not from where the file happens to be
+                    # sitting right now. `data/ingest_report.json` is a committed file that
+                    # describes a *session*, and when `/dades` ingests from
+                    # `raw/.incoming-<session_id>/` that directory is renamed away the moment
+                    # this function returns — a path recorded from it would be a committed
+                    # file pointing at something that no longer exists. For an ordinary
+                    # command-line ingest the two are the same string.
+                    "path": f"raw/{session_id}/{freq_hz}/{image_path.name}",
                     "reason": reason,
                     "quality": quality,
                     "metrics": metrics,

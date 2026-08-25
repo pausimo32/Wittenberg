@@ -742,3 +742,25 @@ def test_ingest_can_read_a_session_from_a_staging_directory(data_root):
     assert {r["session_id"] for r in rows} == {"SYNTH-20260101-01"}
     assert all(r["image_id"].startswith("SYNTH-20260101-01_") for r in rows)
     assert report.roi_mode == "homography"       # the staged calibration was found and used
+
+
+def test_the_report_describes_the_session_not_the_directory_it_was_ingested_from(data_root):
+    """`data/ingest_report.json` is committed. A rejected frame's path in it must name the
+    session, because the staging directory `/dades` ingests from is renamed away the moment
+    `ingest_session` returns — and a committed file pointing at a directory that no longer
+    exists is worse than no path at all."""
+    build_session(data_root, "SYNTH-20260101-01", frames=3, bad_frame_markers={1: 3})
+    staged = data_root / "raw" / ".incoming-SYNTH-20260101-01"
+    (data_root / "raw" / "SYNTH-20260101-01").rename(staged)
+    (data_root / "calib" / "SYNTH-20260101-01.json").rename(staged / "calibration.json")
+
+    ingest_session("SYNTH-20260101-01", data_root, jobs=1, session_dir=staged)
+    staged.rename(data_root / "raw" / "SYNTH-20260101-01")     # what `drafts.finish` does
+
+    listed = json.loads((data_root / "ingest_report.json").read_text("utf-8"))["sessions"][
+        "SYNTH-20260101-01"
+    ]["rejected_images"]
+    assert listed
+    for item in listed:
+        assert ".incoming" not in item["path"]
+        assert (data_root / item["path"]).exists()
