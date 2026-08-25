@@ -25,6 +25,7 @@ import { ApiError } from '../../api/client'
 import { getDraft } from '../../api/drafts'
 import { t } from '../../strings'
 import { Calibration } from './Calibration'
+import { Frames } from './Frames'
 
 /** The four steps, in order, with the state each one is waiting on. */
 const STEPS = [
@@ -137,6 +138,14 @@ export function DraftWizard() {
 
               {entry.key === 'calibration' && draft !== null && (
                 <Calibration draft={draft} onCalibrated={() => void reload()} />
+              )}
+
+              {/* Behind the same lock, and behind it on the same condition: while the draft is
+                  uncalibrated there is nothing here but the sentence saying why. Rendering the
+                  drop zone greyed out would still be a drop zone, and sixty photographs would
+                  reach a server that answers 409 `not_calibrated` to every one of them. */}
+              {entry.key === 'frames' && draft !== null && !locked && (
+                <Frames draft={draft} onChange={() => void reload()} />
               )}
 
               {locked && <p className="mt-3 text-muted">{t.data.calibration.locked}</p>}
