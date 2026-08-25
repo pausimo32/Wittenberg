@@ -30,8 +30,8 @@ import drafts as drafts_module
 from calibrate import ROI_MODE_HOMOGRAPHY
 from imageio import UnsupportedImageError, decode_bytes, thumbnail
 from ingest import IngestError, assess_frame, ingest_session, verdict_of
-from metadata import MixedProvenanceError
-from split import SplitError, split_dataset
+from metadata import MixedProvenanceError, is_accepted, read_metadata
+from split import MIN_SESSIONS, SplitError, split_dataset
 
 #: The calibration preview is the one picture in this view someone squints at, so it gets
 #: twice a rejection thumbnail's side and no more.
@@ -420,6 +420,44 @@ def dataset_router(state: DatasetState) -> APIRouter:
             return split_dataset(state.data_root)
         except SplitError as exc:
             raise conflict("split_failed", str(exc)) from exc
+
+    @router.get("/dataset/matrix")
+    def matrix() -> dict[str, Any]:
+        """Images per class per session, and how many sessions cover each class.
+
+        `docs/02` §2 wants every class in at least three sessions; a class in one is a class
+        whose test accuracy will be a fact about one afternoon. Seeing that while the rig is
+        still set up is the entire point of putting it here rather than only in the curator.
+
+        The numbers are counted, never interpreted: the Catalan sentence about a class being
+        short of sessions is chosen in `strings.ts` from `sessions_per_class`, and the
+        threshold it is compared against is `split.MIN_SESSIONS` — the same constant the
+        split itself refuses on, so the warning cannot drift away from the rule.
+
+        A pair with no images is **absent** from `cells`, not a zero. §9: "the empty cells
+        are the ones that break the split", and in a table a zero and a missing pair look
+        alike while meaning different things — one class was photographed in that session
+        and yielded nothing, the other was never photographed there at all.
+
+        Reads only. `read_metadata` answers `[]` for a dataset that does not exist yet, which
+        is the honest answer for a rig that has not captured anything.
+        """
+        rows = read_metadata(state.data_root / "metadata.csv")
+
+        cells: dict[str, dict[str, dict[str, int]]] = {}
+        for row in rows:
+            freq, session = str(row["freq_hz"]), str(row["session_id"])
+            cell = cells.setdefault(freq, {}).setdefault(session, {"total": 0, "accepted": 0})
+            cell["total"] += 1
+            cell["accepted"] += 1 if is_accepted(row) else 0
+
+        return {
+            "sessions": sorted({str(r["session_id"]) for r in rows}),
+            "classes": sorted({int(r["freq_hz"]) for r in rows}),
+            "cells": cells,
+            "sessions_per_class": {freq: len(by) for freq, by in cells.items()},
+            "min_sessions_per_class": MIN_SESSIONS,
+        }
 
     return router
 

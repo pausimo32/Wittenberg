@@ -780,3 +780,35 @@ def test_split_runs_by_session(client, roots):
         assert response.json()["detail"]["code"] == "split_failed"
     else:
         assert response.json()["seed"] == 42
+
+
+def test_the_matrix_shows_the_empty_cells(client, roots):
+    """§9: "the empty cells are the ones that break the split". A missing pair must be
+    absent from `cells` and visible as a class covered by fewer than 3 sessions."""
+    data_root, _ = roots
+    (data_root / "metadata.csv").write_text(
+        HEADER
+        + "20260830-01_440_0001,20260830-01,440,train,sand,6.0,210,lamp_diffuse,3.0,"
+          "homography,ok,\n"
+        + "20260830-01_440_0002,20260830-01,440,,sand,6.0,210,lamp_diffuse,3.0,"
+          "homography,blurred,gate:blurred\n"
+        + "20260830-02_620_0001,20260830-02,620,test,sand,6.0,210,lamp_diffuse,3.0,"
+          "homography,ok,\n",
+        "utf-8",
+    )
+
+    matrix = client.get("/api/dataset/matrix").json()
+
+    assert matrix["sessions"] == ["20260830-01", "20260830-02"]
+    assert matrix["classes"] == [440, 620]
+    assert matrix["cells"]["440"]["20260830-01"] == {"total": 2, "accepted": 1}
+    assert "20260830-02" not in matrix["cells"]["440"]
+    assert matrix["sessions_per_class"] == {"440": 1, "620": 1}
+    assert matrix["min_sessions_per_class"] == 3
+
+
+def test_the_matrix_is_empty_before_there_is_a_dataset(client):
+    matrix = client.get("/api/dataset/matrix").json()
+
+    assert matrix["sessions"] == []
+    assert matrix["classes"] == []
