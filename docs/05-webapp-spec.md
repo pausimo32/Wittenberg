@@ -260,6 +260,74 @@ missing, luminance out of range, interior edge density too low — and shows you
 next to the original. You find out that the lighting is wrong on photo three, not after
 importing four hundred.
 
+### Where a session in progress lives
+
+A session being labelled is a **draft**: `drafts/<session_id>/`, at the repo root, outside `data/`
+and ignored by git. It holds the uploads exactly as they arrived, the calibration, and one gate
+verdict per frame.
+
+That location is the reason "a half-finished session leaves no trace in `data/`" is a property of
+the layout rather than a cleanup that has to work: there is no code path that could leave a trace
+there, because nothing is written there until the commit. It is also why discarding a draft is safe
+to offer as a button.
+
+It is the repo root and not the system temp directory on purpose — an orphan afternoon in `%TEMP%`
+that nobody can name is indistinguishable from a lost one. And it is beside `data/` on purpose: the
+commit *moves* the captures rather than copying them, so six hundred 12 MP frames change directory
+in milliseconds, and on Windows a cross-volume `os.rename` fails outright.
+
+Draft state is on the **server**, keyed by the session id, not in the page. Reloading, opening a
+second tab or being handed the link finds the session where it was — which is what makes the
+`BrowserRouter` fallback worth having. `GET /api/drafts` lists what is open with the identifier,
+the full path and the size on disk, so a draft nobody remembers starting can be found and finished
+or discarded, and so the person who has to delete one of three can tell which.
+
+### Committing: either the draft exists or the session exists
+
+The commit does not move the captures to their final name and then ingest them. It moves them to
+`data/raw/.incoming-<session_id>/`, runs `ingest.ingest_session` **there**, and renames the
+directory to `<session_id>` only once that function has returned. `data/calib/<session_id>.json` is
+written at that same last step, because `data/calib/` is committed to git and an orphan calibration
+for a session whose ingest failed would be a file in the repository describing nothing.
+
+So a disk that fills up or one corrupt capture leaves a staged draft that says how to resume, and
+leaves nothing in `data/` answering to the session id. Committing again resumes from the staged
+captures; discarding the draft takes them with it.
+
+One window is not closed and is not pretended away: `ingest_session` writes `metadata.csv` as its
+last act, so a crash between that write and the rename leaves rows whose captures are still staged.
+Re-running the commit converges — `_clear_session_processed` and `replace_session_rows` both key on
+the session id.
+
+The commit runs on a thread and reports `(done, total)`; the view polls it. Polling and not a
+stream, because a reload drops an `EventSource` exactly as it drops React state, and requirement 2
+is that a reload finds the session where it was. At ≈ 0.56 s per 12 MP frame a ten-class session of
+sixty frames is minutes, not seconds, and nothing about it blocks.
+
+### Three more rules the build settled
+
+**A session id that already has rows is a question, not a replacement.** `ingest_session` is
+idempotent, which is right for a command line where re-running is what you meant. From a browser it
+is not: an id typed one digit wrong lands on a session someone else captured, and idempotent then
+means the old rows are gone without anyone being asked. The commit refuses with the row count and
+offers the replacement explicitly. A refused commit leaves the session it refused to replace
+byte-identical.
+
+**Calibration comes first, and the server enforces the order.** Uploading a pattern before the four
+markers have been found is refused before the bytes are stored: the 512 px ROI the gate measures
+does not exist yet. The view holds the step shut as well — the same rule said twice, once where it
+can be seen and once where it cannot be bypassed.
+
+**The raw bytes arrive raw, and the same bytes arrive once.** The upload is stored byte for byte —
+no client-side resize, no re-encode, no EXIF strip — and every preview is generated from the file
+*after* it is stored. `docs/02` §4 defines `data/raw/` as untouched, straight off the phone, and a
+recoded JPEG survives Canny as spurious contours that cannot be spotted in the file afterwards. The
+SHA-256 that proves it also refuses a frame the draft already holds, under any name, in any class:
+a retried batch over a connection that stumbles is the likeliest way this view corrupts a dataset,
+and a repeated frame is not a second observation. Duplicates are counted as their own category,
+neither accepted nor rejected — the gate never saw them, and folding them into the rejections would
+make a retried upload read as a lighting problem.
+
 ### Rules that are not negotiable
 
 - **The label is typed once per class, never per image.** A folder of photos of the same mode is
@@ -294,8 +362,26 @@ what stops you from discovering a missing class four days later.
 
 ### Testing
 
-- The gate applied by `/dades` and by `tasks.py ingest` returns identical verdicts on
-  `tests/fixtures/` — asserted, not assumed
-- Abandoning a session mid-upload leaves `data/` byte-identical
-- Re-ingesting a session twice produces one set of rows
-- A `SYNTH-*` session alongside a real one is refused
+The four this section has always named, each now with the test that holds it:
+
+| Property | Test |
+|---|---|
+| The gate applied by `/dades` and by `tasks.py ingest` returns identical verdicts | `test_dataset_api.py::test_the_live_gate_is_the_ingest_gate` — every verdict re-derived through `ingest.gate_frame` and compared |
+| Abandoning a session mid-upload leaves `data/` byte-identical | `test_drafts.py::test_abandoning_a_draft_leaves_data_byte_identical` |
+| Re-ingesting a session twice produces one set of rows | `test_dataset_api.py::test_re_ingesting_a_session_twice_produces_one_set_of_rows` |
+| A `SYNTH-*` session alongside a real one is refused | `test_dataset_api.py::test_a_synthetic_session_alongside_a_real_one_is_refused` — at the door, before any upload |
+
+And the five the build added:
+
+| Property | Test |
+|---|---|
+| The bytes stored are the bytes uploaded | `test_drafts.py::test_stored_bytes_are_the_uploaded_bytes` (SHA-256 on disk) **and** `web/src/api/drafts.test.ts` (the bytes leaving the browser) |
+| A draft survives a reload | `test_dataset_api.py::test_draft_survives_a_new_client` — a second app over the same roots, which is what a reload is |
+| Frames are refused before the calibration | `test_dataset_api.py::test_frames_refused_before_calibration` |
+| A failed ingest leaves no session, and can be resumed | `test_dataset_api.py::test_a_failed_commit_leaves_no_session_and_can_be_resumed` |
+| The commit's progress moves | `test_dataset_api.py::test_commit_reports_progress`, `test_ingest.py::test_progress_is_called_once_per_frame` |
+
+Two of these are worth knowing are *load-bearing* rather than decorative, because both were checked
+by breaking the thing they guard: `test_concurrent_stores_do_not_lose_each_other` fails five times
+out of five with the frames-log lock removed, and `test_the_quad_is_drawn_where_the_markers_are`
+fails when the preview's scale factor is forced to 1.
