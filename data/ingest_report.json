@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T09:56:29+00:00",
+  "generated_at": "2026-08-25T15:44:13+00:00",
   "gate": {
     "version": "1.0.0",
     "_note": "Ingest quality gate \u2014 docs/02-dataset-spec.md \u00a76. Thresholds live here, not in code, so a gate change is a reviewable diff and is recorded verbatim in every data/ingest_report.json.",
@@ -72,11 +72,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 166.1306,
-            "mean_luminance": 216.8352,
+            "laplacian_variance": 164.7327,
+            "mean_luminance": 216.8373,
             "interior_margin_px": 10,
-            "edge_density": 0.0224,
-            "edge_density_full_frame": 0.0271
+            "edge_density": 0.0225,
+            "edge_density_full_frame": 0.0279
           }
         },
         {
@@ -97,8 +97,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12463.5305,
-            "mean_luminance": 95.7414,
+            "laplacian_variance": 12433.2033,
+            "mean_luminance": 95.7452,
             "interior_margin_px": 10,
             "edge_density": 0.3403,
             "edge_density_full_frame": 0.339
@@ -112,11 +112,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3256,
-            "mean_luminance": 101.5583,
+            "laplacian_variance": 1.3272,
+            "mean_luminance": 101.5622,
             "interior_margin_px": 10,
-            "edge_density": 0.01,
-            "edge_density_full_frame": 0.01
+            "edge_density": 0.0105,
+            "edge_density_full_frame": 0.0104
           }
         },
         {
@@ -127,11 +127,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 166.1971,
-            "mean_luminance": 216.845,
+            "laplacian_variance": 164.8597,
+            "mean_luminance": 216.8472,
             "interior_margin_px": 10,
             "edge_density": 0.0226,
-            "edge_density_full_frame": 0.0272
+            "edge_density_full_frame": 0.0279
           }
         },
         {
@@ -142,11 +142,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3174,
-            "mean_luminance": 101.5545,
+            "laplacian_variance": 1.3195,
+            "mean_luminance": 101.5584,
             "interior_margin_px": 10,
-            "edge_density": 0.01,
-            "edge_density_full_frame": 0.0099
+            "edge_density": 0.0103,
+            "edge_density_full_frame": 0.0103
           }
         },
         {
@@ -167,11 +167,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3867,
-            "mean_luminance": 100.1487,
+            "laplacian_variance": 1.3769,
+            "mean_luminance": 100.1523,
             "interior_margin_px": 10,
-            "edge_density": 0.0078,
-            "edge_density_full_frame": 0.008
+            "edge_density": 0.0077,
+            "edge_density_full_frame": 0.0079
           }
         },
         {
@@ -182,11 +182,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 170.0304,
-            "mean_luminance": 216.4835,
+            "laplacian_variance": 168.6314,
+            "mean_luminance": 216.4852,
             "interior_margin_px": 10,
             "edge_density": 0.025,
-            "edge_density_full_frame": 0.03
+            "edge_density_full_frame": 0.0299
           }
         },
         {
@@ -197,11 +197,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12415.5553,
-            "mean_luminance": 95.7713,
+            "laplacian_variance": 12379.727,
+            "mean_luminance": 95.7761,
             "interior_margin_px": 10,
-            "edge_density": 0.3397,
-            "edge_density_full_frame": 0.3382
+            "edge_density": 0.3394,
+            "edge_density_full_frame": 0.3378
           }
         },
         {
@@ -212,11 +212,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3861,
-            "mean_luminance": 100.1686,
+            "laplacian_variance": 1.3816,
+            "mean_luminance": 100.1721,
             "interior_margin_px": 10,
-            "edge_density": 0.0076,
-            "edge_density_full_frame": 0.0078
+            "edge_density": 0.0057,
+            "edge_density_full_frame": 0.0061
           }
         },
         {
@@ -237,8 +237,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 171.606,
-            "mean_luminance": 216.5816,
+            "laplacian_variance": 170.1498,
+            "mean_luminance": 216.5836,
             "interior_margin_px": 10,
             "edge_density": 0.0266,
             "edge_density_full_frame": 0.0313
@@ -252,11 +252,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3665,
-            "mean_luminance": 100.4401,
+            "laplacian_variance": 1.3653,
+            "mean_luminance": 100.4444,
             "interior_margin_px": 10,
-            "edge_density": 0.011,
-            "edge_density_full_frame": 0.0106
+            "edge_density": 0.0131,
+            "edge_density_full_frame": 0.0126
           }
         },
         {
@@ -267,11 +267,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12610.1249,
-            "mean_luminance": 95.954,
+            "laplacian_variance": 12581.1882,
+            "mean_luminance": 95.9561,
             "interior_margin_px": 10,
             "edge_density": 0.3394,
-            "edge_density_full_frame": 0.338
+            "edge_density_full_frame": 0.3378
           }
         },
         {
@@ -282,8 +282,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 170.7979,
-            "mean_luminance": 216.5702,
+            "laplacian_variance": 169.3318,
+            "mean_luminance": 216.573,
             "interior_margin_px": 10,
             "edge_density": 0.0265,
             "edge_density_full_frame": 0.0327
@@ -307,11 +307,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3746,
-            "mean_luminance": 100.4289,
+            "laplacian_variance": 1.3696,
+            "mean_luminance": 100.4331,
             "interior_margin_px": 10,
-            "edge_density": 0.0123,
-            "edge_density_full_frame": 0.0118
+            "edge_density": 0.0118,
+            "edge_density_full_frame": 0.0113
           }
         },
         {
@@ -322,11 +322,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.1888,
-            "mean_luminance": 100.1319,
+            "laplacian_variance": 1.1967,
+            "mean_luminance": 100.134,
             "interior_margin_px": 10,
             "edge_density": 0.0054,
-            "edge_density_full_frame": 0.0051
+            "edge_density_full_frame": 0.0053
           }
         },
         {
@@ -337,11 +337,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 154.1538,
-            "mean_luminance": 216.4806,
+            "laplacian_variance": 152.7937,
+            "mean_luminance": 216.4828,
             "interior_margin_px": 10,
             "edge_density": 0.0124,
-            "edge_density_full_frame": 0.0173
+            "edge_density_full_frame": 0.0167
           }
         },
         {
@@ -362,11 +362,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.184,
-            "mean_luminance": 100.1163,
+            "laplacian_variance": 1.1883,
+            "mean_luminance": 100.1184,
             "interior_margin_px": 10,
-            "edge_density": 0.0053,
-            "edge_density_full_frame": 0.0052
+            "edge_density": 0.0055,
+            "edge_density_full_frame": 0.0054
           }
         },
         {
@@ -377,11 +377,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12522.8365,
-            "mean_luminance": 96.2275,
+            "laplacian_variance": 12488.4622,
+            "mean_luminance": 96.2293,
             "interior_margin_px": 10,
-            "edge_density": 0.3403,
-            "edge_density_full_frame": 0.339
+            "edge_density": 0.3402,
+            "edge_density_full_frame": 0.3387
           }
         },
         {
@@ -392,11 +392,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 151.7122,
-            "mean_luminance": 220.243,
+            "laplacian_variance": 150.3213,
+            "mean_luminance": 220.2455,
             "interior_margin_px": 10,
             "edge_density": 0.0184,
-            "edge_density_full_frame": 0.0236
+            "edge_density_full_frame": 0.0226
           }
         },
         {
@@ -407,11 +407,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.4347,
-            "mean_luminance": 113.8938,
+            "laplacian_variance": 1.443,
+            "mean_luminance": 113.8958,
             "interior_margin_px": 10,
-            "edge_density": 0.0094,
-            "edge_density_full_frame": 0.0095
+            "edge_density": 0.0078,
+            "edge_density_full_frame": 0.0081
           }
         },
         {
@@ -432,8 +432,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 152.5045,
-            "mean_luminance": 220.2646,
+            "laplacian_variance": 151.1816,
+            "mean_luminance": 220.2662,
             "interior_margin_px": 10,
             "edge_density": 0.0184,
             "edge_density_full_frame": 0.0236
@@ -447,11 +447,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.4358,
-            "mean_luminance": 113.8933,
+            "laplacian_variance": 1.4435,
+            "mean_luminance": 113.8952,
             "interior_margin_px": 10,
-            "edge_density": 0.0093,
-            "edge_density_full_frame": 0.0095
+            "edge_density": 0.0096,
+            "edge_density_full_frame": 0.0097
           }
         },
         {
@@ -462,11 +462,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12543.0024,
-            "mean_luminance": 96.0498,
+            "laplacian_variance": 12509.9577,
+            "mean_luminance": 96.0547,
             "interior_margin_px": 10,
-            "edge_density": 0.3404,
-            "edge_density_full_frame": 0.339
+            "edge_density": 0.3406,
+            "edge_density_full_frame": 0.3392
           }
         },
         {
@@ -477,11 +477,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.2872,
-            "mean_luminance": 100.2676,
+            "laplacian_variance": 1.2919,
+            "mean_luminance": 100.2707,
             "interior_margin_px": 10,
-            "edge_density": 0.0103,
-            "edge_density_full_frame": 0.0099
+            "edge_density": 0.0098,
+            "edge_density_full_frame": 0.0095
           }
         },
         {
@@ -502,11 +502,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 162.9846,
-            "mean_luminance": 216.5156,
+            "laplacian_variance": 161.4909,
+            "mean_luminance": 216.5178,
             "interior_margin_px": 10,
-            "edge_density": 0.0194,
-            "edge_density_full_frame": 0.0246
+            "edge_density": 0.0193,
+            "edge_density_full_frame": 0.0238
           }
         },
         {
@@ -517,11 +517,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.2937,
-            "mean_luminance": 100.2752,
+            "laplacian_variance": 1.2972,
+            "mean_luminance": 100.2786,
             "interior_margin_px": 10,
-            "edge_density": 0.011,
-            "edge_density_full_frame": 0.0107
+            "edge_density": 0.0107,
+            "edge_density_full_frame": 0.0104
           }
         }
       ]
@@ -580,11 +580,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 170.0014,
-            "mean_luminance": 219.7903,
+            "laplacian_variance": 168.4024,
+            "mean_luminance": 219.7929,
             "interior_margin_px": 10,
-            "edge_density": 0.0216,
-            "edge_density_full_frame": 0.0266
+            "edge_density": 0.0219,
+            "edge_density_full_frame": 0.0269
           }
         },
         {
@@ -605,11 +605,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12814.8616,
-            "mean_luminance": 97.4404,
+            "laplacian_variance": 12780.9184,
+            "mean_luminance": 97.4486,
             "interior_margin_px": 10,
-            "edge_density": 0.3416,
-            "edge_density_full_frame": 0.3392
+            "edge_density": 0.3412,
+            "edge_density_full_frame": 0.3388
           }
         },
         {
@@ -620,11 +620,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3804,
-            "mean_luminance": 102.9384,
+            "laplacian_variance": 1.3836,
+            "mean_luminance": 102.942,
             "interior_margin_px": 10,
-            "edge_density": 0.0104,
-            "edge_density_full_frame": 0.0104
+            "edge_density": 0.01,
+            "edge_density_full_frame": 0.01
           }
         },
         {
@@ -635,11 +635,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 170.021,
-            "mean_luminance": 219.7682,
+            "laplacian_variance": 168.5285,
+            "mean_luminance": 219.7709,
             "interior_margin_px": 10,
-            "edge_density": 0.022,
-            "edge_density_full_frame": 0.0272
+            "edge_density": 0.0218,
+            "edge_density_full_frame": 0.0269
           }
         },
         {
@@ -650,11 +650,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3841,
-            "mean_luminance": 102.9268,
+            "laplacian_variance": 1.3873,
+            "mean_luminance": 102.9306,
             "interior_margin_px": 10,
-            "edge_density": 0.0112,
-            "edge_density_full_frame": 0.0112
+            "edge_density": 0.0103,
+            "edge_density_full_frame": 0.0103
           }
         },
         {
@@ -675,11 +675,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.4519,
-            "mean_luminance": 101.5451,
+            "laplacian_variance": 1.4475,
+            "mean_luminance": 101.5486,
             "interior_margin_px": 10,
-            "edge_density": 0.0087,
-            "edge_density_full_frame": 0.0088
+            "edge_density": 0.0083,
+            "edge_density_full_frame": 0.0085
           }
         },
         {
@@ -690,11 +690,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 173.9279,
-            "mean_luminance": 219.4082,
+            "laplacian_variance": 172.4566,
+            "mean_luminance": 219.4104,
             "interior_margin_px": 10,
-            "edge_density": 0.0226,
-            "edge_density_full_frame": 0.0269
+            "edge_density": 0.0229,
+            "edge_density_full_frame": 0.0277
           }
         },
         {
@@ -705,11 +705,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12858.5145,
-            "mean_luminance": 97.1355,
+            "laplacian_variance": 12823.4607,
+            "mean_luminance": 97.1381,
             "interior_margin_px": 10,
-            "edge_density": 0.3413,
-            "edge_density_full_frame": 0.3396
+            "edge_density": 0.3417,
+            "edge_density_full_frame": 0.34
           }
         },
         {
@@ -720,11 +720,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.4458,
-            "mean_luminance": 101.5467,
+            "laplacian_variance": 1.4478,
+            "mean_luminance": 101.5501,
             "interior_margin_px": 10,
-            "edge_density": 0.0097,
-            "edge_density_full_frame": 0.0098
+            "edge_density": 0.0094,
+            "edge_density_full_frame": 0.0095
           }
         },
         {
@@ -745,11 +745,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 175.1075,
-            "mean_luminance": 219.4785,
+            "laplacian_variance": 173.6488,
+            "mean_luminance": 219.4815,
             "interior_margin_px": 10,
-            "edge_density": 0.0248,
-            "edge_density_full_frame": 0.0295
+            "edge_density": 0.0247,
+            "edge_density_full_frame": 0.0294
           }
         },
         {
@@ -770,11 +770,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12799.2685,
-            "mean_luminance": 97.1876,
+            "laplacian_variance": 12761.6586,
+            "mean_luminance": 97.1862,
             "interior_margin_px": 10,
-            "edge_density": 0.3393,
-            "edge_density_full_frame": 0.3377
+            "edge_density": 0.3396,
+            "edge_density_full_frame": 0.3379
           }
         },
         {
@@ -785,11 +785,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 175.7079,
-            "mean_luminance": 219.5068,
+            "laplacian_variance": 174.0887,
+            "mean_luminance": 219.5079,
             "interior_margin_px": 10,
             "edge_density": 0.0246,
-            "edge_density_full_frame": 0.029
+            "edge_density_full_frame": 0.0296
           }
         },
         {
@@ -830,8 +830,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 157.0003,
-            "mean_luminance": 219.4101,
+            "laplacian_variance": 155.5098,
+            "mean_luminance": 219.4123,
             "interior_margin_px": 10,
             "edge_density": 0.0122,
             "edge_density_full_frame": 0.0181
@@ -865,11 +865,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12866.4192,
-            "mean_luminance": 97.3191,
+            "laplacian_variance": 12836.3706,
+            "mean_luminance": 97.322,
             "interior_margin_px": 10,
-            "edge_density": 0.3406,
-            "edge_density_full_frame": 0.339
+            "edge_density": 0.341,
+            "edge_density_full_frame": 0.3394
           }
         },
         {
@@ -880,10 +880,10 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 154.4144,
-            "mean_luminance": 223.1592,
+            "laplacian_variance": 152.9223,
+            "mean_luminance": 223.1608,
             "interior_margin_px": 10,
-            "edge_density": 0.0174,
+            "edge_density": 0.0175,
             "edge_density_full_frame": 0.0225
           }
         },
@@ -915,11 +915,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 155.937,
-            "mean_luminance": 223.1767,
+            "laplacian_variance": 154.4463,
+            "mean_luminance": 223.1786,
             "interior_margin_px": 10,
             "edge_density": 0.0176,
-            "edge_density_full_frame": 0.0235
+            "edge_density_full_frame": 0.0234
           }
         },
         {
@@ -940,11 +940,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12770.2489,
-            "mean_luminance": 97.0348,
+            "laplacian_variance": 12740.1084,
+            "mean_luminance": 97.0429,
             "interior_margin_px": 10,
-            "edge_density": 0.3391,
-            "edge_density_full_frame": 0.3373
+            "edge_density": 0.3386,
+            "edge_density_full_frame": 0.3368
           }
         },
         {
@@ -975,11 +975,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 165.9166,
-            "mean_luminance": 219.4647,
+            "laplacian_variance": 164.5244,
+            "mean_luminance": 219.4671,
             "interior_margin_px": 10,
-            "edge_density": 0.0187,
-            "edge_density_full_frame": 0.0241
+            "edge_density": 0.018,
+            "edge_density_full_frame": 0.0231
           }
         },
         {
@@ -1048,11 +1048,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 169.5089,
-            "mean_luminance": 219.7878,
+            "laplacian_variance": 167.9436,
+            "mean_luminance": 219.7898,
             "interior_margin_px": 10,
-            "edge_density": 0.0211,
-            "edge_density_full_frame": 0.0261
+            "edge_density": 0.0214,
+            "edge_density_full_frame": 0.0264
           }
         },
         {
@@ -1073,11 +1073,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12837.7737,
-            "mean_luminance": 97.4144,
+            "laplacian_variance": 12806.241,
+            "mean_luminance": 97.4175,
             "interior_margin_px": 10,
-            "edge_density": 0.3412,
-            "edge_density_full_frame": 0.3395
+            "edge_density": 0.3414,
+            "edge_density_full_frame": 0.3397
           }
         },
         {
@@ -1088,11 +1088,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3795,
-            "mean_luminance": 102.9424,
+            "laplacian_variance": 1.3837,
+            "mean_luminance": 102.946,
             "interior_margin_px": 10,
-            "edge_density": 0.0105,
-            "edge_density_full_frame": 0.0105
+            "edge_density": 0.0107,
+            "edge_density_full_frame": 0.0107
           }
         },
         {
@@ -1103,11 +1103,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 169.7898,
-            "mean_luminance": 219.7785,
+            "laplacian_variance": 168.2685,
+            "mean_luminance": 219.7808,
             "interior_margin_px": 10,
             "edge_density": 0.0218,
-            "edge_density_full_frame": 0.0265
+            "edge_density_full_frame": 0.0267
           }
         },
         {
@@ -1118,11 +1118,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3784,
-            "mean_luminance": 102.9415,
+            "laplacian_variance": 1.3813,
+            "mean_luminance": 102.945,
             "interior_margin_px": 10,
-            "edge_density": 0.0096,
-            "edge_density_full_frame": 0.0096
+            "edge_density": 0.0101,
+            "edge_density_full_frame": 0.01
           }
         },
         {
@@ -1143,11 +1143,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.4551,
-            "mean_luminance": 101.5462,
+            "laplacian_variance": 1.4535,
+            "mean_luminance": 101.5493,
             "interior_margin_px": 10,
-            "edge_density": 0.0097,
-            "edge_density_full_frame": 0.0098
+            "edge_density": 0.0109,
+            "edge_density_full_frame": 0.0109
           }
         },
         {
@@ -1158,11 +1158,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 173.9532,
-            "mean_luminance": 219.3868,
+            "laplacian_variance": 172.5444,
+            "mean_luminance": 219.3892,
             "interior_margin_px": 10,
             "edge_density": 0.0225,
-            "edge_density_full_frame": 0.0273
+            "edge_density_full_frame": 0.0267
           }
         },
         {
@@ -1173,11 +1173,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12759.5435,
-            "mean_luminance": 97.106,
+            "laplacian_variance": 12730.8103,
+            "mean_luminance": 97.1081,
             "interior_margin_px": 10,
-            "edge_density": 0.3405,
-            "edge_density_full_frame": 0.3388
+            "edge_density": 0.3402,
+            "edge_density_full_frame": 0.3386
           }
         },
         {
@@ -1188,11 +1188,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.4507,
-            "mean_luminance": 101.5454,
+            "laplacian_variance": 1.4459,
+            "mean_luminance": 101.5485,
             "interior_margin_px": 10,
-            "edge_density": 0.0091,
-            "edge_density_full_frame": 0.0092
+            "edge_density": 0.0088,
+            "edge_density_full_frame": 0.0089
           }
         },
         {
@@ -1213,11 +1213,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 175.1555,
-            "mean_luminance": 219.5026,
+            "laplacian_variance": 173.6045,
+            "mean_luminance": 219.5052,
             "interior_margin_px": 10,
-            "edge_density": 0.0254,
-            "edge_density_full_frame": 0.0305
+            "edge_density": 0.025,
+            "edge_density_full_frame": 0.03
           }
         },
         {
@@ -1238,11 +1238,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12864.9048,
-            "mean_luminance": 97.0719,
+            "laplacian_variance": 12834.8749,
+            "mean_luminance": 97.075,
             "interior_margin_px": 10,
-            "edge_density": 0.3411,
-            "edge_density_full_frame": 0.3395
+            "edge_density": 0.3412,
+            "edge_density_full_frame": 0.3397
           }
         },
         {
@@ -1253,11 +1253,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 175.8216,
-            "mean_luminance": 219.484,
+            "laplacian_variance": 174.2709,
+            "mean_luminance": 219.4881,
             "interior_margin_px": 10,
-            "edge_density": 0.025,
-            "edge_density_full_frame": 0.0296
+            "edge_density": 0.0246,
+            "edge_density_full_frame": 0.0293
           }
         },
         {
@@ -1298,8 +1298,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 156.5604,
-            "mean_luminance": 219.4132,
+            "laplacian_variance": 155.1233,
+            "mean_luminance": 219.4163,
             "interior_margin_px": 10,
             "edge_density": 0.0122,
             "edge_density_full_frame": 0.0169
@@ -1333,10 +1333,10 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12806.9035,
-            "mean_luminance": 96.8868,
+            "laplacian_variance": 12772.0714,
+            "mean_luminance": 96.8914,
             "interior_margin_px": 10,
-            "edge_density": 0.3404,
+            "edge_density": 0.3403,
             "edge_density_full_frame": 0.3386
           }
         },
@@ -1348,11 +1348,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 155.5153,
-            "mean_luminance": 223.1689,
+            "laplacian_variance": 154.0685,
+            "mean_luminance": 223.1701,
             "interior_margin_px": 10,
-            "edge_density": 0.0175,
-            "edge_density_full_frame": 0.0226
+            "edge_density": 0.0173,
+            "edge_density_full_frame": 0.0224
           }
         },
         {
@@ -1383,11 +1383,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 153.9502,
-            "mean_luminance": 223.1703,
+            "laplacian_variance": 152.5465,
+            "mean_luminance": 223.1719,
             "interior_margin_px": 10,
             "edge_density": 0.0181,
-            "edge_density_full_frame": 0.023
+            "edge_density_full_frame": 0.0231
           }
         },
         {
@@ -1408,11 +1408,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12874.949,
-            "mean_luminance": 97.4079,
+            "laplacian_variance": 12843.6095,
+            "mean_luminance": 97.4149,
             "interior_margin_px": 10,
-            "edge_density": 0.3405,
-            "edge_density_full_frame": 0.3388
+            "edge_density": 0.3403,
+            "edge_density_full_frame": 0.3386
           }
         },
         {
@@ -1443,11 +1443,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 165.4236,
-            "mean_luminance": 219.4323,
+            "laplacian_variance": 163.8947,
+            "mean_luminance": 219.4339,
             "interior_margin_px": 10,
-            "edge_density": 0.0171,
-            "edge_density_full_frame": 0.0226
+            "edge_density": 0.0173,
+            "edge_density_full_frame": 0.0228
           }
         },
         {
@@ -1516,11 +1516,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 165.7864,
-            "mean_luminance": 216.8283,
+            "laplacian_variance": 164.3648,
+            "mean_luminance": 216.8307,
             "interior_margin_px": 10,
             "edge_density": 0.0225,
-            "edge_density_full_frame": 0.0257
+            "edge_density_full_frame": 0.026
           }
         },
         {
@@ -1541,11 +1541,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12493.9441,
-            "mean_luminance": 96.031,
+            "laplacian_variance": 12461.7586,
+            "mean_luminance": 96.0328,
             "interior_margin_px": 10,
-            "edge_density": 0.3407,
-            "edge_density_full_frame": 0.3389
+            "edge_density": 0.3406,
+            "edge_density_full_frame": 0.3387
           }
         },
         {
@@ -1556,11 +1556,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3276,
-            "mean_luminance": 101.5477,
+            "laplacian_variance": 1.3353,
+            "mean_luminance": 101.5515,
             "interior_margin_px": 10,
-            "edge_density": 0.0105,
-            "edge_density_full_frame": 0.0105
+            "edge_density": 0.0113,
+            "edge_density_full_frame": 0.0112
           }
         },
         {
@@ -1571,11 +1571,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 165.9329,
-            "mean_luminance": 216.8278,
+            "laplacian_variance": 164.4634,
+            "mean_luminance": 216.8303,
             "interior_margin_px": 10,
             "edge_density": 0.0225,
-            "edge_density_full_frame": 0.0277
+            "edge_density_full_frame": 0.0281
           }
         },
         {
@@ -1586,11 +1586,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3226,
-            "mean_luminance": 101.557,
+            "laplacian_variance": 1.3241,
+            "mean_luminance": 101.5607,
             "interior_margin_px": 10,
-            "edge_density": 0.0097,
-            "edge_density_full_frame": 0.0097
+            "edge_density": 0.0103,
+            "edge_density_full_frame": 0.0103
           }
         },
         {
@@ -1611,11 +1611,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3905,
-            "mean_luminance": 100.1708,
+            "laplacian_variance": 1.3847,
+            "mean_luminance": 100.1742,
             "interior_margin_px": 10,
-            "edge_density": 0.0048,
-            "edge_density_full_frame": 0.0052
+            "edge_density": 0.0054,
+            "edge_density_full_frame": 0.0058
           }
         },
         {
@@ -1626,8 +1626,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 170.3684,
-            "mean_luminance": 216.4824,
+            "laplacian_variance": 168.9554,
+            "mean_luminance": 216.4844,
             "interior_margin_px": 10,
             "edge_density": 0.0249,
             "edge_density_full_frame": 0.0304
@@ -1641,11 +1641,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12478.9698,
-            "mean_luminance": 95.7366,
+            "laplacian_variance": 12445.3071,
+            "mean_luminance": 95.7403,
             "interior_margin_px": 10,
-            "edge_density": 0.3411,
-            "edge_density_full_frame": 0.3396
+            "edge_density": 0.3409,
+            "edge_density_full_frame": 0.3394
           }
         },
         {
@@ -1656,11 +1656,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3918,
-            "mean_luminance": 100.1554,
+            "laplacian_variance": 1.3842,
+            "mean_luminance": 100.1586,
             "interior_margin_px": 10,
-            "edge_density": 0.0072,
-            "edge_density_full_frame": 0.0074
+            "edge_density": 0.0082,
+            "edge_density_full_frame": 0.0084
           }
         },
         {
@@ -1681,11 +1681,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 171.5967,
-            "mean_luminance": 216.5657,
+            "laplacian_variance": 170.1528,
+            "mean_luminance": 216.5673,
             "interior_margin_px": 10,
             "edge_density": 0.0265,
-            "edge_density_full_frame": 0.0314
+            "edge_density_full_frame": 0.0319
           }
         },
         {
@@ -1696,11 +1696,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3723,
-            "mean_luminance": 100.4296,
+            "laplacian_variance": 1.3671,
+            "mean_luminance": 100.4335,
             "interior_margin_px": 10,
-            "edge_density": 0.0128,
-            "edge_density_full_frame": 0.0123
+            "edge_density": 0.0125,
+            "edge_density_full_frame": 0.0121
           }
         },
         {
@@ -1711,11 +1711,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12593.2406,
-            "mean_luminance": 96.0346,
+            "laplacian_variance": 12557.8512,
+            "mean_luminance": 96.0347,
             "interior_margin_px": 10,
-            "edge_density": 0.341,
-            "edge_density_full_frame": 0.3391
+            "edge_density": 0.3415,
+            "edge_density_full_frame": 0.3395
           }
         },
         {
@@ -1726,11 +1726,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 170.5853,
-            "mean_luminance": 216.5776,
+            "laplacian_variance": 169.1372,
+            "mean_luminance": 216.5792,
             "interior_margin_px": 10,
             "edge_density": 0.0266,
-            "edge_density_full_frame": 0.0305
+            "edge_density_full_frame": 0.0302
           }
         },
         {
@@ -1751,11 +1751,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3727,
-            "mean_luminance": 100.4312,
+            "laplacian_variance": 1.3749,
+            "mean_luminance": 100.4358,
             "interior_margin_px": 10,
-            "edge_density": 0.0117,
-            "edge_density_full_frame": 0.0112
+            "edge_density": 0.0114,
+            "edge_density_full_frame": 0.0111
           }
         },
         {
@@ -1766,11 +1766,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.193,
-            "mean_luminance": 100.1204,
+            "laplacian_variance": 1.1973,
+            "mean_luminance": 100.1226,
             "interior_margin_px": 10,
-            "edge_density": 0.0055,
-            "edge_density_full_frame": 0.0053
+            "edge_density": 0.0051,
+            "edge_density_full_frame": 0.005
           }
         },
         {
@@ -1781,8 +1781,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 154.3365,
-            "mean_luminance": 216.4907,
+            "laplacian_variance": 152.9174,
+            "mean_luminance": 216.493,
             "interior_margin_px": 10,
             "edge_density": 0.0125,
             "edge_density_full_frame": 0.0179
@@ -1806,11 +1806,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.2077,
-            "mean_luminance": 100.1139,
+            "laplacian_variance": 1.2109,
+            "mean_luminance": 100.1161,
             "interior_margin_px": 10,
-            "edge_density": 0.0046,
-            "edge_density_full_frame": 0.0045
+            "edge_density": 0.0049,
+            "edge_density_full_frame": 0.0047
           }
         },
         {
@@ -1821,11 +1821,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12502.8027,
-            "mean_luminance": 96.0211,
+            "laplacian_variance": 12468.7783,
+            "mean_luminance": 96.0267,
             "interior_margin_px": 10,
-            "edge_density": 0.3392,
-            "edge_density_full_frame": 0.3378
+            "edge_density": 0.3391,
+            "edge_density_full_frame": 0.3377
           }
         },
         {
@@ -1836,11 +1836,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 152.542,
-            "mean_luminance": 220.2513,
+            "laplacian_variance": 151.1045,
+            "mean_luminance": 220.2534,
             "interior_margin_px": 10,
             "edge_density": 0.0184,
-            "edge_density_full_frame": 0.0235
+            "edge_density_full_frame": 0.0236
           }
         },
         {
@@ -1851,11 +1851,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.443,
-            "mean_luminance": 113.8909,
+            "laplacian_variance": 1.4527,
+            "mean_luminance": 113.8928,
             "interior_margin_px": 10,
-            "edge_density": 0.0091,
-            "edge_density_full_frame": 0.0093
+            "edge_density": 0.0084,
+            "edge_density_full_frame": 0.0087
           }
         },
         {
@@ -1876,8 +1876,8 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 152.3744,
-            "mean_luminance": 220.2207,
+            "laplacian_variance": 150.9719,
+            "mean_luminance": 220.2223,
             "interior_margin_px": 10,
             "edge_density": 0.0184,
             "edge_density_full_frame": 0.0235
@@ -1891,11 +1891,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.436,
-            "mean_luminance": 113.8992,
+            "laplacian_variance": 1.44,
+            "mean_luminance": 113.9013,
             "interior_margin_px": 10,
-            "edge_density": 0.0094,
-            "edge_density_full_frame": 0.0096
+            "edge_density": 0.0097,
+            "edge_density_full_frame": 0.0098
           }
         },
         {
@@ -1906,11 +1906,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 12523.6137,
-            "mean_luminance": 95.9014,
+            "laplacian_variance": 12491.9211,
+            "mean_luminance": 95.9067,
             "interior_margin_px": 10,
-            "edge_density": 0.3407,
-            "edge_density_full_frame": 0.3392
+            "edge_density": 0.3403,
+            "edge_density_full_frame": 0.3387
           }
         },
         {
@@ -1921,11 +1921,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.3156,
-            "mean_luminance": 100.2745,
+            "laplacian_variance": 1.3124,
+            "mean_luminance": 100.2783,
             "interior_margin_px": 10,
-            "edge_density": 0.0104,
-            "edge_density_full_frame": 0.0101
+            "edge_density": 0.0099,
+            "edge_density_full_frame": 0.0096
           }
         },
         {
@@ -1946,11 +1946,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 162.2606,
-            "mean_luminance": 216.5305,
+            "laplacian_variance": 160.651,
+            "mean_luminance": 216.5333,
             "interior_margin_px": 10,
             "edge_density": 0.0193,
-            "edge_density_full_frame": 0.0238
+            "edge_density_full_frame": 0.0235
           }
         },
         {
@@ -1961,11 +1961,11 @@
           "metrics": {
             "n_markers": 4,
             "roi_mode": "homography",
-            "laplacian_variance": 1.2954,
-            "mean_luminance": 100.2645,
+            "laplacian_variance": 1.2994,
+            "mean_luminance": 100.2681,
             "interior_margin_px": 10,
-            "edge_density": 0.0101,
-            "edge_density_full_frame": 0.0097
+            "edge_density": 0.0104,
+            "edge_density_full_frame": 0.01
           }
         }
       ]
