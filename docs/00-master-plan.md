@@ -8,13 +8,13 @@ green: every gate exists because failing it silently costs more than failing it 
 | Phase | Outcome | Gate | Model |
 |---|---|---|---|
 | F0 | Repo + Claude Code configured | `tasks.py setup` green, device reported, 7 agents listed | sonnet |
-| F3.5 | Docs and code reconciled | no contradiction left between a spec and the code that implements it | opus |
 | F1 | Modes found, classes fixed | `data/modes.csv` ≥ 10 modes | lab + haiku |
 | F2 | Python preprocessing | unit tests green on `tests/fixtures/` | opus → sonnet |
 | F3a | Ingest pipeline built | synthetic sessions ingest + split; curator READY | sonnet |
+| F3.5 | Documents and code reconciled | no doc↔code contradiction left open | sonnet |
+| F4a | Training bench green on synthetic | `train` and `eval` write `runs/<ts>/`, `check-model` green — never an accuracy figure | sonnet |
 | F3b | ≥ 4 real sessions ingested | curator says READY TO TRAIN | sonnet |
-| F4a | Training bench built | `train` -> `eval` -> `check-model` green end to end on the synthetic sessions | opus |
-| F4b | Trained + evaluated model | acceptance gates in model-spec §6, on real captures | opus |
+| F4b | Trained + evaluated model | acceptance gates in model-spec §6, on real captures, **both models** | opus |
 | F5 | Local serving API (CPU) | `check-model` green, API == direct call, ≤ 150 ms | sonnet |
 | F6 | Vite + React app + `/dades` | analyse flow end to end; a session can be labelled and committed | sonnet |
 | F7 | Didactic module + field prep | E2E green, reset clean, `v1.0-field` tagged | sonnet |
@@ -85,37 +85,6 @@ sonnet — mechanical scaffolding.
 4. `/agents` — confirm 7 agents: the three `wittenberg-*` plus the four imported.
 5. `/context` — record the baseline cost of CLAUDE.md + skill descriptions.
 6. `git init && git commit` the skeleton before anything else.
-
----
-
-## F3.5 — Reconcile the documents and the code (before F1, despite the number)
-
-Numbered 3.5 because it settles what F3a built; scheduled **before F1** because every one of
-its six items is something the lab would hit on the first day. F1 assembles the rig, tapes the
-markers and photographs the calibration frame — the first time `cv2.aruco` touches a real
-photograph is F1, not F3b. A contradiction between a spec and its implementation costs nothing
-while it is on paper and costs a session once there are photographs.
-
-What it settles, and which side won:
-
-| # | Contradiction | Resolution |
-|---|---|---|
-| 1 | `SYNTH-NN` in code vs `SYNTH-YYYYMMDD-NN` in the plan | the document. A synthetic id must be a real id with a prefix, or the dry run never exercises the parsing of a real one |
-| 2 | `check-gpu` asks `is_available()` | the document. `check-device`, running a real matmul and `synchronize()` — the only check that catches a cu124 wheel on a Blackwell card |
-| 3 | `check-versions` compares `cv2.__version__` | the document. It must assert the *package*: `cv2.aruco` is contrib-only, and the version string is identical either way |
-| 4 | `tools/check_capture.py` in §6, absent from the repo | written, reading `config/quality_gate.json` and calling the same gate as ingest |
-| 5 | `[F3]` labels after F3 split | `[F3a]` |
-| 6 | geometric corner selection vs the §1.1 table | **the code.** Geometry decides; the table becomes an audit of the rig, and a divergence is a warning in `ingest_report.json` |
-
-Plus: `config/quality_gate.json` stays and is documented; `session.json` becomes a hard
-requirement at ingest; the F1 ≥ 10 modes gate becomes an error for real sweeps and a warning
-for synthetic ones; and `docs/adr/0006` records what the OpenCV pin is actually worth, in
-pixels.
-
-**The rule this phase encodes.** When a document and the code disagree, decide which is right
-and change the other — in one commit, with the reason written down. Neither "the code is the
-truth" nor "the spec is the truth" is a policy; a repository where the two disagree and nobody
-has decided is the only outcome that is always wrong.
 
 ---
 
@@ -287,6 +256,89 @@ implementation, two callers — the same discipline as `src/preprocess.py`.
 
 ---
 
+## F3.5 — Reconcile the documents and the code
+
+Numbered 3.5 because it settles what F3a built. Executed **immediately after F3a and before
+F1**, because every one of its six items is something the lab would hit on the first day: F1
+assembles the rig, tapes the markers and photographs the calibration frame, so the first time
+`cv2.aruco` touches a real photograph is F1, not F3b. A contradiction between a spec and its
+implementation costs nothing while it is on paper and costs a session once there are
+photographs.
+
+What it settles, and which side won:
+
+| # | Contradiction | Resolution |
+|---|---|---|
+| 1 | `SYNTH-NN` in code vs `SYNTH-YYYYMMDD-NN` in the plan | the document. A synthetic id must be a real id with a prefix, or the dry run never exercises the parsing of a real one |
+| 2 | `check-gpu` asks `is_available()` | the document. `check-device`, running a real matmul and `synchronize()` — the only check that catches a cu124 wheel on a Blackwell card |
+| 3 | `check-versions` compares `cv2.__version__` | the document. It must assert the *package*: `cv2.aruco` is contrib-only, and the version string is identical either way |
+| 4 | `tools/check_capture.py` in §6, absent from the repo | written, reading `config/quality_gate.json` and calling the same gate as ingest |
+| 5 | `[F3]` labels after F3 split | `[F3a]` |
+| 6 | geometric corner selection vs the §1.1 table | **the code.** Geometry decides; the table becomes an audit of the rig, and a divergence is a warning in `ingest_report.json` |
+
+Plus: `config/quality_gate.json` stays and is documented; `session.json` becomes a hard
+requirement at ingest; the F1 ≥ 10 modes gate becomes an error for real sweeps and a warning
+for synthetic ones; and `docs/adr/0006` records what the OpenCV pin is actually worth, in
+pixels.
+
+**The rule this phase encodes.** When a document and the code disagree, decide which is right
+and change the other — in one commit, with the reason written down. Neither "the code is the
+truth" nor "the spec is the truth" is a policy; a repository where the two disagree and nobody
+has decided is the only outcome that is always wrong.
+
+---
+
+## F4a — The training bench (code, NOT blocked by the lab)
+
+**Numbered after F3b in the old plan and executed before it, on purpose.** In six months that
+order will look like a mistake, so: F4a *trains*, but it does not depend on the laboratory. F1
+and F3b consume weeks of calendar time; the code that trains does not have to wait for them,
+any more than the code that ingests had to wait in F3a. The synthetic sessions from F2.5 are
+enough to exercise every path — the loader, the loss, the early stopping, the run directory,
+the six evaluation outputs and the checkpoint gate — and the day the real captures land, the
+only unknown left is the physics.
+
+The same argument as F2.5 and F3a, and the same payoff: what F4a caught this time was a
+Grad-CAM failure that only appears with `baseline_paper`, which would otherwise have surfaced
+at the end of the first real training run.
+
+What F4a builds is `src/model.py`, `src/dataset.py`, `src/train.py`, `src/evaluate.py`,
+`src/runs.py`, and the `train`, `eval` and `check-model` targets — greened against the four
+synthetic sessions.
+
+**The gate is "it runs end to end and writes the artefacts". It is never an accuracy figure.**
+On synthetic captures the network reaches ~100 %, and that number measures how well it
+inverted the closed-form mode shape that drew the images. `metrics.json` from a synthetic run
+carries a `do_not_report` field saying so, in the file itself, because the person who opens it
+in six months will not remember where the data came from.
+
+The corollary matters more than the gate: **do not tune a single hyperparameter by looking at
+that number.** §3 of `docs/04-model-spec.md` fixes all of them and §5 is where they move — in
+an ablation, on real data, with the result written down. A learning rate chosen because it
+improved a score on rendered images is a learning rate chosen at random.
+
+Two things to check rather than assume:
+
+- the head reads `n_classes` from `config/classes.json` (6 with the synthetic sessions, 10–18
+  with real ones), never from a constant. The checkpoint stores a class *index*, so a head
+  sized for the wrong list answers with a different frequency at full confidence;
+- `python tasks.py check-model` is green against the checkpoint the bench produced, and red
+  when `config/preprocess.json` is mutated. That is the F5 gate, built here because it is what
+  makes F4a verifiable at all.
+
+Then `rm -rf data/raw/SYNTH-*` and delete the synthetic runs, before the first real training
+finds them and someone has to read timestamps to tell which is which. The committed trace —
+`metadata.csv`, `ingest_report.json`, `modes.csv`, `classes.json`, the calibrations — moves to
+`docs/annexes/f3a-dry-run/`, which is where it stays: evidence that the pipeline was proved
+before any real data existed, out of every path the pipeline reads.
+
+**`config/classes.json` goes with it, and the live path stays empty until F1 writes it.** Six
+invented frequencies sitting in the live config while F1 measures the real ones is a trap: the
+class index is frozen and is what a checkpoint stores instead of a frequency, so training
+against a stale list produces a model that answers the wrong frequency at full confidence.
+
+---
+
 ## F3b — Data collection (lab, the phase that takes calendar time)
 
 **Do externally**
@@ -364,38 +416,6 @@ sonnet.
 
 ---
 
-## F4a — The training bench (code, NOT blocked by the lab)
-
-Same move as F2.5 and F3a, for the same reason: F1 and F3b are lab phases that consume weeks
-of calendar time, and the code that trains does not have to wait for them. What F4a builds is
-`src/model.py`, `src/dataset.py`, `src/train.py`, `src/evaluate.py`, and the `train`, `eval`
-and `check-model` targets — greened against the four synthetic sessions.
-
-**The gate is "it runs end to end and writes the artefacts". It is never an accuracy figure.**
-On synthetic captures the network reaches ~100 %, and that number measures how well it
-inverted the closed-form mode shape that drew the images. `metrics.json` from a synthetic run
-carries a `do_not_report` field saying so, in the file itself, because the person who opens it
-in six months will not remember where the data came from.
-
-The corollary matters more than the gate: **do not tune a single hyperparameter by looking at
-that number.** §3 of `docs/04-model-spec.md` fixes all of them and §5 is where they move — in
-an ablation, on real data, with the result written down. A learning rate chosen because it
-improved a score on rendered images is a learning rate chosen at random.
-
-Two things to check rather than assume:
-
-- the head reads `n_classes` from `config/classes.json` (6 with the synthetic sessions, 10–18
-  with real ones), never from a constant. The checkpoint stores a class *index*, so a head
-  sized for the wrong list answers with a different frequency at full confidence;
-- `python tasks.py check-model` is green against the checkpoint the bench produced, and red
-  when `config/preprocess.json` is mutated. That is the F5 gate, built here because it is what
-  makes F4a verifiable at all.
-
-Then `rm -rf data/raw/SYNTH-*` and delete the synthetic runs, before the first real training
-finds them and someone has to read timestamps to tell which is which.
-
----
-
 ## F4b — Train and evaluate on real captures (the team's RTX 5070)
 
 Training is the only step that wants a GPU. It runs on the team's own card, a handful of times,
@@ -443,14 +463,24 @@ evaluation set. The bench is built; this phase produces the numbers.
 
 ## Definition of done
 - [ ] both models trained, metrics.json written
+- [ ] EVERY acceptance run covers BOTH models — train, eval and check-model, baseline_paper
+      as well as wittenberg_v1. Not "the one that ships, plus the baseline when convenient".
 - [ ] session-wise accuracy ≥ 80 %, worst-class recall ≥ 60 % (or a written explanation)
 - [ ] confusion matrix as PNG and CSV
-- [ ] Grad-CAM for 3 correct + 3 incorrect per class
+- [ ] Grad-CAM for 3 correct + 3 incorrect per class, for both models
 - [ ] accuracy reported with a 95 % Wilson interval
 
 ## Model
 opus — the split logic and the evaluation design are where this phase goes wrong.
 ```
+
+**Every acceptance run goes through both models.** `baseline_paper` is not decoration waiting
+for A7: it is a second, differently-shaped path through the same code, and it fails where
+`wittenberg_v1` does not. F4a found exactly that — Grad-CAM's backward hook makes the hooked
+layer's output a view, and `baseline_paper` puts its `ReLU` directly after that layer while
+`wittenberg_v1` has a `BatchNorm` in between. Running only the model that ships would have put
+that discovery at the end of the first real training run, on the GPU machine, with the lab work
+already spent.
 
 **Then the ablations** — one prompt each, `docs/04-model-spec.md` §5, 3 seeds, mean ± std.
 A4 (random vs session split) first: its result determines how every other number is read.

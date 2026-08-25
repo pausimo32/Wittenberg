@@ -39,6 +39,11 @@ flagged. A session missing `session.json` is blocked; those images cannot be lab
 python tasks.py ingest --session 20260916-01
 ```
 
+Frames go through a process pool when the measured cost of the first frame says it pays —
+real HEIC sessions yes, the 600 px synthetic dry run no. `--jobs N` forces it either way, and
+`--jobs 1` is the first thing to try if an ingest behaves oddly. The verdicts and the processed
+pixels are byte-identical regardless (`docs/02` §5).
+
 Which does, in order:
 
 1. **HEIC → PNG**, EXIF orientation applied then stripped, Display P3 → sRGB, profile stripped.

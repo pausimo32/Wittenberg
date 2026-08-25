@@ -43,6 +43,7 @@ from torch import nn
 
 import runs as runs_module
 from dataset import class_weights, load_split, to_model_input
+from environment import opencv_signature
 from metadata import is_synthetic
 from model import MODEL_NAMES, build_model, classes_from_config, parameter_count
 from preprocess import load_config
@@ -103,8 +104,15 @@ def train(
     runs_root: Path | str | None = None,
     epochs: int | None = None,
     seed: int = SEED,
+    classes_path: Path | str | None = None,
 ) -> Path:
-    """Train one model and write one run directory. Returns the run directory."""
+    """Train one model and write one run directory. Returns the run directory.
+
+    `classes_path` defaults to `config/classes.json`, which is what production uses. It is a
+    parameter because the class list belongs to a *dataset*: a test that builds its own
+    dataset has to be able to build its own frozen list too, rather than depending on
+    whatever happens to be checked in.
+    """
     if model_name not in MODEL_NAMES:
         raise TrainingError(f"unknown model {model_name!r} — one of {', '.join(MODEL_NAMES)}")
 
@@ -113,7 +121,7 @@ def train(
     data_root = Path(data_root)
 
     config = load_config()
-    classes = classes_from_config()
+    classes = classes_from_config(classes_path)
     n_classes = len(classes)
 
     train_split = load_split(data_root, "train", classes)
@@ -182,6 +190,10 @@ def train(
             "state_dict": model.state_dict(),
             "preprocess_sha256": runs_module.preprocess_hash(config),
             "preprocess_version": config.get("version"),
+            # Both keys of the §4 guard travel inside the checkpoint as well as beside it:
+            # `model.pt` ships with the repository (ADR 0005) and has to carry its own
+            # provenance. The OpenCV version is not decoration — see docs/adr/0006.
+            **{k: v for k, v in opencv_signature().items() if not k.startswith("opencv_dist")},
         },
         run_dir / "model.pt",
     )
@@ -294,6 +306,9 @@ def _write_config(run_dir, model_name, config, classes, determinism, epochs, wei
             "separators=(',', ':')) — see src/runs.py"
         ),
         "preprocess_config": config,
+        # Flat, at the top level, because `src/runs.py` gates on these two and a gate should
+        # not have to reach into a nested "environment" bag to find its key.
+        **opencv_signature(),
         "environment": _environment(),
     }
     path = run_dir / "config.json"
@@ -350,14 +365,18 @@ def _split_summary(split) -> dict[str, Any]:
 
 
 def _environment() -> dict[str, Any]:
-    import cv2
+    """The rest of the environment — recorded for the TDR, not gated on.
 
+    `docs/06` §4 promises a reader can reproduce the run; that needs the whole picture. Only
+    the OpenCV pair is a gate, because it is the only one measured to change the pixels
+    (`docs/adr/0006`).
+    """
     return {
         "python": sys.version.split()[0],
         "platform": platform.platform(),
         "torch": torch.__version__,
         "cuda": torch.version.cuda,
         "cudnn": torch.backends.cudnn.version(),
-        "opencv": cv2.__version__,
         "numpy": np.__version__,
+        **opencv_signature(),
     }

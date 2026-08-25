@@ -182,17 +182,14 @@ def check_versions(argv: list[str]):
     print(f"  cv2 {probe['cv2_version']}, cv2.aruco answers  OK")
 
 
-#: Every distribution that installs a module called `cv2`. Exactly one may be present.
-OPENCV_DISTRIBUTIONS = (
-    "opencv-python",
-    "opencv-contrib-python",
-    "opencv-python-headless",
-    "opencv-contrib-python-headless",
-)
-
-
 def _probe_opencv() -> dict:
-    """Ask the venv what it actually has installed and whether cv2.aruco works."""
+    """Ask the venv what it actually has installed and whether cv2.aruco works.
+
+    Deliberately a subprocess against `venv_python()`: this target has to be able to say
+    "cv2 is not installed", which it cannot do by importing cv2 itself.
+    """
+    from environment import OPENCV_DISTRIBUTIONS
+
     code = (
         "import json\n"
         "from importlib import metadata\n"
@@ -300,14 +297,20 @@ def modes(argv):
 
 @target("ingest", "raw captures -> data/processed + metadata.csv  [F3a]")
 def ingest(argv):
-    """`python tasks.py ingest [--session ID | --all]`."""
+    """`python tasks.py ingest [--session ID | --all] [--jobs N]`.
+
+    `--jobs 1` puts every frame back in this process. Ingest is decode-bound roughly 20
+    to 1, so the default pool takes ~4 000 real frames from about 40 minutes to under
+    ten; the verdicts are identical either way (`src/ingest.py`).
+    """
     from ingest import ingest_session
     from metadata import MetadataError
 
     sessions = _sessions_to_ingest(argv)
+    jobs = _option(argv, "--jobs", None)
     for session_id in sessions:
         try:
-            r = ingest_session(session_id, DATA)
+            r = ingest_session(session_id, DATA, jobs=int(jobs) if jobs else None)
         except MetadataError as exc:
             die(str(exc))
 
@@ -441,23 +444,20 @@ def ablate(argv): not_implemented("F4b")
 def check_model(argv):
     """`python tasks.py check-model [--run <name>]`. Hard failure, never a warning."""
     from preprocess import load_config
-    from runs import (
-        RunsError,
-        check_preprocess_hash,
-        missing_artefacts,
-    )
+    from runs import RunsError, check_run, missing_artefacts
 
     try:
         run_dir = _run_from(argv)
         absent = missing_artefacts(run_dir)
         if absent:
             die(f"{run_dir.name} is missing {', '.join(absent)} — it is not a finished run")
-        result = check_preprocess_hash(run_dir, load_config())
+        result = check_run(run_dir, load_config())
     except RunsError as exc:
         die(str(exc))
 
     print(f"  {result['run']}  preprocessing {result['preprocess_version']}")
     print(f"  sha256 {result['sha256']}  MATCHES config/preprocess.json")
+    print(f"  {result['opencv_package']} cv2 {result['opencv_version']}  MATCHES the checkpoint")
     print("  this checkpoint may be served (docs/03-preprocessing-spec.md §4)")
 
 

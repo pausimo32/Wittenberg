@@ -20,14 +20,18 @@ import json
 import pytest
 
 from evaluate import GRADCAM_PER_CLASS, evaluate_run, wilson_interval
-from model import classes_from_config
 from runs import PreprocessMismatch
 from train import train
 
 
 @pytest.fixture(scope="module")
-def evaluated(tiny_dataset, tmp_path_factory):
-    run_dir = train(tiny_dataset, epochs=3, runs_root=tmp_path_factory.mktemp("runs"))
+def evaluated(tiny_dataset, tiny_classes_path, tmp_path_factory):
+    run_dir = train(
+        tiny_dataset,
+        epochs=3,
+        runs_root=tmp_path_factory.mktemp("runs"),
+        classes_path=tiny_classes_path,
+    )
     return run_dir, evaluate_run(run_dir, tiny_dataset)
 
 
@@ -53,12 +57,11 @@ def test_every_mandatory_output_is_written(evaluated, artefact):
     assert (run_dir / "report" / artefact).exists()
 
 
-def test_gradcam_is_produced_for_every_class(evaluated):
+def test_gradcam_is_produced_for_every_class(evaluated, tiny_classes):
     """§4.6: "Non-negotiable — without it there is no evidence the model learned the
     physics"."""
     run_dir, summary = evaluated
-    classes = classes_from_config()
-    assert set(summary["gradcam"]["written"]) == {str(c["freq_hz"]) for c in classes}
+    assert set(summary["gradcam"]["written"]) == {str(c["freq_hz"]) for c in tiny_classes}
     assert list((run_dir / "report" / "gradcam").glob("*.png"))
 
 
@@ -144,12 +147,12 @@ def test_accuracy_is_reported_per_session_as_well(evaluated):
 # §4.3 and §4.5 — the files a TDR annex is made of
 # --------------------------------------------------------------------------- #
 
-def test_the_confusion_matrix_csv_is_square_and_labelled(evaluated):
+def test_the_confusion_matrix_csv_is_square_and_labelled(evaluated, tiny_classes):
     """Annex 9 is this CSV. It has to be readable without the code that made it."""
     run_dir, _ = evaluated
     with (run_dir / "report" / "confusion_matrix.csv").open(newline="", encoding="utf-8") as fh:
         rows = list(csv.reader(fh))
-    frequencies = [str(c["freq_hz"]) for c in classes_from_config()]
+    frequencies = [str(c["freq_hz"]) for c in tiny_classes]
     assert rows[0][1:] == frequencies
     assert [r[0] for r in rows[1:]] == frequencies
 
@@ -161,11 +164,11 @@ def test_the_confusion_counts_add_up_to_the_split(evaluated):
     assert sum(int(v) for row in rows for v in row[1:]) == summary["images"]
 
 
-def test_the_per_class_report_names_the_worst_class(evaluated):
+def test_the_per_class_report_names_the_worst_class(evaluated, tiny_classes):
     """§6's acceptance gate is worst-class recall, so it is computed, not eyeballed."""
     _run_dir, summary = evaluated
     assert summary["per_class"]["worst_class_hz"] in [
-        int(c["freq_hz"]) for c in classes_from_config()
+        int(c["freq_hz"]) for c in tiny_classes
     ]
     assert 0.0 <= summary["per_class"]["worst_class_recall"] <= 1.0
 
@@ -207,13 +210,16 @@ def test_a_checkpoint_from_another_preprocessing_is_not_evaluated(evaluated, tin
 # both architectures, because they fail differently
 # --------------------------------------------------------------------------- #
 
-def test_the_baseline_is_evaluated_too(tiny_dataset, tmp_path):
+def test_the_baseline_is_evaluated_too(tiny_dataset, tiny_classes_path, tmp_path):
     """`baseline_paper` puts its ReLU directly after the layer Grad-CAM hooks, so an
     in-place ReLU there raises "view+inplace" during the backward pass — a failure
     `wittenberg_v1` never sees, because a BatchNorm sits in between. §1 A exists to be
     compared against (A7), and a model that cannot be evaluated cannot be compared.
     """
-    run_dir = train(tiny_dataset, model_name="baseline_paper", epochs=1, runs_root=tmp_path)
+    run_dir = train(
+        tiny_dataset, model_name="baseline_paper", epochs=1, runs_root=tmp_path,
+        classes_path=tiny_classes_path,
+    )
     summary = evaluate_run(run_dir, tiny_dataset)
     assert list((run_dir / "report" / "gradcam").glob("*.png"))
     assert summary["gradcam"]["written"]

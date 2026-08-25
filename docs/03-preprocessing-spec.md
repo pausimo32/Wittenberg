@@ -127,18 +127,40 @@ and can be shipped as a TDR annex.
 With a single implementation there is nothing to compare. What *can* still go wrong is serving a
 checkpoint trained under a different version of this spec.
 
-1. Every checkpoint stores the fully resolved `config/preprocess.json` **and its SHA-256** in
-   `runs/<ts>/config.json`, and the SHA-256 again inside `model.pt` — the checkpoint travels
-   with the repository (`docs/adr/0005`) and has to carry its own provenance.
-2. The API asserts at startup that the hash of the running `config/preprocess.json` equals the
-   checkpoint's. On mismatch it **refuses to start** and prints both versions.
-3. `python tasks.py check-model` runs the same assertion from the command line.
+The guard has **two keys**, and both are hard failures.
 
-**The hash is over the resolved config, canonically serialised** —
+1. Every checkpoint stores the fully resolved `config/preprocess.json` **and its SHA-256**, plus
+   **`cv2.__version__` and the OpenCV package name**, in `runs/<ts>/config.json` — and all of
+   them again inside `model.pt`, because the checkpoint travels with the repository
+   (`docs/adr/0005`) and has to carry its own provenance.
+2. The API asserts at startup that *both* match the running environment. On either mismatch it
+   **refuses to start** and prints what differs.
+3. `python tasks.py check-model` runs the same two assertions from the command line.
+
+### Key one — the hash, over the resolved config
+
 `json.dumps(config, sort_keys=True, separators=(",", ":"))`, in `src/runs.py`. Not over the
 file's bytes: re-indenting the JSON, reordering two keys, or Git checking the file out with
 CRLF on Windows would each change the bytes without changing a single pixel, and a guard that
 fires on those is a guard everyone learns to ignore. Any changed *value* changes the hash.
+
+### Key two — the OpenCV build
+
+**The hash pins the parameters. It does not pin the implementation.** Reinstall the venv with a
+different OpenCV and the hash still matches, while the pixels have moved: `docs/adr/0006`
+measures `cv2.warpPerspective` differing by up to 7 grey levels in **every** frame between
+4.12 and 5.0, all 120 final tensors differing, and up to 5 298 of 262 144 edge pixels flipping
+state. A model trained on one of those edge maps and served against the other answers
+confidently and wrongly, and key one sees nothing at all.
+
+So `opencv_version` and `opencv_package` are compared exactly, and a mismatch is refused exactly
+as hard as a hash mismatch. What is compared is `cv2.__version__`, not the wheel version: a bump
+from `opencv-contrib-python` 4.12.0.88 to 4.12.0.90 leaves `cv2.__version__` at `4.12.0` and
+changes no pixel, so it does not fire. The wheel version is recorded for the audit trail. The
+package name is part of the key because the contrib and non-contrib builds are different
+software and only one of them has `cv2.aruco` (§5.3).
+
+A checkpoint that records neither key is refused too. Unverifiable is not the same as fine.
 
 This is a hard failure, never a warning. It is the whole of what used to be a parity harness.
 
@@ -169,9 +191,18 @@ and later "fix" the pin to another, and every processed image changes: the edge 
 trained model no longer matches them, and the only honest remedy is to re-ingest and re-train.
 Before F3b that costs nothing; after it, it costs the dataset.
 
-The same applies to the Python version. A major-version gap (4.x → 5.x) can change CLAHE tile
-interpolation and Canny's internals; `pytest` passing proves the code runs, **not** that the
-pixels match what an earlier version produced.
+**Measured, not assumed** — `docs/adr/0006` did this over 120 frames, 4.12.0 against 5.0.0 with
+Python and numpy held fixed. The threat is **`cv2.warpPerspective` in step 2**: fed identical
+input, CLAHE, the blur, Canny and the resize are byte-identical across the two versions, and the
+warp differs by up to 7 grey levels in every single frame. CLAHE then *doubles* what the warp
+hands it (median worst pixel 4 → 8, worst frame 12) without contributing anything of its own —
+it is the amplifier, not the origin. By the end, all 120 tensors differ and up to 5 298 of
+262 144 edge pixels flip state.
+
+No gate verdict changed and `metadata.csv` came out byte-identical, which is the trap: the gate
+has margin, the pixels do not. `pytest` passing proves the code runs, **not** that the pixels
+match what an earlier version produced — the tests assert shapes, dtypes, ranges and
+determinism, and all of those hold under either version.
 
 Two acceptable resolutions, and only two:
 
@@ -189,10 +220,12 @@ only in the contrib build. Plain `opencv-python` imports fine and then raises
 `AttributeError: module 'cv2' has no attribute 'aruco'` the first time a real session is
 ingested, i.e. *after* the lab work. Never install both packages: they conflict, and which one
 wins depends on install order. `opencv-python` is pinned in `config/versions.json` and asserted
-by `python tasks.py check-versions`. Not for cross-language parity any more, but for
-reproducibility across the three team members' machines and across time: CLAHE tile
-interpolation has changed between minor versions before, and a reader reproducing the work in a
-year needs the version.
+by `python tasks.py check-versions`. Not for cross-language parity any more, but because **the
+OpenCV version is part of the experimental method** (`docs/adr/0006`) — it belongs beside the
+seed, the camera distance and the name of the GPU, and a reader reproducing the work in a year
+needs it for the same reason they need `d = 210 mm`. What moves between versions is the
+geometric warp of step 2, measured; a reader who remembers "something about CLAHE" is
+remembering the amplifier rather than the cause.
 
 ## 6. Changing this spec
 

@@ -557,3 +557,65 @@ def test_unknown_session_is_refused(data_root):
     (data_root / "raw").mkdir(parents=True)
     with pytest.raises(IngestError, match="not found"):
         ingest_session("SYNTH-20260109-01", data_root)
+
+
+# --------------------------------------------------------------------------- #
+# parallelism — it must change the clock and nothing else
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("jobs", [1, 2])
+def test_the_verdicts_do_not_depend_on_the_number_of_processes(data_root, tmp_path, jobs):
+    """The whole licence for the pool. Ingest twice, compare the committed bytes.
+
+    `src/preprocess.py` is a pure function and `src/quality.py` reads only its arguments, so
+    frames are independent; the frame list is built in one fixed order and results are
+    collected in that order. If this ever fails, the parallelism is not safe and the dataset
+    depends on a machine's core count.
+    """
+    build_session(data_root, "SYNTH-20260101-01", frames=4, bad_frame_markers={1: 3})
+    ingest_session("SYNTH-20260101-01", data_root, jobs=1)
+    serial = (data_root / "metadata.csv").read_bytes()
+    serial_report = json.loads((data_root / "ingest_report.json").read_text("utf-8"))["sessions"]
+
+    ingest_session("SYNTH-20260101-01", data_root, jobs=jobs)
+    assert (data_root / "metadata.csv").read_bytes() == serial
+    replayed = json.loads((data_root / "ingest_report.json").read_text("utf-8"))["sessions"]
+    assert replayed == serial_report
+
+
+def test_the_processed_images_are_identical_too(data_root):
+    """Not just the verdicts — the pixels the model will train on."""
+    build_session(data_root, "SYNTH-20260101-01", frames=3)
+    ingest_session("SYNTH-20260101-01", data_root, jobs=1)
+    serial = {
+        p.relative_to(data_root).as_posix(): p.read_bytes()
+        for p in sorted((data_root / "processed").rglob("*.png"))
+    }
+    assert serial
+
+    ingest_session("SYNTH-20260101-01", data_root, jobs=2)
+    parallel = {
+        p.relative_to(data_root).as_posix(): p.read_bytes()
+        for p in sorted((data_root / "processed").rglob("*.png"))
+    }
+    assert parallel == serial
+
+
+def test_the_pool_is_chosen_from_a_measured_frame_cost_not_a_frame_count(data_root):
+    """One synthetic session — 120 frames of 600 px PNG at 19 ms — does not justify a pool.
+    One real session of ~1 000 HEICs at ~560 ms plainly does. The frame counts are within an
+    order of magnitude of each other; the per-frame costs are a factor of thirty apart, and
+    only the second distinguishes the two cases."""
+    from ingest import PARALLEL_MIN_SECONDS, is_worth_parallelising
+
+    assert not is_worth_parallelising(120, 0.019)        # one F3a dry-run session: ~2.3 s
+    assert is_worth_parallelising(1000, 0.560)           # one real session: ~9 minutes
+    assert not is_worth_parallelising(10_000, 0.0)       # free frames are never worth a pool
+    assert is_worth_parallelising(1, PARALLEL_MIN_SECONDS)
+
+
+def test_an_empty_session_does_not_start_a_pool(data_root):
+    """A session directory with no frequency folders is a mistake, not a reason to spawn."""
+    from ingest import _assess_all
+
+    assert _assess_all([], {}, "homography", None, None, jobs=8) == []

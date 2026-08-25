@@ -94,3 +94,21 @@ def tiny_dataset(tmp_path_factory) -> Path:
     from conftest_f4a import build_dataset
 
     return build_dataset(tmp_path_factory.mktemp("f4a") / "data")
+
+
+@pytest.fixture(scope="session")
+def tiny_classes() -> list[dict]:
+    """The frozen class list `tiny_dataset` was built from.
+
+    Not `config/classes.json`: F1 generates that from a real mode sweep and the live path is
+    empty until then (`docs/annexes/f3a-dry-run/README.md`).
+    """
+    from conftest_f4a import class_list
+
+    return class_list()
+
+
+@pytest.fixture(scope="session")
+def tiny_classes_path(tiny_dataset) -> Path:
+    """`classes.json` for `tiny_dataset`, in the shape `src/model.py` reads."""
+    return tiny_dataset / "classes.json"

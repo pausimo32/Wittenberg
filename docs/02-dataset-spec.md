@@ -208,8 +208,19 @@ one process, native Windows:
 
 So the real ingest is **decode-bound, roughly 20 to 1**. At ≈ 0.56 s/frame, the full ≈ 4 000
 frame dataset is **about 35–40 minutes** in one process — not ten minutes, and nowhere near
-three hours. Plan the session debrief around it, do not plan a coffee break; and if it ever
-needs to be faster, parallelise the decode, not the pipeline.
+three hours.
+
+That ratio is why `tasks.py ingest` puts frames through a process pool: the parallelism is over
+frames, so it is the decode that scales and not the pipeline, and ~4 000 real frames come down
+to **under ten minutes**. It is chosen from the *measured* cost of the session's first frame,
+not from the frame count — the same pool is a pessimisation on the 600 px synthetic frames of
+the dry run, which cost 19 ms each. `--jobs N` overrides it; `--jobs 1` is what to use when
+something looks wrong.
+
+**It changes the clock and nothing else.** `metadata.csv`, `ingest_report.json` and every
+processed PNG come out byte-identical however many workers ran, and `tests/test_ingest.py`
+asserts exactly that. If it ever stopped being true, the dataset would depend on the core count
+of whichever laptop ingested it.
 
 Worth knowing before the lab, not after: an ingest that took three hours would have to be
 started overnight, and the point of `tools/check_capture.py` is that you find out on the day.

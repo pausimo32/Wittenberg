@@ -15,6 +15,13 @@ on a mismatch. Hashing the file's *bytes* would make re-indenting the JSON — o
 it out with different line endings, which on Windows it does — look exactly like a changed
 Canny threshold. So the hash is taken over `json.dumps(config, sort_keys=True,
 separators=(",", ":"))`: any changed value changes it, and nothing else does.
+
+**The hash is only half the guard.** It pins the *parameters*, not the *implementation*.
+Reinstall the venv with a different OpenCV and the hash still matches — while `docs/adr/0006`
+measures `cv2.warpPerspective` differing by up to 7 grey levels in every frame, all 120 tensors
+differing, and up to 5 298 of 262 144 edge pixels flipping state. So the OpenCV version and
+package are the second key, checked exactly as hard as the first: a checkpoint that disagrees
+with the running OpenCV is refused, not warned about. `check_run` does both.
 """
 
 from __future__ import annotations
@@ -39,6 +46,16 @@ class RunsError(RuntimeError):
 
 class PreprocessMismatch(RunsError):
     """The checkpoint was trained under a different `config/preprocess.json`."""
+
+
+class OpenCVMismatch(RunsError):
+    """The checkpoint was trained under a different OpenCV build.
+
+    Separate from `PreprocessMismatch` because the remedy is different: that one is fixed by
+    checking out the config the run was made with, this one by reinstalling the pinned wheel.
+    Both are `RunsError`, so a caller that only wants "this checkpoint is not servable" can
+    catch one thing.
+    """
 
 
 def preprocess_hash(config: dict[str, Any]) -> str:
@@ -130,6 +147,54 @@ def check_preprocess_hash(run_dir: Path, current: dict[str, Any]) -> dict[str, s
         "preprocess_version": stored.get("preprocess_version", "?"),
         "sha256": got,
     }
+
+
+def check_opencv(run_dir: Path, current: dict[str, Any] | None = None) -> dict[str, str]:
+    """The second key. Raises `OpenCVMismatch`; never returns a warning.
+
+    `cv2.__version__` and the distribution name are compared exactly. A wheel bump that leaves
+    `cv2.__version__` alone changes no pixel and does not fire; a move between OpenCV versions
+    changes the ROI warp and does.
+
+    A checkpoint written before this field existed carries no version at all. That is treated
+    the same way a missing hash is treated: unverifiable is not the same as fine.
+    """
+    from environment import opencv_signature
+
+    stored = read_run_config(run_dir)
+    want_version = stored.get("opencv_version")
+    want_package = stored.get("opencv_package")
+    if not want_version:
+        raise RunsError(
+            f"{run_dir.name}/config.json records no opencv_version, so the build that "
+            f"produced its pixels cannot be identified. Retrain: docs/adr/0006 measures the "
+            f"ROI warp moving between OpenCV versions, and a checkpoint that cannot be "
+            f"checked against one is not servable (docs/03 §4)."
+        )
+
+    signature = current if current is not None else opencv_signature()
+    got_version = signature["opencv_version"]
+    got_package = signature["opencv_package"]
+
+    if got_version != want_version or got_package != want_package:
+        raise OpenCVMismatch(
+            f"{run_dir.name} was trained under {want_package} (cv2 {want_version}), but this "
+            f"environment has {got_package} (cv2 {got_version}).\n"
+            f"config/preprocess.json is unchanged, which is exactly why this check exists: the "
+            f"parameters are the same and the pixels are not. docs/adr/0006 measures "
+            f"cv2.warpPerspective differing by up to 7 grey levels in every frame between 4.12 "
+            f"and 5.0, with every final tensor differing.\n"
+            f"Reinstall the pinned wheel (`python tasks.py check-versions` names it), or "
+            f"retrain and supersede docs/adr/0006."
+        )
+    return {"opencv_package": got_package, "opencv_version": got_version}
+
+
+def check_run(run_dir: Path, config: dict[str, Any]) -> dict[str, str]:
+    """Both keys of the guard, in one call. What `tasks.py check-model` and the API run."""
+    result = check_preprocess_hash(run_dir, config)
+    result.update(check_opencv(run_dir))
+    return result
 
 
 def missing_artefacts(run_dir: Path) -> list[str]:

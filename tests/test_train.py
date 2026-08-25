@@ -28,18 +28,18 @@ from train import HYPERPARAMETERS, SEED, TrainingError, configure_determinism, t
 
 
 @pytest.fixture(scope="module")
-def short_run(tiny_dataset, tmp_path_factory) -> Path:
-    return train(tiny_dataset, epochs=2, runs_root=tmp_path_factory.mktemp("runs"))
+def short_run(tiny_dataset, tiny_classes_path, tmp_path_factory) -> Path:
+    return train(tiny_dataset, classes_path=tiny_classes_path, epochs=2, runs_root=tmp_path_factory.mktemp("runs"))
 
 
 # --------------------------------------------------------------------------- #
 # determinism
 # --------------------------------------------------------------------------- #
 
-def test_the_same_seed_gives_the_same_weights(tiny_dataset, tmp_path):
+def test_the_same_seed_gives_the_same_weights(tiny_dataset, tiny_classes_path, tmp_path):
     """The TDR claims this. Two runs, identical parameters, byte for byte."""
-    first = train(tiny_dataset, epochs=2, runs_root=tmp_path / "a")
-    second = train(tiny_dataset, epochs=2, runs_root=tmp_path / "b")
+    first = train(tiny_dataset, classes_path=tiny_classes_path, epochs=2, runs_root=tmp_path / "a")
+    second = train(tiny_dataset, classes_path=tiny_classes_path, epochs=2, runs_root=tmp_path / "b")
 
     a = torch.load(first / "model.pt", map_location="cpu", weights_only=False)["state_dict"]
     b = torch.load(second / "model.pt", map_location="cpu", weights_only=False)["state_dict"]
@@ -48,10 +48,10 @@ def test_the_same_seed_gives_the_same_weights(tiny_dataset, tmp_path):
         assert torch.equal(a[key], b[key]), key
 
 
-def test_a_different_seed_gives_different_weights(tiny_dataset, tmp_path):
+def test_a_different_seed_gives_different_weights(tiny_dataset, tiny_classes_path, tmp_path):
     """Otherwise the test above would pass for the wrong reason."""
-    first = train(tiny_dataset, epochs=2, runs_root=tmp_path / "a")
-    other = train(tiny_dataset, epochs=2, runs_root=tmp_path / "b", seed=7)
+    first = train(tiny_dataset, classes_path=tiny_classes_path, epochs=2, runs_root=tmp_path / "a")
+    other = train(tiny_dataset, classes_path=tiny_classes_path, epochs=2, runs_root=tmp_path / "b", seed=7)
     a = torch.load(first / "model.pt", map_location="cpu", weights_only=False)["state_dict"]
     b = torch.load(other / "model.pt", map_location="cpu", weights_only=False)["state_dict"]
     assert not all(torch.equal(a[k], b[k]) for k in a)
@@ -112,9 +112,37 @@ def test_config_json_records_the_resolved_preprocessing(short_run):
 
 
 def test_config_json_records_the_environment(short_run):
+    """docs/06 §4 promises a reader can reproduce the run; that needs the whole picture."""
     config = json.loads((short_run / "config.json").read_text("utf-8"))
-    for key in ("python", "torch", "opencv", "numpy", "platform"):
+    for key in ("python", "torch", "numpy", "platform", "opencv_version", "opencv_package"):
         assert config["environment"][key]
+
+
+def test_config_json_carries_the_opencv_key_at_the_top_level(short_run):
+    """The second key of the §4 guard. `src/runs.py` gates on these and should not have to
+    reach into a nested "environment" bag to find them."""
+    config = json.loads((short_run / "config.json").read_text("utf-8"))
+    assert config["opencv_version"]
+    assert config["opencv_package"]
+
+
+def test_the_checkpoint_carries_the_opencv_build_too(short_run):
+    """`model.pt` ships with the repository (ADR 0005) and has to carry its own provenance —
+    both keys, not just the hash. docs/adr/0006: the hash matches across OpenCV versions and
+    every pixel moves."""
+    checkpoint = torch.load(short_run / "model.pt", map_location="cpu", weights_only=False)
+    config = json.loads((short_run / "config.json").read_text("utf-8"))
+    assert checkpoint["opencv_version"] == config["opencv_version"]
+    assert checkpoint["opencv_package"] == config["opencv_package"]
+
+
+def test_the_run_passes_both_keys_of_the_guard(short_run):
+    """What `tasks.py check-model` runs, on a checkpoint this bench just produced."""
+    from runs import check_run
+
+    result = check_run(short_run, load_config())
+    assert result["sha256"]
+    assert result["opencv_version"]
 
 
 def test_metrics_json_reports_the_seed(short_run):
@@ -159,13 +187,13 @@ def test_the_hyperparameters_are_the_ones_the_spec_fixes():
     assert HYPERPARAMETERS["amp"] is False
 
 
-def test_an_unknown_model_is_refused_before_anything_is_written(tiny_dataset, tmp_path):
+def test_an_unknown_model_is_refused_before_anything_is_written(tiny_dataset, tiny_classes_path, tmp_path):
     with pytest.raises(TrainingError, match="unknown model"):
-        train(tiny_dataset, model_name="resnet50", runs_root=tmp_path)
+        train(tiny_dataset, classes_path=tiny_classes_path, model_name="resnet50", runs_root=tmp_path)
     assert not tmp_path.exists() or not any(tmp_path.iterdir())
 
 
-def test_the_baseline_trains_too(tiny_dataset, tmp_path):
+def test_the_baseline_trains_too(tiny_dataset, tiny_classes_path, tmp_path):
     """§1 A exists to be compared against (A7), so it has to actually run."""
-    run_dir = train(tiny_dataset, model_name="baseline_paper", epochs=1, runs_root=tmp_path)
+    run_dir = train(tiny_dataset, classes_path=tiny_classes_path, model_name="baseline_paper", epochs=1, runs_root=tmp_path)
     assert json.loads((run_dir / "metrics.json").read_text("utf-8"))["model"] == "baseline_paper"

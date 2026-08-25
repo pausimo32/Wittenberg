@@ -67,9 +67,10 @@ def evaluate_run(
     report_dir.mkdir(parents=True, exist_ok=True)
 
     config = load_config()
-    # The same gate `tasks.py check-model` runs. Evaluating a checkpoint against images
-    # built by a different preprocessing produces a number that describes nothing.
-    runs_module.check_preprocess_hash(run_dir, config)
+    # The same gate `tasks.py check-model` runs, both keys of it. Evaluating a checkpoint
+    # against images built by different preprocessing — different parameters OR a different
+    # OpenCV — produces a number that describes nothing, and describes it convincingly.
+    runs_module.check_run(run_dir, config)
 
     checkpoint = torch.load(run_dir / "model.pt", map_location="cpu", weights_only=False)
     classes = checkpoint["classes"]
