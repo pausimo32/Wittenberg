@@ -65,8 +65,9 @@ def test_preprocess_output_is_the_last_stage(plate_photo, calib_homography, conf
 def test_preprocess_stages_returns_eight_arrays(plate_photo, calib_homography, config):
     stages = preprocess_stages(plate_photo, calib_homography, config)
 
-    assert len(stages) == 8
-    assert stages._fields == STAGE_NAMES
+    assert len(stages.arrays) == 8
+    assert stages._fields == (*STAGE_NAMES, "timings_ms")
+    assert stages.timings_ms is None
 
 
 def test_source_stage_is_the_input_view_not_a_defensive_copy(
@@ -303,11 +304,54 @@ def test_preprocess_is_deterministic_across_ten_runs(
 def test_preprocess_stages_are_deterministic_across_ten_runs(
     plate_photo, calib_center_crop, config
 ):
-    reference = [s.tobytes() for s in preprocess_stages(plate_photo, calib_center_crop, config)]
+    reference = [
+        s.tobytes() for s in preprocess_stages(plate_photo, calib_center_crop, config).arrays
+    ]
 
     for _ in range(10):
         stages = preprocess_stages(plate_photo, calib_center_crop, config)
-        assert [s.tobytes() for s in stages] == reference
+        assert [s.tobytes() for s in stages.arrays] == reference
+
+
+# --- collect_timings: a measurement, never a second pipeline -----------------
+
+
+@pytest.mark.parametrize("calib_name", ["calib_homography", "calib_center_crop"])
+def test_timed_and_untimed_pipelines_agree_byte_for_byte(
+    request, plate_photo, config, calib_name
+):
+    """The property `collect_timings` is allowed to exist under.
+
+    Cronometrar is a §6.0 non-change — no version bump, no retrain — precisely because it
+    touches no pixel. That claim is only worth making if something checks it. If the two
+    paths ever diverge, this fails on the next run instead of surfacing months later as a
+    prediction that disagrees with the images shown next to it.
+    """
+    calib = request.getfixturevalue(calib_name)
+
+    plain = preprocess_stages(plate_photo, calib, config)
+    timed = preprocess_stages(plate_photo, calib, config, collect_timings=True)
+
+    assert [a.tobytes() for a in timed.arrays] == [a.tobytes() for a in plain.arrays]
+    assert [a.dtype for a in timed.arrays] == [a.dtype for a in plain.arrays]
+    assert [a.shape for a in timed.arrays] == [a.shape for a in plain.arrays]
+
+
+def test_collect_timings_measures_every_step_after_the_first(
+    plate_photo, calib_homography, config
+):
+    stages = preprocess_stages(plate_photo, calib_homography, config, collect_timings=True)
+
+    # Step 1 is `src/imageio.py`'s, so the timings start at the ROI — one key per array
+    # this module actually produces.
+    assert tuple(stages.timings_ms) == STAGE_NAMES[1:]
+    assert all(ms > 0.0 for ms in stages.timings_ms.values())
+
+
+def test_timings_do_not_leak_between_calls(plate_photo, calib_homography, config):
+    """One stopwatch per call: an untimed call after a timed one still reports nothing."""
+    preprocess_stages(plate_photo, calib_homography, config, collect_timings=True)
+    assert preprocess_stages(plate_photo, calib_homography, config).timings_ms is None
 
 
 def test_preprocess_does_not_mutate_its_input(plate_photo, calib_homography, config):

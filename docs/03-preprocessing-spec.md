@@ -88,14 +88,36 @@ Output tensor: `float32[1,128,128,1]`, NHWC.
 
 ### `preprocess_stages()` — the intermediates
 
-`preprocess_stages(image_rgba, calib, config=None)` returns the array after **each of steps 1–8**,
-as a `NamedTuple`: `source` `(H,W,3) uint8`, `roi` `(512,512,3) uint8`, `gray` / `clahe` / `blur` /
-`edges` `(512,512) uint8`, `resized` `(128,128) uint8`, `tensor` `(128,128,1) float32`.
+`preprocess_stages(image_rgba, calib, config=None, collect_timings=False)` returns the array
+after **each of steps 1–8**, as a `NamedTuple`: `source` `(H,W,3) uint8`, `roi` `(512,512,3)
+uint8`, `gray` / `clahe` / `blur` / `edges` `(512,512) uint8`, `resized` `(128,128) uint8`,
+`tensor` `(128,128,1) float32`.
 
 Steps 1 and 2 are included **for the pipeline viewer** (`docs/05-webapp-spec.md` §8), which shows a
 user what the machine did to their photo. They are also what makes a wrong prediction diagnosable
 and what generates annex 7. Exposing an intermediate is not a transform change: it does not touch
 the pipeline and does not invalidate a checkpoint.
+
+**`collect_timings` — `timings_ms`.** With `collect_timings=True` the tuple's last field,
+`timings_ms`, is `{step: milliseconds}` for steps 2–8, keyed by the field name of the array each
+one produced (`roi`, `gray`, `clahe`, `blur`, `edges`, `resized`, `tensor`). It is `None`
+otherwise, and off by default. Step 1 is not there — it belongs to `src/imageio.py` (§5.1) and is
+timed by its own caller.
+
+This exists for `docs/05` §8, which shows the *real measured* cost of each stage beside its image
+rather than a remembered figure. The serving API must therefore never time the steps by re-running
+them: §8 forbids running the pipeline twice, so the pipeline measures itself or nothing does.
+
+**Timing is not a pipeline change** — see §6.0. The steps run in the same order, on the same
+arrays, with the same parameters whichever way the flag is set; a stopwatch reads a clock between
+them and touches no pixel. No version bump, no retrain, and the config hash is untouched, because
+`config/preprocess.json` gains no key. `tests/test_preprocess.py` asserts the property directly:
+the timed and untimed paths must produce byte-identical arrays.
+
+**`timings_ms` is not an array.** Anything that compares the pipeline's output field by field —
+determinism checks, the OpenCV baseline diff, annex tooling — must iterate `Stages.arrays`, not
+the tuple. A wall clock in a byte-for-byte comparison fails on a machine that was merely busy,
+which says nothing about the pixels.
 
 **Non-mutation contract.** `source` is the caller's input array itself, not a defensive copy —
 copying a full-resolution capture on every call does not pay for itself. `roi` is likewise the
@@ -230,7 +252,9 @@ remembering the amplifier rather than the cause.
 ## 6. Changing this spec
 
 0. First decide whether the pipeline actually changed. Exposing a new intermediate, renaming a
-   variable or adding a test does **not** change it. Moving a parameter out of prose and into
+   variable, adding a test or **measuring how long a step takes** does **not** change it —
+   `collect_timings` (§2) was added under this clause, with no bump and no retrain. Moving a
+   parameter out of prose and into
    `config/preprocess.json` does not change the computed pixels either, but it *does* change the
    config hash, so it needs a version bump and a retrain if any checkpoint already exists. Spec
    1.1.0 did exactly this, before F4 had produced any checkpoint — which is the cheap moment.
