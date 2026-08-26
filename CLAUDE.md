@@ -56,7 +56,7 @@ the team picks. Never deployed, never bound to `0.0.0.0`, never calls out to the
 | `python tasks.py --list` | every target and what it does |
 | `python tasks.py setup` | venv, deps, version and device checks |
 | `python tasks.py ingest` | raw captures → `data/processed/` + `data/metadata.csv` |
-| `python tasks.py train` | trains the CNN, writes `runs/<ts>/` (cloud GPU, or slow on CPU) |
+| `python tasks.py train` | trains the CNN, writes `runs/<ts>/` (the team's RTX 5070, or slow on CPU) |
 | `python tasks.py eval` | confusion matrix + per-class report → `runs/<ts>/report/` |
 | `python tasks.py check-model` | **gate.** checkpoint's preprocessing hash == current config |
 | `python tasks.py app` | build if stale, start the local server, open the browser |
@@ -84,3 +84,13 @@ If a task needs more than **two** of these, stop and split the task.
 Prefer subagents for anything that reads many files: `wittenberg-dataset-curator` for data
 audits, `wittenberg-repro-auditor` before any number goes into the TDR, `wittenberg-tdr-writer`
 for Catalan prose. They return summaries, not file dumps.
+
+**Those three are the project's agents, and `.claude/agents/` holds nothing else.** Do not add
+imported general-purpose templates (`ml-engineer`, `computer-vision-engineer`, and friends).
+Three were removed in F5 because they recommended ONNX export, `torch.cuda.amp` and cloud ML
+platforms — all three killed by ADR 0004 and ADR 0005, one of them with its backend already
+deleted from this repo. The problem is not that they were stale. It is that an agent is a
+fourth, fifth and sixth place for the project's rules to live, each needing to be kept in step
+with this file and with `docs/adr/`; and a stale *document* misinforms whoever reads it, while
+a stale *agent* acts. If a task needs delegation these three do not cover, write one that
+carries this project's constraints — do not import one that carries someone else's.

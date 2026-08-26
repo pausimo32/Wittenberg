@@ -103,15 +103,19 @@ Do NOT read: docs/01, 02, 03, 04, 06, 07.
 Implement the FastAPI backend described in §3.
 
 ## Constraints
-- /api/predict MUST call src.preprocess.preprocess directly. Do not
+- /api/predict MUST call src.preprocess.preprocess_stages directly. Do not
   reimplement, inline, wrap or "optimise" any transform step. This is the
   property the whole architecture exists to guarantee (docs/adr/0004).
+- ONE call returns both the stages and the prediction. Never run the pipeline
+  twice, once to display and once to predict (docs/05 §3, §8).
 - Assert at startup that the checkpoint's preprocess_hash equals the SHA-256
   of the current config/preprocess.json. On mismatch, refuse to start and
   print both. Never downgrade this to a warning.
 - Bind 127.0.0.1 explicitly. No CORS wildcard. Images processed in memory,
   never written to disk.
-- Load the model once at startup, .to('cuda').eval(). Single worker.
+- Load the model once at startup, .to(device).eval() with
+  device = cuda if available else cpu. CPU is the supported configuration,
+  not a fallback (docs/adr/0005). Single worker.
 - EXIF/HEIC/P3 normalisation comes from the shared src/imageio.py helper —
   the same one ingest uses. Do not write a second copy (spec §5.1).
 
@@ -120,8 +124,8 @@ Implement the FastAPI backend described in §3.
 - [ ] pytest: /api/predict on a tests/fixtures/ image returns exactly what calling
       preprocess + model directly returns
 - [ ] pytest: mutating config/preprocess.json makes startup fail
-- [ ] /api/health reports run id, preprocess version, device = cuda
-- [ ] elapsed_ms < 200 on the local GPU
+- [ ] /api/health reports run id, preprocess version, device and classes
+- [ ] elapsed_ms < 150 on an ordinary CPU (docs/05 §7)
 
 ## Model
 sonnet — the spec is complete; this is assembly. Escalate to opus only if the

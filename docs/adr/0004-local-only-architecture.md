@@ -1,7 +1,9 @@
 # ADR 0004 — Local-only application: FastAPI + PyTorch, one preprocessing implementation
 
 - **Date:** 2026-08-17
-- **Status:** accepted. **Supersedes ADR 0001.**
+- **Status:** accepted. **Supersedes ADR 0001.** Amended by ADR 0005: the one machine
+  assumption below is dropped and inference moves to **CPU**. The preprocessing property
+  this ADR exists for is untouched.
 - **Trigger:** the app is not for public deployment. It runs on the team's own machine and is
   used by the team. Participants only touch Google Forms, from their own devices.
 
@@ -21,13 +23,16 @@ implementations agree, plus a parity harness, a golden set, an audit subagent an
 chunk — was paid *only* to buy those three properties.
 
 There is also a new fact: the machine that runs the app is the machine with the CUDA GPU.
+*(Amended by ADR 0005: it is not. The app must run on any computer the team picks, and the
+GPU belongs to training alone. Nothing else in this ADR depends on that fact.)*
 
 ## Decision
 
 **One process, one language, one preprocessing implementation.**
 
-- **Backend** — FastAPI on `127.0.0.1`, loading the trained PyTorch model onto the GPU once at
-  startup, and calling `src/preprocess.py` — *the same function used to build the training set*.
+- **Backend** — FastAPI on `127.0.0.1`, loading the trained PyTorch model ~~onto the GPU~~
+  (amended by ADR 0005: **onto the CPU**, ≈ 12 ms per inference) once at startup, and calling
+  `src/preprocess.py` — *the same function used to build the training set*.
 - **Frontend** — Vite + React + TypeScript, built to static files that FastAPI serves. Next.js
   was chosen for its static export and free hosting; neither applies now, and its App Router and
   SSR machinery are complexity with no return on `localhost`.

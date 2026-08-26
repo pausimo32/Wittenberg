@@ -1,7 +1,8 @@
 # ADR 0003 — PyTorch instead of TensorFlow/Keras for training
 
 - **Date:** 2026-08-17
-- **Status:** accepted. The export/ONNX consequences below are themselves superseded by ADR 0004
+- **Status:** accepted. The export/ONNX consequences below are themselves superseded by ADR 0004,
+  and the device consequences by ADR 0005 — the app runs on **CPU**; the GPU is training-only
 - **Trigger:** the team develops on native Windows with an NVIDIA GPU
 
 ## Context
@@ -43,12 +44,16 @@ the determinism the project requires.
 - `docs/04-model-spec.md` is expressed in PyTorch. The **architecture is unchanged**: same
   layers, same 289 134 parameters, same hyperparameters, same acceptance gates.
 - ~~F5 exports with `torch.onnx.export` instead of `tf2onnx`.~~ Superseded by ADR 0004: there is
-  no export step at all. The local API loads `model.pt` directly onto the GPU.
+  no export step at all. ~~The local API loads `model.pt` directly onto the GPU.~~ Amended by
+  ADR 0005: the local API loads `model.pt` onto the **CPU** — CUDA only if it happens to be
+  present, and never required.
 - `docs/03-preprocessing-spec.md` is **completely unaffected**: preprocessing is OpenCV and never
   depended on the training framework. This is the payoff of having kept the preprocessing
   contract separate from the model — and it held again through ADR 0004.
-- `requirements.txt` drops `tensorflow` and `tf2onnx`, adds `torch` and `torchvision` (CUDA
-  build, from the PyTorch index URL). `onnx` was added here and removed again by ADR 0004.
+- `requirements.txt` drops `tensorflow` and `tf2onnx`, adds `torch` and `torchvision` (~~CUDA
+  build~~ — amended by ADR 0005 to the **CPU** build; the CUDA wheels moved to
+  `requirements-train.txt`, from the PyTorch index URL). `onnx` was added here and removed
+  again by ADR 0004.
 
 ## What this means for the TDR
 

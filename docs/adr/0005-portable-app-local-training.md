@@ -108,12 +108,14 @@ app would tie the tool to one machine, which is exactly what requirement 1 forbi
 - `python tasks.py check-device` replaces `check-gpu`: it reports the device and, on CPU, states
   the expected latency instead of warning. CPU is the supported configuration, not a fallback.
 - ADR 0003's PyTorch decision **stands**, with its motivation shifted: it was chosen because
-  TensorFlow could not use a local Windows GPU. Now there is no local GPU at all, and PyTorch is
-  still right — one line switches device, CPU inference is fast, and every rented-GPU platform
-  supports it.
+  TensorFlow could not use a local Windows GPU. ~~Now there is no local GPU at all~~ — per the
+  2026-08-18 amendment there is one, the team's RTX 5070, and it trains. PyTorch is still right
+  either way: one line switches device, and CPU inference is fast.
 - ADR 0004's core property is **untouched and now stronger**: training and inference still call
-  the same `src/preprocess.py`. Because that preprocessing happens locally in both cases, the
-  cloud only ever sees tensors that the local pipeline produced.
+  the same `src/preprocess.py`. ~~Because that preprocessing happens locally in both cases, the
+  cloud only ever sees tensors that the local pipeline produced.~~ Per the 2026-08-18 amendment
+  there is no cloud: both run on machines the team owns, and the guard that matters is the
+  startup hash below, not who owns the hardware.
 - The training script records the resolved `config/preprocess.json` and its hash into the
   checkpoint. The API's startup guard does not care which machine computed the weights — it
   cares that the pipeline matches.
