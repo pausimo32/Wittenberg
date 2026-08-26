@@ -41,6 +41,7 @@ import torch
 from sklearn.metrics import classification_report, confusion_matrix
 
 import runs as runs_module
+from cam import CamError, gradcam
 from dataset import load_split, to_model_input
 from model import build_model
 from preprocess import load_config
@@ -371,31 +372,12 @@ def _write_cam(model, split, index, class_index, config, device, frequencies, pa
     x = to_model_input(split.images[index: index + 1], config, device)
     x.requires_grad_(False)
 
-    activations: list[torch.Tensor] = []
-    gradients: list[torch.Tensor] = []
-    layer = model.cam_layer
-    handles = [
-        layer.register_forward_hook(lambda _m, _i, o: activations.append(o)),
-        layer.register_full_backward_hook(lambda _m, _gi, go: gradients.append(go[0])),
-    ]
+    # The map itself lives in `src/cam.py`, shared with the serving API's stage 12
+    # (docs/05 §8). Two renderings, one algorithm — see that module's docstring.
     try:
-        model.zero_grad(set_to_none=True)
-        logits = model(x)
-        logits[0, class_index].backward()
-    finally:
-        for handle in handles:
-            handle.remove()
-
-    if not activations or not gradients:
-        raise EvaluationError("Grad-CAM hooks produced nothing — §4.6 cannot be satisfied")
-
-    weights = gradients[0].mean(dim=(2, 3), keepdim=True)
-    cam = torch.relu((weights * activations[0]).sum(dim=1, keepdim=True))
-    cam = torch.nn.functional.interpolate(
-        cam, size=x.shape[-2:], mode="bilinear", align_corners=False
-    )[0, 0].detach().cpu().numpy()
-    if cam.max() > 0:
-        cam = cam / cam.max()
+        cam = gradcam(model, x, class_index)
+    except CamError as exc:
+        raise EvaluationError(f"{exc} — §4.6 cannot be satisfied") from exc
 
     edges = split.images[index].numpy()
     true_hz = frequencies[int(split.labels[index])]
