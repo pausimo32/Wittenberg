@@ -45,12 +45,13 @@ FastAPI
 │             named by runs/latest.txt (or --run), model.to(device).eval()
 │             device = cuda if available else cpu — cpu is the supported default
 │             assert checkpoint.preprocess_hash == hash(config/preprocess.json)   ← refuses to start
-├── GET  /api/health   → {model_run, preprocess_version, device, classes}
+├── GET  /api/health   → {model_run, preprocess_version, device, classes, do_not_report}
 ├── POST /api/predict?stages=true|false   → multipart image
 │                      → src.preprocess.preprocess_stages(...)   ← THE SAME FUNCTION AS TRAINING
 │                      → model forward, softmax
 │                      → forward hooks: feature maps + Grad-CAM (§8)
-│                      → {top3:[{freq_hz, p}], stages:[…13], elapsed_ms, timings_ms}
+│                      → {top3:[{freq_hz, p}], stages:[…13], elapsed_ms, timings_ms,
+│                         roi_mode, markers_found}  — each stage carries its measured ms
 ├── POST /api/dataset/session   → open a draft session (nothing written yet)
 ├── POST /api/dataset/upload    → images + one label; runs the SAME gate as tasks.py ingest
 ├── POST /api/dataset/commit    → write rows to metadata.csv; re-run the split
@@ -60,11 +61,18 @@ FastAPI
 
 Rules:
 
-- `/api/predict` calls `src.preprocess.preprocess`. It does **not** reimplement, wrap, inline or
+- `/api/predict` calls `src.preprocess.preprocess_stages` — the same function training calls,
+  which is why the diagram above says so. It does **not** reimplement, wrap, inline or
   "optimise" any step. If a transform needs changing, it changes in `src/preprocess.py` and the
   model is retrained.
 - The startup hash assertion is the one guard replacing the old parity gate
   (`docs/adr/0004`). Never make it a warning.
+- **`/api/health` carries the checkpoint's `do_not_report`.** `src/train.py` writes that field
+  into the `metrics.json` of any run built from `SYNTH-*` sessions, saying that its accuracy
+  measures how well the network inverted the formula that drew the images. The app will serve
+  such a checkpoint; what it must not do is let the number look like a result, so the field is
+  exposed here and §4 hangs a visible banner on it. `null` means the run's numbers may be
+  quoted.
 - The response includes the pipeline stages as base64 PNGs — see §8. `?stages=false` returns
   only the final edge map, for the rare call where the intermediates are not wanted.
 - **One call produces both the stages and the prediction.** Never run the pipeline twice, once
@@ -109,6 +117,24 @@ Never round a prediction to a "nicer" number. Never hide low confidence. A tool 
 answers a confident number teaches participants that machines are always right, which is the
 opposite of what a research project should demonstrate.
 
+### The geometry warning — `roi_mode`
+
+`/api/predict` returns `roi_mode` and `markers_found`. When `roi_mode` is not `homography` the
+result needs **its own visible state**, above the three-tier confidence presentation and
+independent of it: the four ArUco markers were not in the frame, so the photo was centre-cropped
+instead of rectified, and the model is reading a geometry it never saw during training.
+
+This is the ordinary case, not an edge case. Every training frame went through the session
+calibration; every photo taken by someone who is not running a capture session — at `/apren`,
+from a phone, an old picture — will not. The confidence numbers are computed the same way and
+look exactly as convincing, which is precisely the problem: the failure is invisible to the
+person reading the screen, so the interface has to be the thing that says it.
+
+Say what happened and what it costs, in one sentence, and do not bury it in the confidence tier —
+a low-confidence answer and a wrongly-rectified one are different failures and lead to different
+next actions (take a better photo vs. take the photo again with the frame). Ablation A10
+(`docs/04-model-spec.md` §5) measures the accuracy drop; once it has a number, quote it here.
+
 ## 5. `/apren` — the didactic module
 
 - Seven steps in the order of `docs/01-domain-physics.md` §4. Linear, no skipping ahead.
@@ -140,10 +166,19 @@ opposite of what a research project should demonstrate.
 
 No performance budget for bundle size, no lazy-loading strategy, no service worker, no
 Lighthouse target, no CDN. Those were consequences of shipping to strangers over the internet.
-The only performance requirement left is that a prediction feels instant. Measured budget on an
-ordinary CPU: ≈ 24 ms preprocessing + ≈ 12 ms inference. If `elapsed_ms` exceeds **150 ms**,
-something is wrong — most likely the model is being reloaded per request instead of once at
-startup.
+The only performance requirement left is that a prediction feels instant. If `elapsed_ms`
+exceeds **150 ms**, something is wrong — most likely the model is being reloaded per request
+instead of once at startup.
+
+Measured end to end on an ordinary CPU, over a real socket, with all thirteen stages: **82–129
+ms**, of which ≈ 8 ms decode, ≈ 12 ms ArUco detection, **≈ 1.3 ms preprocessing** (steps 2–8),
+≈ 5–11 ms inference, ≈ 16 ms Grad-CAM and **≈ 43 ms PNG-encoding the stages** — the largest
+single phase by far. `?stages=false` is ≈ 29 ms. The budget holds with room to spare; if it ever
+stops holding, the encode phase is where to look, not the pipeline.
+
+*(The earlier figure here, "≈ 24 ms preprocessing", was an estimate and was wrong by about 18×.
+It has been replaced by a measurement — and, more usefully, by `timings_ms`: every response now
+carries the real numbers for that request, so no figure in this document is load-bearing.)*
 
 ## 8. The pipeline viewer
 
@@ -154,12 +189,19 @@ project, and it is why `preprocess_stages()` exists.
 ### Why it is animated, not streamed
 
 The obvious reading of "show the steps as they happen" is a live stream — server-sent events,
-one stage pushed as it finishes. Do not build that. Measured on a 1400×1400 capture, the whole
-eight-step pipeline takes **≈ 24 ms on CPU**, the network adds **≈ 12 ms**, and the slowest
-single step (Canny) takes 13 ms.
-Every stage would arrive inside one animation frame; the user would see the last image appear and
-nothing else. Streaming would add an endpoint, an ordering concern and a failure mode in exchange
-for a worse result.
+one stage pushed as it finishes. Do not build that. Measured with
+`preprocess_stages(collect_timings=True)`, the whole seven-step pipeline takes **≈ 1.3 ms on
+CPU** and the network adds **≈ 5–11 ms**. The slowest preprocessing step is the ROI warp at
+≈ 0.55 ms; Canny is ≈ 0.35 ms.
+
+The cost is **flat in the size of the capture** — 800×800, 1400×1400 and 3024×3024 all land at
+≈ 1.3 ms — because step 2 resamples to a fixed 512² ROI and every later step works on that. Only
+the warp reads the full-resolution array.
+
+Every stage would arrive inside one animation frame, several times over; the user would see the
+last image appear and nothing else. Streaming would add an endpoint, an ordering concern and a
+failure mode in exchange for a worse result. The measurement makes that argument stronger than
+the estimate it replaces did.
 
 So: **one request returns all thirteen stages, and the UI walks through them at a human pace** —
 ~1.1 s per step, with play/pause, step-by-step arrows, a clickable thumbnail rail, and a
@@ -224,8 +266,23 @@ visible rather than asserted.
   retyped into the UI. If someone changes a threshold, the viewer must say the new number.
 - Steps 7 and 8 render with `image-rendering: pixelated`. At 128×128 the pixel grid *is* the
   point; smoothing it hides that the network sees something coarse.
-- Payload: eight PNGs is roughly 1 MB. On localhost that is nothing. Do not add compression
-  complexity for it.
+- **Stage 1 is capped for display at 768 px on the long side**, and the response reports both
+  the original `shape` and the encoded `display_shape` so the UI can say "mostrada a 768×576 ·
+  original 4032×3024". The pipeline still receives the full-resolution array — only the picture
+  sent to be looked at is smaller. This is not cosmetic: measured on a 4032×3024 capture,
+  encoding stage 1 uncapped costs **459 ms and 24 MB**, a 3× breach of the §7 budget on the
+  first real phone photo. At 768 it is 19 ms and 590 KB. 1024 would be 32 ms and 1 MB, for
+  detail nobody looks at in a card beside twelve others.
+- Payload: the thirteen stages are twelve PNGs, ≈ 1.8 MB, and cost ≈ 43 ms to encode — the
+  largest phase of the request. Measured breakdown: stage 1 ≈ 19 ms, stage 2 (the 512² RGBA
+  ROI) ≈ 10 ms, stage 12 ≈ 8 ms, stages 3–5 ≈ 3 ms each, the rest negligible. On localhost that
+  is nothing and needs no attention.
+
+  **If the field laptop misses the §7 budget** (measure it there — see F7 in
+  `docs/00-master-plan.md`), `timings_ms` will say whether encode is the cause, and there are
+  exactly two cheap levers, in this order: drop `DISPLAY_MAX_SIDE` to 512 (−11 ms), and encode
+  stage 2 as RGB instead of RGBA, whose alpha channel is a constant 255 (−3 ms). Do not add
+  compression complexity, and do not touch the pipeline: none of this is the model's fault.
 - Keyboard: ← → to step, space to play/pause. Participants share one laptop.
 
 ### Also use it for annex 7

@@ -529,8 +529,9 @@ full 13-stage pipeline viewer, the /dades labelling view, and the shell for
 - Pipeline viewer per §8: THIRTEEN stages from ONE request — 8 preprocessing,
   3 feature-map, 1 Grad-CAM, 1 probabilities — animated at ~1.1 s per step with
   play/pause, arrows and a thumbnail rail. Do NOT stream them: preprocessing is
-  ~24 ms and the network ~12 ms, so there is nothing to watch live. Show each
-  step's real measured time. Steps 7-8 render pixelated.
+  ~1.3 ms and the network ~5-11 ms (measured, docs/05 §8), so there is nothing
+  to watch live. Show each step's real measured time — every stage in the
+  response carries its own `ms`. Steps 7-8 render pixelated.
 - /dades per §9: draft session, calibration frame, one label per class, the
   gate applied AS IMAGES ARRIVE with the reason shown for each rejection, and
   nothing written until commit. It must call the SAME ingest code as
@@ -583,6 +584,14 @@ manual work.
 - Prepare informed consent, and guardian consent for minors.
 - Check the laptop: battery, screen brightness for the room, sound level, and that
   `python tasks.py app` starts with no network available.
+- **Measure `elapsed_ms` on that laptop**, from the built app, on a real capture, with all
+  thirteen stages — not with `?stages=false`, and not on a development machine. The 150 ms gate
+  of `docs/05` §7 is a claim about the computer the session runs on. Measured during F5 on a
+  development machine: 82–129 ms with every stage, of which ≈ 43 ms is PNG-encoding them.
+  A slower laptop can fail the gate on the encode phase alone while the model is untouched, and
+  `timings_ms` in any response says immediately whether that is what happened. If it fails,
+  `docs/05` §8 names the two cheap levers; do it before `v1.0-field` is frozen, never during
+  the study.
 
 ---
 
