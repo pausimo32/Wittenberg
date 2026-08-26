@@ -22,6 +22,8 @@ CONFIG = ROOT / "config"
 DATA = ROOT / "data"
 RUNS = ROOT / "runs"
 VENV = ROOT / ".venv"
+WEB = ROOT / "web"
+DIST = WEB / "dist"
 
 # The F1/F3 targets import the pipeline modules directly, the same way tests/conftest.py
 # does. Imports stay inside the target functions so `--list`, `setup` and `clean` keep
@@ -43,10 +45,16 @@ def target(name: str, help_text: str):
 
 
 def npm(*args: str):
+    """npm, always against `web/` — the only Node project in the repo.
+
+    `--prefix` rather than a `cwd` change: `run` prints the command it executes, and a
+    printed npm line that does not say which directory it ran in is the kind of thing
+    someone debugs for ten minutes.
+    """
     exe = shutil.which("npm")
     if exe is None:
-        die("npm not found on PATH — install Node 20")
-    return run([exe, *args])
+        die("npm not found on PATH — install Node 20 or newer")
+    return run([exe, "--prefix", str(WEB), *args])
 
 
 # --------------------------------------------------------------------------- #
@@ -477,11 +485,134 @@ def _option(argv: list[str], flag: str, default):
 
 
 @target("api", "start the FastAPI dev server with reload  [F5]")
-def api(argv): not_implemented("F5")
+def api(argv):
+    """`python tasks.py api [--run <name>] [--port N] [--no-reload]`.
+
+    Development only — `docs/05` §2 runs field sessions from `tasks.py app`, never from a
+    reloading server. Binds `127.0.0.1` and one worker in both branches.
+
+    The gate runs here first, in this process, so a checkpoint that disagrees with
+    `config/preprocess.json` produces the same message `check-model` prints instead of a
+    uvicorn traceback from inside a reloader subprocess.
+
+    Two branches because uvicorn's `--reload` re-imports the app in a spawned process,
+    which on Windows does not inherit this file's `sys.path`: the reloading branch hands
+    uvicorn an import string and `PYTHONPATH`, and `--run` — which pins a run and has
+    nothing to gain from hot reload — serves the already-loaded app in this process.
+    """
+    from api import HOST, PORT, StartupRefused, create_app, load_serving
+
+    port = int(_option(argv, "--port", PORT))
+    pinned = "--run" in argv
+    reload_ = not pinned and "--no-reload" not in argv
+
+    try:
+        serving = load_serving(argv)
+    except StartupRefused as exc:
+        die(str(exc))
+
+    print(f"  run        {serving.run_dir.name}")
+    print(f"  preprocess {serving.config.get('version')}  sha256 {serving.preprocess_sha256}")
+    print(f"  {serving.opencv['package']} cv2 {serving.opencv['version']}")
+    print(f"  device     {serving.device.type}  ({len(serving.classes)} classes)")
+    print(f"  http://{HOST}:{port}  — 127.0.0.1 only, one worker, no outbound call")
+
+    if reload_:
+        src = str(ROOT / "src")
+        env = {**os.environ}
+        env["PYTHONPATH"] = os.pathsep.join(filter(None, [src, env.get("PYTHONPATH")]))
+        run(
+            [
+                venv_python(), "-m", "uvicorn", "api:create_app", "--factory",
+                "--host", HOST, "--port", str(port), "--workers", "1",
+                "--reload", "--reload-dir", src,
+            ],
+            env=env,
+        )
+        return
+
+    import uvicorn
+
+    uvicorn.run(create_app(argv), host=HOST, port=port, workers=1)
 
 
 @target("app", "build if stale, serve the local app, open the browser  [F6]")
-def app(argv): not_implemented("F6")
+def app(argv):
+    """`python tasks.py app [--run <name>] [--port N] [--no-open] [--force-build]`.
+
+    What a field session runs (`docs/05` §2). Not the Vite dev server: hot-reload artefacts
+    and dev overlays in front of a participant invalidate the session, so this serves the
+    built bundle out of `web/dist` and never starts Vite.
+
+    No reload, one worker, `127.0.0.1`. The gate runs first, in this process, so a
+    checkpoint that disagrees with `config/preprocess.json` fails with the same message
+    `check-model` prints rather than after the browser has already opened.
+    """
+    import webbrowser
+
+    from api import HOST, PORT, StartupRefused, create_app
+
+    port = int(_option(argv, "--port", PORT))
+    build_frontend(force="--force-build" in argv)
+
+    try:
+        application = create_app(argv, web_dist=DIST)
+    except StartupRefused as exc:
+        die(str(exc))
+
+    url = f"http://{HOST}:{port}"
+    serving = application.state.serving
+    print(f"  run        {serving.run_dir.name}")
+    print(f"  device     {serving.device.type}  ({len(serving.classes)} classes)")
+    if serving.do_not_report:
+        # The app shows this as a banner on every view; the console says it too, because
+        # whoever starts the server is the person who can still swap the checkpoint.
+        print(f"  DO NOT REPORT  {serving.do_not_report}")
+    print(f"  {url}  — 127.0.0.1 only, one worker, no outbound call")
+
+    if "--no-open" not in argv:
+        webbrowser.open(url)
+
+    import uvicorn
+
+    uvicorn.run(application, host=HOST, port=port, workers=1)
+
+
+def build_frontend(force: bool = False):
+    """`npm run build` when `web/dist` is older than anything that goes into it.
+
+    Staleness by mtime rather than a hash: this exists so nobody demonstrates last week's
+    bundle, not to be a build system. `node_modules` and `dist` are excluded from the scan
+    or the check would always trip on itself.
+    """
+    if not WEB.is_dir():
+        die("web/ not found — F6 builds the frontend")
+
+    index = DIST / "index.html"
+    if force or not index.exists():
+        reason = "forced" if force else "no build yet"
+    else:
+        built = index.stat().st_mtime
+        newest = max(
+            (p.stat().st_mtime for p in _frontend_sources()),
+            default=0.0,
+        )
+        if newest <= built:
+            print(f"  web/dist is current ({index.parent.name}/)")
+            return
+        reason = "sources newer than the build"
+
+    print(f"  building the frontend ({reason})")
+    if not (WEB / "node_modules").is_dir():
+        npm("install")
+    npm("run", "build")
+
+
+def _frontend_sources():
+    skip = {"node_modules", "dist"}
+    for path in WEB.rglob("*"):
+        if path.is_file() and not any(part in skip for part in path.relative_to(WEB).parts):
+            yield path
 
 
 @target("annexes", "generate the TDR annexes into annexes/  [F7]")
