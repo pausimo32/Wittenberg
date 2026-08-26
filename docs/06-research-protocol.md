@@ -12,7 +12,7 @@ treball into obligations on the code.
 | S3 | Which age/education group improves most? | pre/post deltas segmented by group |
 | S4 | Which experimental conditions give the sharpest patterns? | ablation A8 + `data/ingest_report.json` yield by condition |
 | S5 | How accurate is supervised classification by frequency? | per-class F1 + Wilson interval (`docs/04-model-spec.md` §4) |
-| S6 | What are the main error sources and limits? | frequency-distance error analysis, Grad-CAM, `docs/01-domain-physics.md` §3 |
+| S6 | What are the main error sources and limits? | frequency-distance error analysis, Grad-CAM, ablation A10 (ROI without the markers), `docs/01-domain-physics.md` §3 |
 
 If a change does not serve one of these rows, it is out of scope.
 
@@ -91,3 +91,11 @@ Quote the rejection rate with its thresholds, or do not quote it.
   GAP head, larger test set) — a documented deviation is a contribution; an undocumented one
   is an error.
 - Limitations are a section, not an apology. Small sample, one plate, one camera, one room.
+- **Report what a photo without the ArUco frame costs.** Every training frame was rectified by
+  the session calibration; a photo taken without the markers in shot is centre-cropped instead,
+  which is a geometry the model never saw. This is the *ordinary* case for anyone using the app
+  outside a capture session, and the resulting error is not visible to the person looking at the
+  screen. Ablation A10 (`docs/04-model-spec.md` §5) measures the accuracy drop on the real test
+  split; quote that figure here rather than describing the effect qualitatively. Stating the
+  condition under which our own tool is less reliable is a result, not a concession — and an
+  unmeasured caveat is indistinguishable from one we did not check.

@@ -102,7 +102,7 @@ preprocessing version and the framework/CUDA versions), `metrics.json`, `history
 
 ## 5. Ablations — these ARE the results chapter
 
-Nine variants, each with 3 seeds — 27 runs. Report mean ± std. Each row is a sentence in the
+Ten variants, each with 3 seeds — 30 runs. Report mean ± std. Each row is a sentence in the
 TDR discussion.
 
 | # | Variant | Question it answers |
@@ -116,6 +116,27 @@ TDR discussion.
 | A7 | `baseline_paper` vs `wittenberg_v1` | Does the added depth earn its cost? Note this varies depth, BN and head at once — it does not isolate any of them. |
 | A8 | sand vs semolina vs salt | Which granular material gives the most separable patterns? |
 | A9 | `wittenberg_v1` with a `Flatten` head vs the `GAP` head | Isolates the head choice, which A7 confounds |
+| A10 | the same checkpoint evaluated with ROI `center_crop` instead of `homography` | What does a photo taken without the ArUco frame cost? |
+
+### A10 in detail — the cost of a photo without the markers
+
+The only ablation that is **not** a retrain. A10 takes the shipped checkpoint and re-runs the
+*evaluation* over the same real test split twice: once with each frame's session calibration, and
+once with `{"roi_mode": "center_crop"}` forced. Everything else — weights, seed, split, images —
+is identical, so the difference is the ROI and nothing else. Cheap: one extra evaluation pass, no
+training, on data F3b already produces.
+
+It is here because `center_crop` is not an exotic case in the app, it is the **normal** one.
+`/api/predict` detects the four markers in the uploaded frame and falls back to `center_crop` when
+they are not there, which is what happens to every photo a visitor takes without the calibration
+frame in shot — at `/apren`, from a phone, from an old picture. The model then receives a
+geometry it never saw in training, and the failure is invisible: the plate looks fine, the
+probabilities look normal, the answer is simply less trustworthy.
+
+`/api/predict` reports `roi_mode` per request and `docs/05` §4 gives the non-homography case its
+own visible state. A10 is what turns that warning into a number, so the TDR can say *how much*
+rather than *some*. Report it as accuracy under each ROI mode with the Wilson interval of both,
+and quote it in the limitations section (`docs/06-research-protocol.md` §5).
 
 ## 6. Acceptance gates — ship or do not ship
 
