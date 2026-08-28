@@ -37,15 +37,15 @@ def make_app(tmp_path, name, config, data_root, drafts_root):
 
     built = build_run(tmp_path / name, config, class_list(), {"do_not_report": None})
 
-    dist = tmp_path / name / "dist"
-    dist.mkdir(parents=True, exist_ok=True)
-    (dist / "index.html").write_text("<!doctype html><title>app</title>", "utf-8")
+    site = tmp_path / name / "site"
+    site.mkdir(parents=True, exist_ok=True)
+    (site / "index.html").write_text("<!doctype html><title>app</title>", "utf-8")
 
     return api.create_app(
         argv=[],
         runs_root=built["runs_root"],
         classes_path=built["classes_path"],
-        web_dist=dist,
+        site_dir=site,
         data_root=data_root,
         drafts_root=drafts_root,
     )
@@ -66,12 +66,18 @@ def test_an_api_path_with_no_route_is_still_a_404(client):
     assert not response.text.lstrip().lower().startswith("<!doctype")
 
 
-def test_the_spa_fallback_still_answers_a_view_route(client):
-    """The other half of the same rule: `/dades` is a real URL with no file behind it."""
+def test_a_view_route_with_no_file_is_a_404_now(client):
+    """The other half of the same rule, inverted by `docs/adr/0007`.
+
+    This asserted the SPA fallback: `/dades` was a real URL with no file behind it, and
+    `BrowserRouter` needed the shell served for it. The frontend is a static multipage
+    site now, where every page is a file, so an extensionless path is a mistyped URL and
+    must fail rather than render the home page. The `/api/drafts` routes it reached are
+    unchanged and are exercised by the rest of this module.
+    """
     response = client.get("/dades")
 
-    assert response.status_code == 200
-    assert response.text.lstrip().lower().startswith("<!doctype")
+    assert response.status_code == 404
 
 
 def test_create_list_and_read_a_draft(client, roots):
