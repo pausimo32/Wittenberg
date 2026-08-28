@@ -127,7 +127,7 @@ def app(served_run):
     return api.create_app(
         runs_root=served_run["runs_root"],
         classes_path=served_run["classes_path"],
-        web_dist=served_run["runs_root"] / "no-frontend-yet",
+        site_dir=served_run["runs_root"] / "no-site-here",
     )
 
 
@@ -458,48 +458,64 @@ def test_startup_refuses_an_unfinished_run(served_run):
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
-# §3 — serving the built frontend
+# §3, §4 — serving the static site
 # --------------------------------------------------------------------------- #
 
 @pytest.fixture(scope="module")
-def app_with_frontend(served_run, tmp_path_factory):
-    """The app with a stand-in `web/dist`. F6's real build is checked by `tasks.py app`."""
-    dist = tmp_path_factory.mktemp("dist")
-    (dist / "index.html").write_text("<!doctype html><div id=root></div>", encoding="utf-8")
-    (dist / "assets").mkdir()
-    (dist / "assets" / "index.js").write_text("console.log(1)", encoding="utf-8")
+def app_with_site(served_run, tmp_path_factory):
+    """The app with a stand-in `site/`. The real site is exercised by `tasks.py app`."""
+    site = tmp_path_factory.mktemp("site")
+    (site / "index.html").write_text("<!doctype html><h1>accueil</h1>", encoding="utf-8")
+    (site / "analyseur.html").write_text(
+        "<!doctype html><h1>analyseur</h1>", encoding="utf-8"
+    )
+    (site / "css").mkdir()
+    (site / "css" / "style.css").write_text("body{}", encoding="utf-8")
     return TestClient(
         api.create_app(
             runs_root=served_run["runs_root"],
             classes_path=served_run["classes_path"],
-            web_dist=dist,
+            site_dir=site,
         )
     )
 
 
-@pytest.mark.parametrize("path", ["/", "/analitza", "/dades", "/apren/qualsevol"])
-def test_client_routes_survive_a_reload(app_with_frontend, path):
-    """`BrowserRouter` puts real URLs in the address bar with no file behind them.
+@pytest.mark.parametrize("path", ["/", "/index.html", "/analyseur.html", "/css/style.css"])
+def test_the_site_is_served_at_its_own_urls(app_with_site, path):
+    assert app_with_site.get(path).status_code == 200
 
-    Without the fallback these 404 — invisible while clicking, and immediate the moment
-    someone reloads or is handed a link. Mid-session that is one participant's data lost.
+
+def test_a_missing_page_stays_a_404_and_never_becomes_the_home_page(app_with_site):
+    """Multipage, not SPA. `/analyseur.html` is a real file, so a typo must 404.
+
+    The mount this replaced fell back to `index.html` for any extensionless path, which
+    is right for a history-API router and wrong here: a mistyped page would silently
+    render the home page and look like a working link.
     """
-    response = app_with_frontend.get(path)
-    assert response.status_code == 200
-    assert "<div id=root>" in response.text
+    response = app_with_site.get("/analyzer.html")
+    assert response.status_code == 404
+    assert "accueil" not in response.text
 
 
-def test_a_missing_asset_still_404s(app_with_frontend):
-    """A broken build must fail loudly, not serve HTML where a script was expected."""
-    assert app_with_frontend.get("/assets/does-not-exist.js").status_code == 404
-    assert app_with_frontend.get("/assets/index.js").status_code == 200
+def test_a_missing_api_route_is_a_json_404_not_html(app_with_site):
+    """`response.json()` on `<!doctype html>` reports a network fault for a missing route."""
+    response = app_with_site.get("/api/nope")
+    assert response.status_code == 404
+    assert not response.text.lstrip().startswith("<")
+    assert app_with_site.get("/api/health").json()["model_run"]
 
 
-def test_the_api_is_not_shadowed_by_the_static_mount(app_with_frontend):
-    assert app_with_frontend.get("/api/health").json()["model_run"]
-    # An unknown /api path is an API error, never the SPA shell.
-    assert app_with_frontend.get("/api/nope").status_code == 404
-    assert "<div id=root>" not in app_with_frontend.get("/api/nope").text
+@pytest.mark.parametrize(
+    "path",
+    ["/CLAUDE.md", "/src/api.py", "/data/metadata.csv", "/runs/latest.txt", "/tasks.py"],
+)
+def test_the_mount_publishes_nothing_outside_the_site(app_with_site, path):
+    """Why the site lives in `site/` and not at the repo root.
+
+    Mounting the repo root would put `data/raw/`, `runs/`, `src/` and `.git/` on an HTTP
+    port. Binding to 127.0.0.1 is not a reason to serve them.
+    """
+    assert app_with_site.get(path).status_code == 404
 
 
 def test_no_cors_wildcard(app):

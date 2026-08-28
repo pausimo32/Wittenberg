@@ -72,7 +72,7 @@ from quality import load_gate
 ROOT = Path(__file__).resolve().parents[1]
 CLASSES_PATH = ROOT / "config" / "classes.json"
 DATA_ROOT = ROOT / "data"
-WEB_DIST = ROOT / "web" / "dist"
+SITE_DIR = ROOT / "site"
 
 HOST = "127.0.0.1"
 PORT = 8000
@@ -303,7 +303,7 @@ def create_app(
     runs_root: Path | str | None = None,
     config_path: Path | str | None = None,
     classes_path: Path | str | None = None,
-    web_dist: Path | str | None = None,
+    site_dir: Path | str | None = None,
     data_root: Path | str | None = None,
     drafts_root: Path | str | None = None,
 ) -> FastAPI:
@@ -374,52 +374,19 @@ def create_app(
         )
     )
 
-    dist = Path(WEB_DIST if web_dist is None else web_dist)
-    if dist.is_dir():
-        # F6 builds this. Mounted last so it cannot shadow /api.
-        app.mount("/", _SinglePageFiles(directory=dist, html=True), name="app")
+    site = Path(SITE_DIR if site_dir is None else site_dir)
+    if site.is_dir():
+        # Mounted last so it cannot shadow /api. `html=True` serves index.html for `/`.
+        #
+        # No SPA fallback, and no `directory=ROOT`. Both were deliberate: this is a
+        # multipage site where `/analyseur.html` is a real file, so a mistyped page must
+        # stay a 404 rather than silently render the home page; and the doc root is
+        # `site/` rather than the repo it lives in, because mounting the repo would put
+        # `data/raw/`, `runs/`, `src/` and `.git/` on an HTTP port. Binding to 127.0.0.1
+        # is not a reason to serve them.
+        app.mount("/", StaticFiles(directory=site, html=True), name="site")
 
     return app
-
-
-class _SinglePageFiles(StaticFiles):
-    """`StaticFiles`, plus the fallback a history-API router needs.
-
-    The frontend uses `BrowserRouter`, so `/analitza` and `/dades` are real URLs in the
-    address bar with no file behind them. Plain `StaticFiles` serves `index.html` for `/`
-    and 404s for those — which is invisible while clicking around and appears the moment
-    someone reloads the page, bookmarks `/dades`, or is handed a link. During a field
-    session a participant reloading into a 404 is the end of that participant's data.
-
-    Two kinds of request keep their 404, and both are cases where an HTML page would be a
-    worse answer than an error:
-
-    - **Anything under `/api`.** The mount is at `/`, so it catches every path no API route
-      matched — including a mistyped or not-yet-built endpoint. Returning the SPA shell with
-      a 200 there means `response.json()` fails on `<!doctype html>` and the frontend
-      reports a network problem for what is actually a missing endpoint.
-    - **Anything with a file extension.** A missing `/assets/*.js` must fail loudly rather
-      than silently return HTML, which is how a broken build turns into ten minutes of
-      reading a syntax error in what is really `<!doctype html>`.
-    """
-
-    async def get_response(self, path: str, scope: Any) -> Any:
-        from starlette.exceptions import HTTPException as StarletteHTTPException
-
-        try:
-            return await super().get_response(path, scope)
-        except StarletteHTTPException as exc:
-            if exc.status_code != 404:
-                raise
-            # The request path as the client sent it. `path` is mount-relative and its
-            # leading slash depends on the Starlette version, so the decision is made on
-            # `scope` where the value is unambiguous.
-            requested = str(scope.get("path", ""))
-            if requested == "/api" or requested.startswith("/api/"):
-                raise
-            if Path(path).suffix:
-                raise
-            return await super().get_response("index.html", scope)
 
 
 # --------------------------------------------------------------------------- #
