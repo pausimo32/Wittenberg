@@ -193,3 +193,49 @@ def test_a_full_mode_list_raises_no_warning(tmp_path):
     rows = [mode(400 + 100 * i) for i in range(12)]
     result = build_classes(read_modes(write_csv(tmp_path / "m.csv", rows)), "capture")
     assert result["warnings"] == []
+
+
+# --------------------------------------------------------------------------- #
+# the class list the static site reads
+# --------------------------------------------------------------------------- #
+
+def _mode(hz: int) -> dict[str, str | int]:
+    return {
+        "freq_hz": hz,
+        "width_hz": "12",
+        "n_nodal_lines": "3",
+        "symmetry": "diagonal",
+        "quality": "clear",
+        "notes": "",
+    }
+
+
+def test_write_site_classes_emits_the_frozen_list_for_the_browser(tmp_path):
+    from modes import write_site_classes
+
+    # Ten, because a real sweep with fewer is refused by `build_classes` (F1).
+    result = build_classes([_mode(hz) for hz in range(420, 1620, 120)], "capture")
+    text = write_site_classes(result, tmp_path / "classes.generated.js").read_text("utf-8")
+
+    assert "do not hand-edit" in text.lower()
+    assert "window.WITTENBERG_CLASSES" in text
+    assert '"hz": 420' in text
+    assert '"label": "420 Hz"' in text
+    # Ascending frequency: the same order as the frozen class index.
+    assert text.index('"hz": 420') < text.index('"hz": 1500')
+
+
+def test_the_site_class_list_follows_whatever_modes_are_chosen(tmp_path):
+    """The point of generating it: twelve classes unrelated to today's six synthetic ones.
+
+    The old site hard-coded thirteen frequencies, one place indexing them by array
+    position. This is what makes "ready for the real data" a property and not a promise.
+    """
+    from modes import write_site_classes
+
+    result = build_classes([_mode(hz) for hz in range(300, 3900, 300)], "capture")
+    text = write_site_classes(result, tmp_path / "c.js").read_text("utf-8")
+
+    assert result["n_classes"] == 12
+    assert '"hz": 3600' in text
+    assert '"hz": 300' in text

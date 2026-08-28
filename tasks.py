@@ -22,6 +22,7 @@ CONFIG = ROOT / "config"
 DATA = ROOT / "data"
 RUNS = ROOT / "runs"
 VENV = ROOT / ".venv"
+SITE = ROOT / "site"
 WEB = ROOT / "web"
 DIST = WEB / "dist"
 
@@ -284,7 +285,13 @@ except RuntimeError as exc:
 
 @target("modes", "validate data/modes.csv, write config/classes.json  [F1]")
 def modes(argv):
-    from modes import ModesError, build_classes, read_modes, write_classes
+    from modes import (
+        ModesError,
+        build_classes,
+        read_modes,
+        write_classes,
+        write_site_classes,
+    )
 
     provenance = "synthetic" if (DATA / "SYNTHETIC").exists() else "capture"
     try:
@@ -297,7 +304,11 @@ def modes(argv):
         print(f"  rejected {r['freq_hz']} Hz — {r['reason']}")
 
     path = write_classes(result, CONFIG / "classes.json")
+    # The site reads its class list from a generated file, written here so it cannot
+    # drift from classes.json. Nothing in the frontend hard-codes a frequency.
+    site_path = write_site_classes(result, SITE / "js" / "classes.generated.js")
     print(f"  {result['n_classes']} classes -> {path.relative_to(ROOT)}")
+    print(f"  {result['n_classes']} classes -> {site_path.relative_to(ROOT)}")
     print("  the class index is frozen; retrain from scratch if this file changes")
     if not result["classes"]:
         die("no usable modes — nothing to train on")

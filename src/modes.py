@@ -204,3 +204,40 @@ def _int_field(row: dict[str, Any], key: str, path: Path, line: int) -> int:
         return int(raw)
     except ValueError as exc:
         raise ModesError(f"{path} line {line}: {key} must be an integer, got {raw!r}") from exc
+
+
+def write_site_classes(result: dict[str, Any], path: Path | str) -> Path:
+    """The class list as a browser global, for the static site.
+
+    Written by the same command that writes `config/classes.json`, so the two cannot
+    drift. Mechanical fields only: everything editorial — the description, the
+    complexity, the (m,n) indices — lives in `site/js/frequencies.js`, keyed by
+    frequency and written by people.
+
+    This exists because the old site hard-coded thirteen frequencies in three places,
+    one of them indexing a parallel array *by position*: choosing fourteen real modes
+    would have read past its end and stopped the page rendering. The classes are not
+    chosen yet, so the list has to follow whatever `data/modes.csv` eventually says
+    without anyone editing HTML.
+    """
+    entries = [
+        {
+            "hz": c["freq_hz"],
+            "label": f"{c['freq_hz']} Hz",
+            "n_nodal_lines": c.get("n_nodal_lines"),
+            "symmetry": c.get("symmetry"),
+            "width_hz": c.get("width_hz"),
+        }
+        for c in result["classes"]
+    ]
+    text = (
+        "/* Generated from config/classes.json by `python tasks.py modes`.\n"
+        " * Do not hand-edit: the class index is frozen and this file is regenerated.\n"
+        " * Editorial metadata (description, complexity, mode indices) belongs in\n"
+        " * frequencies.js, keyed by frequency. */\n"
+        f"window.WITTENBERG_CLASSES = {json.dumps(entries, indent=2, ensure_ascii=False)};\n"
+    )
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
+    return p
