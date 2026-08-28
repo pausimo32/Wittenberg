@@ -518,6 +518,52 @@ def test_the_mount_publishes_nothing_outside_the_site(app_with_site, path):
     assert app_with_site.get(path).status_code == 404
 
 
+def test_predict_reports_the_quality_gate(client, golden_png):
+    """§6's gate, run on the upload for information. Same function ingest calls."""
+    body = post(client, golden_png).json()
+    assert set(body["quality"]) == {"quality", "reason", "metrics"}
+    assert body["quality"]["metrics"]["n_markers"] == body["markers_found"]
+    assert body["quality"]["metrics"]["roi_mode"] == body["roi_mode"]
+
+
+def test_a_blurred_upload_is_still_predicted_and_still_flagged(client, golden_png):
+    """The analyser warns; only ingest rejects.
+
+    A blurred photo still gets an answer and is still told it is blurred. Refusing it
+    would invent a policy the analyser never had — the gate decides what enters the
+    dataset, not what a participant is allowed to ask.
+    """
+    original = cv2.imdecode(np.frombuffer(golden_png, np.uint8), cv2.IMREAD_UNCHANGED)
+    ok, buffer = cv2.imencode(".png", cv2.GaussianBlur(original, (31, 31), 0))
+    assert ok
+
+    response = post(client, buffer.tobytes(), stages=False)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["quality"]["reason"] == "blurred"
+    assert len(body["top3"]) == 3
+
+
+def test_the_gate_does_not_run_the_pipeline_a_second_time(client, golden_png, monkeypatch):
+    """§3: one call, one pipeline run. The gate is handed what the answer came from."""
+    import quality as quality_module
+
+    calls = {"n": 0}
+    real = api.preprocess_stages
+
+    def counting(*args: object, **kwargs: object) -> object:
+        calls["n"] += 1
+        return real(*args, **kwargs)
+
+    # Both namespaces, because both bound the name at import time. Patching only
+    # `api.preprocess_stages` counts nothing the gate does and the test passes with the
+    # invariant broken — which is how this test was written the first time.
+    monkeypatch.setattr(api, "preprocess_stages", counting)
+    monkeypatch.setattr(quality_module, "preprocess_stages", counting)
+    post(client, golden_png)
+    assert calls["n"] == 1
+
+
 def test_no_cors_wildcard(app):
     assert not any(
         "CORS" in type(m.cls).__name__ or "CORS" in getattr(m.cls, "__name__", "")

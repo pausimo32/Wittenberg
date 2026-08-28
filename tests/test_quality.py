@@ -197,3 +197,47 @@ def test_gate_config_is_json_and_versioned(repo_root):
     cfg = json.loads((repo_root / "config" / "quality_gate.json").read_text("utf-8"))
     assert cfg["version"]
     assert cfg["markers_required"] == 4
+
+
+# --------------------------------------------------------------------------- #
+# `docs/05` §3 — the gate on an upload, where the stages already exist
+# --------------------------------------------------------------------------- #
+
+def test_assess_uses_the_stages_it_is_given_instead_of_recomputing(gate, monkeypatch):
+    """One call, one pipeline run.
+
+    `/api/predict` runs `preprocess_stages` to produce its answer, and §3 forbids running
+    it a second time to measure the same image. The gate takes what the caller already
+    has; monkeypatching the module-level name is what proves it is not called again.
+    """
+    import quality as quality_module
+
+    image = chladni_like()
+    stages = quality_module.preprocess_stages(image, CALIB_CENTER_CROP, None)
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise AssertionError("preprocess_stages must not run a second time")
+
+    monkeypatch.setattr(quality_module, "preprocess_stages", fail)
+    result = assess(image, CALIB_CENTER_CROP, n_markers=4, gate=gate, stages=stages)
+
+    assert result.quality == "ok"
+    assert result.reason is None
+
+
+def test_the_given_stages_produce_the_same_verdict_as_recomputing(gate):
+    """The parameter is a shortcut, never a different measurement."""
+    image = chladni_like()
+    from quality import preprocess_stages as ps
+
+    recomputed = assess(image, CALIB_CENTER_CROP, n_markers=4, gate=gate)
+    handed = assess(
+        image,
+        CALIB_CENTER_CROP,
+        n_markers=4,
+        gate=gate,
+        stages=ps(image, CALIB_CENTER_CROP, None),
+    )
+    assert handed.quality == recomputed.quality
+    assert handed.reason == recomputed.reason
+    assert handed.metrics == recomputed.metrics

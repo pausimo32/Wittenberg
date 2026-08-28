@@ -39,7 +39,7 @@ from typing import Any, NamedTuple
 import cv2
 import numpy as np
 
-from preprocess import ROI_MODE_HOMOGRAPHY, preprocess_stages
+from preprocess import ROI_MODE_HOMOGRAPHY, Stages, preprocess_stages
 
 GATE_PATH = Path(__file__).resolve().parents[1] / "config" / "quality_gate.json"
 
@@ -89,6 +89,7 @@ def assess(
     n_markers: int,
     config: Mapping[str, Any] | None = None,
     gate: Mapping[str, Any] | None = None,
+    stages: Stages | None = None,
 ) -> GateResult:
     """Apply §6 to one decoded capture.
 
@@ -96,6 +97,11 @@ def assess(
     calibration. `n_markers` is how many ArUco markers ingest actually found in the
     raw frame — the gate does not detect them itself, so it stays pure and testable
     without a marker board.
+
+    `stages` is the already-computed pipeline, for the one caller that has it.
+    `/api/predict` runs `preprocess_stages` to produce its answer, and `docs/05` §3
+    forbids running it a second time to measure the same image; ingest passes nothing
+    and the gate computes its own. It is a shortcut, never a different measurement.
     """
     params = gate if gate is not None else load_gate()
     mode = _roi_mode(calib, config)
@@ -106,7 +112,7 @@ def assess(
     if mode == ROI_MODE_HOMOGRAPHY and n_markers < int(params["markers_required"]):
         return GateResult(QUALITY_PARTIAL, "partial", metrics)
 
-    stages = preprocess_stages(image_rgba, calib, config)
+    stages = preprocess_stages(image_rgba, calib, config) if stages is None else stages
     gray = stages.gray
 
     metrics["laplacian_variance"] = float(cv2.Laplacian(gray, cv2.CV_64F).var())

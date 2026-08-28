@@ -67,7 +67,7 @@ from drafts import DRAFTS_ROOT
 from imageio import UnsupportedImageError, decode_bytes, thumbnail
 from model import build_model
 from preprocess import load_config, preprocess_stages
-from quality import load_gate
+from quality import assess, load_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 CLASSES_PATH = ROOT / "config" / "classes.json"
@@ -127,6 +127,9 @@ class Serving(NamedTuple):
     opencv: dict[str, str]
     synthetic: bool
     do_not_report: str | None
+    #: `config/quality_gate.json`, read once. §6's thresholds, applied to an upload as a
+    #: warning rather than a rejection — see `_predict`.
+    gate: dict[str, Any]
 
 
 # --------------------------------------------------------------------------- #
@@ -184,6 +187,7 @@ def load_serving(
         },
         synthetic=bool(metrics.get("synthetic", False)),
         do_not_report=metrics.get("do_not_report"),
+        gate=load_gate(),
     )
 
 
@@ -413,6 +417,19 @@ def _predict(
             decoded.pixels, calib, serving.config, collect_timings=True
         )
 
+    with _timed(timings, "quality"):
+        # `docs/02` §6's gate, run on the upload for information only. It is the same
+        # function `tasks.py ingest` calls, never a second copy — but here it *warns and
+        # never rejects*: a blurred photo still gets an answer and is still told it is
+        # blurred. Refusing it would invent a policy the analyser never had; the gate
+        # decides what enters the dataset, not what a participant may ask.
+        #
+        # `stages=pipeline` is what keeps this from being a second run of the pipeline,
+        # which §3 forbids: the gate measures the arrays the answer came from.
+        verdict = assess(
+            decoded.pixels, calib, markers, serving.config, serving.gate, stages=pipeline
+        )
+
     with _timed(timings, "inference"):
         # Step 8 + the NHWC->NCHW permute by `dataset.to_model_input`, from `stages.resized`
         # (step 7) — the identical path `train.predict` and `evaluate` take, so the tensor
@@ -443,6 +460,11 @@ def _predict(
         ],
         "roi_mode": str(calib["roi_mode"]),
         "markers_found": markers,
+        "quality": {
+            "quality": verdict.quality,
+            "reason": verdict.reason,
+            "metrics": verdict.metrics,
+        },
     }
 
     if with_stages:
