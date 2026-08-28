@@ -21,8 +21,12 @@
 (function () {
   'use strict';
 
-  var DEV_API_BASE  = 'http://localhost:8000';
-  var PROD_API_BASE = '';        // même origine
+  // Même origine dans les deux cas : FastAPI sert ce site (docs/05 §3). Il n'y a plus
+  // de « développement » où le backend vivrait sur un autre port — `python tasks.py app`
+  // sert les pages et l'API depuis 127.0.0.1:8000. Cela supprime la question CORS au
+  // lieu d'y répondre par un joker, que src/api.py refuse par conception.
+  var DEV_API_BASE  = '';
+  var PROD_API_BASE = '';
   var STORAGE_KEY   = 'wittenberg.apiBaseUrl';
 
   function fromMeta() {
@@ -65,8 +69,8 @@
     /** Racine de l'API, sans barre oblique finale. '' signifie même origine. */
     API_BASE_URL: resolveBaseUrl(),
 
-    /** Préfixe versionné des routes d'inférence. */
-    API_PREFIX: '/api/v1',
+    /** L'API n'est pas versionnée : docs/05 §3 définit /api/health et /api/predict. */
+    API_PREFIX: '',
 
     /** Délai maximal d'une requête d'analyse, en millisecondes. */
     REQUEST_TIMEOUT_MS: 30000,

@@ -12,11 +12,13 @@
  * serveur pour rester strictement identique à celui de l'entraînement — il
  * n'est donc volontairement pas dupliqué dans le navigateur.
  *
- * Contrat du backend : voir backend/README.md
- *   GET  /health
- *   GET  /ready
- *   GET  /api/v1/model-info
- *   POST /api/v1/predict   (multipart/form-data, champ « image »)
+ * Contrat du backend : docs/05-webapp-spec.md §3.
+ *   GET  /api/health                  ce qui est chargé, et s'il est citable
+ *   POST /api/predict?stages=false    multipart/form-data, champ « file »
+ *
+ * La traduction de ce contrat vers la forme attendue par l'interface vit dans
+ * adapter.js, chargé avant ce fichier. Ici il ne reste que le transport, la
+ * progression et les erreurs.
  */
 
 // ── États du pipeline ───────────────────────────────────────────────────────
@@ -28,7 +30,7 @@ const PredictionState = {
   ERROR:     'error'
 };
 
-// ── Codes d'erreur renvoyés par le backend ──────────────────────────────────
+// ── Codes d'erreur ──────────────────────────────────────────────────────────
 const PredictionErrorCode = {
   MODEL_UNAVAILABLE: 'model_unavailable',
   NETWORK:           'network_error',
@@ -40,10 +42,23 @@ const PredictionErrorCode = {
   CORRUPT:           'corrupt_image'
 };
 
+/**
+ * Les codes HTTP que renvoie /api/predict, traduits vers les codes que
+ * l'interface sait déjà afficher. 415 couvre aussi bien un fichier qui n'est
+ * pas une image qu'un HEIC que la machine ne sait pas décoder : le message du
+ * serveur distingue les deux, donc on le lit plutôt que de deviner.
+ */
+const HTTP_ERROR_CODES = {
+  400: PredictionErrorCode.EMPTY_FILE,
+  413: PredictionErrorCode.FILE_TOO_LARGE,
+  415: PredictionErrorCode.UNSUPPORTED,
+  422: PredictionErrorCode.CORRUPT
+};
+
 function _config() {
   return window.WITTENBERG_CONFIG || {
-    API_BASE_URL: 'http://localhost:8000',
-    API_PREFIX: '/api/v1',
+    API_BASE_URL: '',
+    API_PREFIX: '',
     REQUEST_TIMEOUT_MS: 30000,
     apiUrl: function (path) { return this.API_BASE_URL + this.API_PREFIX + path; },
     url: function (path) { return this.API_BASE_URL + path; }
@@ -54,32 +69,24 @@ function _t(key, fallback) {
   return window.WI18n ? window.WI18n.t(key) : fallback;
 }
 
-/**
- * Complète une classe renvoyée par le backend avec les métadonnées locales
- * (mode vibratoire, description) lorsqu'une correspondance existe.
- *
- * Le backend reste la seule source de vérité pour la fréquence et le libellé ;
- * `frequencies.js` ne fournit qu'un enrichissement éditorial facultatif. Si le
- * manifeste du modèle décrit des fréquences absentes du fichier local, le
- * résultat s'affiche sans description plutôt qu'avec une description erronée.
- */
-function _toFrequency(entry) {
-  const hz = entry.frequency_hz;
-  const local = (typeof getFrequencyByHz === 'function') ? getFrequencyByHz(hz) : null;
-  return Object.assign({}, local || {}, {
-    hz: hz,
-    label: entry.label,
-    classIndex: entry.class_index,
-    hasLocalMetadata: Boolean(local)
-  });
+function _adapter() {
+  return window.WittenbergAdapter;
 }
 
 async function _readError(response) {
-  let code = 'http_' + response.status;
+  let code = HTTP_ERROR_CODES[response.status] || ('http_' + response.status);
   let message = null;
   try {
     const body = await response.json();
-    if (body && body.error) {
+    const detail = body && body.detail;
+    if (typeof detail === 'string') {
+      message = detail;
+      // `imageio.decode_bytes` nomme le format qu'il a refusé ; un HEIC non
+      // décodable a son propre message dans l'interface.
+      if (response.status === 415 && /heif|heic/i.test(detail)) {
+        code = PredictionErrorCode.UNSUPPORTED_HEIF;
+      }
+    } else if (body && body.error) {
       code = body.error.code || code;
       message = body.error.message || null;
     }
@@ -94,25 +101,24 @@ const PredictionService = {
   /**
    * Interroge le backend sur l'état du modèle.
    *
-   * @returns {Promise<Object>} { available, status, reason, classes, ... }
-   *   `available: false` couvre aussi bien un backend injoignable qu'un
-   *   backend démarré sans modèle : `status` distingue les deux cas.
+   * `available: false` couvre aussi bien un backend injoignable qu'un backend
+   * démarré sans modèle ; `status` distingue les deux cas. En pratique l'API
+   * refuse de démarrer sans checkpoint valide (docs/05 §3), donc « injoignable »
+   * est le seul échec que cette page verra.
    */
   async getModelInfo() {
     const config = _config();
     try {
-      const response = await fetch(config.apiUrl('/model-info'), {
+      const response = await fetch(config.url('/api/health'), {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
       if (!response.ok) {
         return { available: false, status: 'unreachable', reason: null, reachable: true };
       }
-      const info = await response.json();
-      info.reachable = true;
-      return info;
+      return _adapter().mapHealth(await response.json());
     } catch (e) {
-      return { available: false, status: 'unreachable', reason: null, reachable: false };
+      return _adapter().mapHealth(null);
     }
   },
 
@@ -121,7 +127,7 @@ const PredictionService = {
    *
    * @param {File|Blob} imageFile  Fichier image (JPEG, PNG, WebP…)
    * @param {Function}  onProgress Callback(state, message) pour l'interface
-   * @returns {Promise<Object>} Résultat normalisé pour l'interface.
+   * @returns {Promise<Object>} Résultat normalisé par adapter.js.
    */
   async predict(imageFile, onProgress = () => {}) {
     const config = _config();
@@ -137,9 +143,9 @@ const PredictionService = {
     onProgress(PredictionState.LOADING, _t('pred.loading', 'Envoi de l\'image…'));
 
     const formData = new FormData();
-    // Le nom transmis est neutralisé côté serveur ; il ne sert qu'au journal
-    // de bord du navigateur.
-    formData.append('image', imageFile, imageFile.name || 'capture.jpg');
+    // Le champ s'appelle « file » : c'est le nom qu'attend /api/predict. Le nom de
+    // fichier est neutralisé côté serveur ; il ne sert qu'au journal du navigateur.
+    formData.append('file', imageFile, imageFile.name || 'capture.jpg');
 
     const controller = new AbortController();
     const timeoutId = setTimeout(
@@ -150,7 +156,9 @@ const PredictionService = {
     let response;
     try {
       onProgress(PredictionState.ANALYZING, _t('pred.analysing', 'Analyse du motif en cours…'));
-      response = await fetch(config.apiUrl('/predict'), {
+      // stages=false : l'analyseur n'affiche que la carte de contours finale (≈ 29 ms
+      // au lieu de ≈ 82-129 ms). Les treize étapes sont le visualiseur, un autre écran.
+      response = await fetch(config.url('/api/predict?stages=false'), {
         method: 'POST',
         body: formData,
         signal: controller.signal
@@ -183,30 +191,7 @@ const PredictionService = {
     const body = await response.json();
     onProgress(PredictionState.DONE, _t('pred.done', 'Analyse terminée'));
 
-    const quality = body.quality || { score: null, warnings: [] };
-
-    return {
-      success: true,
-      requestId: body.request_id,
-      modelName: body.model ? body.model.name : null,
-      modelVersion: body.model ? body.model.version : null,
-      preprocessingVersion: body.preprocessing ? body.preprocessing.version : null,
-      processingMs: body.processing_ms,
-
-      frequency: _toFrequency(body.prediction),
-      confidence: body.prediction.confidence,
-      topPredictions: (body.top_k || []).map(function (entry) {
-        return { frequency: _toFrequency(entry), confidence: entry.probability };
-      }),
-
-      lowConfidence: body.prediction.reliable === false,
-      reason: body.prediction.reason || null,
-      margin: body.prediction.margin,
-
-      quality: {
-        score: quality.score,
-        warnings: quality.warnings || []
-      }
-    };
+    // Toute la traduction du contrat vit dans adapter.js — un seul endroit.
+    return _adapter().mapPrediction(body);
   }
 };
