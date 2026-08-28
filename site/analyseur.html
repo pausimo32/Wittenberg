@@ -265,39 +265,44 @@
               <span class="badge badge-dark" id="result-model-badge">—</span>
             </div>
             <div class="result-body">
-              <!-- Frequency big number -->
-              <div style="margin-bottom:1.5rem;">
-                <div class="flex items-end gap-2 flex-wrap" style="margin-bottom:.5rem;">
-                  <span class="freq-big" id="result-freq">—</span>
-                  <span style="font-size:1.5rem;font-weight:300;color:var(--c-text-muted);padding-bottom:.5rem;">Hz</span>
-                </div>
-                <p style="font-size:.875rem;color:var(--c-text-muted);" id="result-mode"></p>
-              </div>
-
-              <!-- Confidence -->
-              <div style="margin-bottom:1.75rem;">
-                <div class="flex justify-between items-center" style="margin-bottom:.5rem;">
-                  <span style="font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);" data-i18n="analyser.conf_label">Confiance du modèle</span>
-                  <div style="display:flex;align-items:center;gap:.5rem;">
-                    <span style="font-size:1.125rem;font-weight:700;color:var(--c-dark);" id="result-conf-pct">0 %</span>
-                    <span class="badge" id="result-conf-badge"></span>
+              <!-- Géométrie : un état visible à part, au-dessus des paliers de
+                   confiance et indépendant d'eux (docs/05 §4). Une réponse peu sûre et
+                   une réponse mal redressée sont deux échecs différents. -->
+              <div id="geometry-warning" class="warn-box" style="margin-bottom:1.25rem;display:none;">
+                <div style="display:flex;gap:.625rem;align-items:flex-start;">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:.125rem;color:#b45309;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="white" stroke-width="2"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="white" stroke-width="2"/></svg>
+                  <div>
+                    <p style="font-size:.8125rem;font-weight:600;color:#92400e;margin-bottom:.375rem;" data-i18n="analyser.geometry_title">Plaque non redressée</p>
+                    <p id="geometry-warning-text" style="font-size:.875rem;color:#92400e;line-height:1.6;margin:0;"></p>
                   </div>
                 </div>
-                <div class="confidence-bar" role="progressbar" id="conf-bar-aria" aria-label="Niveau de confiance">
-                  <div class="confidence-fill" id="conf-bar" style="width:0%;"></div>
-                </div>
               </div>
+
+              <!-- Le titre du résultat. Jamais un nombre seul : les trois paliers de
+                   docs/05 §4, et au palier bas il ne nomme personne. -->
+              <div style="margin-bottom:1.5rem;">
+                <h3 id="result-headline" style="font-family:var(--font-serif);font-size:1.75rem;line-height:1.25;color:var(--c-dark);margin:0 0 .5rem;">—</h3>
+                <p style="font-size:.875rem;color:var(--c-text-muted);" id="result-mode"></p>
+                <p id="result-help" style="font-size:.875rem;color:var(--c-text-muted);line-height:1.6;margin-top:.5rem;display:none;"></p>
+              </div>
+
+              <!-- Les trois candidats, à tous les paliers, toujours. -->
+              <div style="margin-bottom:1.75rem;">
+                <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:.75rem;" data-i18n="analyser.candidates_label">Les trois hypothèses</div>
+                <div id="top-predictions"></div>
+              </div>
+
+              <!-- La carte de contours : voir ce que le modèle voit est la moitié de la
+                   valeur didactique, et rend les échecs explicables (docs/05 §4). -->
+              <figure id="result-edges" style="display:none;margin:0 0 1.5rem;">
+                <img id="result-edges-img" alt="" style="width:100%;border-radius:8px;background:var(--c-dark);display:block;" />
+                <figcaption style="font-size:.75rem;color:var(--c-text-muted);margin-top:.375rem;" data-i18n="analyser.edges_caption">Ce que le modèle voit réellement</figcaption>
+              </figure>
 
               <!-- Description -->
               <div class="card card-alt" style="margin-bottom:1.5rem;">
                 <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:.5rem;" data-i18n="analyser.desc_label">Description du motif</div>
                 <p style="font-size:.9375rem;color:var(--c-text);line-height:1.7;" id="result-desc">—</p>
-              </div>
-
-              <!-- Top 3 predictions -->
-              <div>
-                <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:.75rem;" data-i18n="analyser.alts_label">Hypothèses alternatives</div>
-                <div id="top-predictions"></div>
               </div>
 
               <!-- Image quality warnings -->
@@ -309,13 +314,6 @@
                     <ul id="quality-warning-list" style="font-size:.875rem;color:#92400e;line-height:1.6;margin:0;padding-left:1.1rem;list-style:disc;"></ul>
                   </div>
                 </div>
-              </div>
-
-              <!-- Low confidence warning -->
-              <div id="low-conf-warning" class="warn-box" style="margin-top:.75rem;display:none;">
-                <p style="font-size:.875rem;color:#92400e;line-height:1.6;" id="low-conf-text" data-i18n="analyser.low_conf_warn">
-                  Le niveau de confiance est faible. Le motif peut être ambigu ou les conditions expérimentales ont pu varier. Vérifiez l'éclairage et la position de la caméra.
-                </p>
               </div>
 
               <!-- Reset -->
@@ -597,90 +595,112 @@
   }
 
   function showResult(result) {
+    const A = window.WittenbergAdapter;
     const freq = result.frequency;
-    const confPct = Math.round(result.confidence * 100);
-    const confLabel = getConfidenceLabel(result.confidence);
+    const headline = document.getElementById('result-headline');
+    const help = document.getElementById('result-help');
 
-    document.getElementById('result-freq').textContent = freq.hz.toLocaleString('fr-FR');
-    // Le mode vibratoire et la description proviennent des métadonnées locales :
-    // ils ne sont affichés que si la fréquence prédite y figure réellement.
-    document.getElementById('result-mode').textContent = freq.mode
-      ? 'Mode ' + freq.mode + ' — ' + freq.label
-      : freq.label;
-    document.getElementById('result-conf-pct').textContent = confPct + ' %';
-    document.getElementById('result-conf-badge').className = 'badge ' + confLabel.cls;
-    document.getElementById('result-conf-badge').textContent = confLabel.text;
-    document.getElementById('result-desc').textContent = freq.description
-      || t('analyser.no_desc', 'Aucune description n\'est disponible pour cette fréquence.');
+    // docs/05 §4 — les trois paliers. Le nombre n'est jamais seul, et au palier bas
+    // le titre ne nomme personne : afficher « probablement N Hz » sous 0,35 et le
+    // rattraper en petits caractères est la faible confiance masquée qu'interdit §4.
+    if (result.tier === 'high') {
+      headline.textContent = t('analyser.tier_high', 'Probablement {freq}')
+        .replace('{freq}', result.leader.label);
+      help.style.display = 'none';
+    } else if (result.tier === 'mid') {
+      headline.textContent = t('analyser.tier_mid', 'Ce pourrait être {a} ou {b}')
+        .replace('{a}', result.leader.label)
+        .replace('{b}', result.runnerUp ? result.runnerUp.label : '—');
+      help.style.display = 'none';
+    } else {
+      headline.textContent = t('analyser.tier_low', 'Je ne sais pas assez');
+      help.textContent = t('analyser.tier_low_help', '');
+      help.style.display = 'block';
+    }
+
+    // Le mode vibratoire et la description viennent des métadonnées éditoriales : ils
+    // ne s'affichent que si la fréquence prédite y figure réellement. Les classes
+    // n'étant pas encore choisies, leur absence est le cas normal.
+    document.getElementById('result-mode').textContent =
+      (freq && freq.mode) ? 'Mode ' + freq.mode : '';
+    document.getElementById('result-desc').textContent = (freq && freq.description)
+      || t('analyser.no_desc', 'Aucune description n'est disponible pour cette fréquence.');
 
     if (result.modelVersion) {
       document.getElementById('result-model-badge').textContent = result.modelVersion;
     }
 
-    setTimeout(() => {
-      document.getElementById('conf-bar').style.width = confPct + '%';
-      document.getElementById('conf-bar-aria').setAttribute('aria-valuenow', confPct);
-    }, 100);
-
-    // Hypothèses alternatives : tout le top-k sauf la prédiction retenue.
+    // Les trois candidats, à tous les paliers, toujours. Le pourcentage est tronqué
+    // vers zéro : 0,699 ne doit pas se lire « 70 % » sous « ce pourrait être ».
     const topEl = document.getElementById('top-predictions');
     topEl.innerHTML = '';
-    const ordinals = [
-      t('analyser.pred_2nd', '2e'),
-      t('analyser.pred_3rd', '3e'),
-      '4e', '5e'
-    ];
-    result.topPredictions.slice(1).forEach((pred, i) => {
-      const pct = Math.round(pred.confidence * 100);
+    result.topPredictions.forEach(function (pred, i) {
+      const pct = A.truncatePercent(pred.confidence);
+      const leading = (i === 0 && result.tier !== 'low');
       topEl.innerHTML += `
         <div class="top-pred-item">
-          <span style="font-size:.875rem;color:var(--c-text-muted);width:2rem;flex-shrink:0;">${ordinals[i] || (i + 2) + 'e'}</span>
-          <span style="font-size:.875rem;font-weight:600;color:var(--c-dark);min-width:80px;">${pred.frequency.label}</span>
+          <span style="font-size:.875rem;font-weight:${leading ? 700 : 600};color:var(--c-dark);min-width:84px;">${pred.frequency.label}</span>
           <div class="top-pred-bar-wrap">
             <div class="top-pred-bar" style="width:${pct}%;"></div>
           </div>
-          <span style="font-size:.8125rem;color:var(--c-text-muted);min-width:36px;text-align:right;">${pct}%</span>
+          <span style="font-size:.8125rem;color:var(--c-text-muted);min-width:56px;text-align:right;">${pct.toFixed(1)} %</span>
         </div>`;
     });
 
-    showQualityWarnings(result.quality);
-
-    const lowConfBox = document.getElementById('low-conf-warning');
-    if (result.lowConfidence) {
-      document.getElementById('low-conf-text').textContent = result.reason === 'ambiguous'
-        ? t('analyser.ambiguous_warn', 'Deux fréquences obtiennent des probabilités très proches. Le motif est ambigu : reprenez la photographie ou vérifiez la stabilité de la fréquence appliquée.')
-        : t('analyser.low_conf_warn', 'Le niveau de confiance est faible. Le motif peut être ambigu ou les conditions expérimentales ont pu varier. Vérifiez l\'éclairage et la position de la caméra.');
-      lowConfBox.style.display = 'block';
-    } else {
-      lowConfBox.style.display = 'none';
-    }
+    showGeometryWarning(result.geometry);
+    showQualityWarning(result.quality);
+    showEdgeMap(result.stages);
 
     loadingState.style.display = 'none';
     emptyState.style.display = 'none';
     resultSection.style.display = 'block';
-    setStatus('result', t('analyser.status_done', 'Fréquence estimée : ') + freq.label);
+    setStatus('result', headline.textContent);
     // L'image reste chargée : le bouton redevient actif pour permettre une
     // nouvelle analyse sans conserver l'indicateur de chargement.
     enableAnalyze();
   }
 
-  /** Affiche les indications de qualité renvoyées par le backend. */
-  function showQualityWarnings(quality) {
+  /**
+   * Le cadre ArUco absent : son propre état, au-dessus des paliers et indépendant
+   * d'eux. Les chiffres de confiance sont calculés de la même manière et paraissent
+   * tout aussi convaincants, ce qui est précisément le problème — l'échec est
+   * invisible pour qui lit l'écran, donc c'est l'interface qui doit le dire.
+   */
+  function showGeometryWarning(geometry) {
+    const box = document.getElementById('geometry-warning');
+    if (!geometry || geometry.rectified) { box.style.display = 'none'; return; }
+    document.getElementById('geometry-warning-text').textContent =
+      t('analyser.geometry_warn', '').replace('{n}', geometry.markersFound);
+    box.style.display = 'block';
+  }
+
+  /**
+   * Le verdict du contrôle qualité (docs/02 §6), tel que le renvoie /api/predict.
+   * Il avertit et ne refuse jamais : la photo a quand même reçu une réponse.
+   */
+  function showQualityWarning(quality) {
     const box  = document.getElementById('quality-warning');
     const list = document.getElementById('quality-warning-list');
-    const warnings = (quality && quality.warnings) ? quality.warnings : [];
     list.innerHTML = '';
-    if (!warnings.length) {
-      box.style.display = 'none';
-      return;
-    }
-    warnings.forEach(warning => {
-      const item = document.createElement('li');
-      item.style.marginBottom = '.35rem';
-      item.textContent = warning.message;
-      list.appendChild(item);
-    });
+    if (!quality || !quality.reason) { box.style.display = 'none'; return; }
+
+    const item = document.createElement('li');
+    item.style.marginBottom = '.35rem';
+    item.textContent = t('analyser.quality_' + quality.reason, quality.reason);
+    list.appendChild(item);
     box.style.display = 'block';
+  }
+
+  /**
+   * La dernière étape du pipeline : ce que le réseau reçoit réellement. Elle vient de
+   * la réponse qui a produit le résultat affiché — jamais d'un second calcul.
+   */
+  function showEdgeMap(stages) {
+    const fig = document.getElementById('result-edges');
+    const stage = (stages && stages.length) ? stages[stages.length - 1] : null;
+    if (!stage || !stage.png) { fig.style.display = 'none'; return; }
+    document.getElementById('result-edges-img').src = 'data:image/png;base64,' + stage.png;
+    fig.style.display = 'block';
   }
 
   function showLoading() {
@@ -729,8 +749,8 @@
     loadingState.style.display = 'none';
     resultSection.style.display = 'none';
     document.getElementById('quality-warning').style.display = 'none';
-    document.getElementById('low-conf-warning').style.display = 'none';
-    document.getElementById('conf-bar').style.width = '0%';
+    document.getElementById('geometry-warning').style.display = 'none';
+    document.getElementById('result-edges').style.display = 'none';
   }
 
   function enableAnalyze() {
@@ -750,14 +770,6 @@
     statusDot.className = 'status-dot';
     const map = { idle: 'status-dot-idle', ready: 'status-dot-ready', loading: 'status-dot-loading', result: 'status-dot-result' };
     if (map[type]) statusDot.classList.add(map[type]);
-  }
-
-  function getConfidenceLabel(ratio) {
-    var i = window.WI18n;
-    if (ratio >= 0.85) return { text: i ? i.t('analyser.conf_high')   : 'Très élevée', cls: 'badge-success' };
-    if (ratio >= 0.70) return { text: i ? i.t('analyser.conf_med_hi') : 'Élevée',      cls: 'badge-primary' };
-    if (ratio >= 0.55) return { text: i ? i.t('analyser.conf_med')    : 'Moyenne',     cls: 'badge-warn' };
-    return                     { text: i ? i.t('analyser.conf_low')    : 'Faible',      cls: 'badge-muted' };
   }
 
   // ── Disponibilité du modèle ───────────────────────────────────────────
