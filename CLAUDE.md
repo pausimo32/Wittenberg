@@ -17,8 +17,11 @@ Research artefact for a TDR (Catalan high-school research project).
    Commit `data/metadata.csv`, `runs/*/metrics.json` and `runs/*/config.json`.
 5. **Deterministic by default.** Seed 42 everywhere (`random`, `np.random`, `torch`), plus
    `torch.use_deterministic_algorithms(True)`. Report the seed in every `metrics.json`.
-6. UI strings are **Catalan**. Code, comments, commit messages and docs are **English**.
-   Use `docs/07-glossary-ca-en.md` for physics terms — do not invent translations.
+6. **The app's UI is French by default** (`docs/adr/0007`), with a `ca`/`es`/`fr` switcher in
+   `site/js/i18n.js` — a deliberate exception, not a slip; read the ADR before "fixing" it.
+   The **TDR document itself stays Catalan**. Code, comments, commit messages and docs are
+   **English**. Use `docs/07-glossary-ca-en.md` for Catalan physics terms — never invent
+   translations.
 
 ## Environment
 
@@ -47,7 +50,8 @@ the team picks. Never deployed, never bound to `0.0.0.0`, never calls out to the
 - **Serving** — FastAPI on `127.0.0.1`, PyTorch model **on CPU**, calling `src/preprocess.py`.
   1.17 MB checkpoint, travels with the repo
 - **Preprocessing** — one implementation, `cv2`. No second language, no parity gate.
-- **Frontend** — Vite + React + TypeScript + Tailwind, built static, served by FastAPI
+- **Frontend** — static multipage site in `site/`: plain HTML, CSS and browser JS, served by
+  FastAPI from the same origin. No build step (`docs/adr/0007`)
 
 ## Commands
 

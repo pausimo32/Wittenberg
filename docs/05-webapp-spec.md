@@ -51,7 +51,7 @@ FastAPI
 │                      → model forward, softmax
 │                      → forward hooks: feature maps + Grad-CAM (§8)
 │                      → {top3:[{freq_hz, p}], stages:[…13], elapsed_ms, timings_ms,
-│                         roi_mode, markers_found}  — each stage carries its measured ms
+│                         roi_mode, markers_found, quality}  — each stage carries its ms
 ├── POST /api/dataset/session   → open a draft session (nothing written yet)
 ├── POST /api/dataset/upload    → images + one label; runs the SAME gate as tasks.py ingest
 ├── POST /api/dataset/commit    → write rows to metadata.csv; re-run the split
@@ -73,6 +73,12 @@ Rules:
   such a checkpoint; what it must not do is let the number look like a result, so the field is
   exposed here and §4 hangs a visible banner on it. `null` means the run's numbers may be
   quoted.
+- **`quality` is the ingest gate, run on the upload for information.** `src/quality.py::assess`
+  — the same function `tasks.py ingest` calls, never a second copy — returns
+  `{quality, reason, metrics}`. On an upload it **warns and never rejects**: a blurred photo
+  still gets an answer and is still told it is blurred. The gate decides what enters the
+  dataset, not what a participant may ask. It is handed the stages the answer came from, so
+  the "never run the pipeline twice" rule below still holds.
 - The response includes the pipeline stages as base64 PNGs — see §8. `?stages=false` returns
   only the final edge map, for the rare call where the intermediates are not wanted.
 - **One call produces both the stages and the prediction.** Never run the pipeline twice, once
@@ -84,20 +90,29 @@ Rules:
 - **No outbound network call, ever.** Not for inference, not for telemetry, not for fonts. A
   Playwright test asserts zero outbound requests. The app must work with the machine offline.
 
-## 4. Frontend — Vite + React + TypeScript
+## 4. Frontend — a static multipage site
 
-No SSR, no file-based routing framework. `react-router` for four views. Tailwind for styling.
+**Amended by `docs/adr/0007`.** This section described Vite + React + TypeScript. The app's
+frontend is the static multipage site in `site/`: plain HTML, CSS and browser JavaScript,
+served by FastAPI from the same origin, with no build step. Read that ADR before reversing
+this — the reversal was a team decision, not an accident.
 
-| View | Purpose |
+| Page | Purpose |
 |---|---|
-| `/` | one sentence, one button |
-| `/analitza` | file or drag-drop → prediction |
-| `/apren` | the 7-concept didactic sequence (`docs/01-domain-physics.md` §4) |
-| `/galeria` | the project's own modes, ordered by frequency |
-| `/dades` | **Data.** Supplying the labelled database — see §9. Team only, never in a session |
-| `/sobre` | method, limits, team, TDR reference |
+| `index.html` | one sentence, one button |
+| `analyseur.html` | file, drag-drop or camera → prediction |
+| `experience.html` | the didactic sequence (`docs/01-domain-physics.md` §4) |
+| `donnees.html` | the class table and the dataset, read from `js/classes.generated.js` |
+| `apropos.html` | method, limits, team, TDR reference |
 
-Catalan slugs, Catalan UI copy, English code (`CLAUDE.md`).
+French UI copy by default, with a `ca`/`es`/`fr` switcher in `js/i18n.js`; English code
+(`CLAUDE.md`). The French default and the French filenames are ADR 0007's second decision and
+are a deliberate exception to rule 6.
+
+**The class list is never written by hand.** `tasks.py modes` generates
+`site/js/classes.generated.js` from `config/classes.json`, in the command that freezes the
+class index. Editorial material lives in `js/frequencies.js`, keyed by frequency. The classes
+are not chosen yet, and no page may have to be edited on the day they are.
 
 ### Result presentation — the honesty requirement
 
