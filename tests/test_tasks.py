@@ -123,3 +123,24 @@ def test_no_target_still_claims_f3():
     """F3 split into F3a (code) and F3b (lab); a bare [F3] label names neither."""
     labels = [help_text for _fn, help_text in tasks.TARGETS.values()]
     assert not any("[F3]" in label for label in labels)
+
+
+def test_the_app_target_does_not_shell_out_to_npm(monkeypatch, capsys):
+    """A field session serves files from `site/`. There is nothing to build.
+
+    The site is plain HTML, CSS and browser JavaScript, so the staleness check the Vite
+    build needed has no subject any more — and a build step that cannot go stale cannot
+    demonstrate last week's bundle by accident.
+    """
+    import tasks
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the static site has no build step")
+
+    monkeypatch.setattr(tasks, "npm", fail)
+    monkeypatch.setattr(tasks, "_serve", lambda *a, **k: None)
+    monkeypatch.setattr("webbrowser.open", lambda *a, **k: None)
+
+    tasks.app(["--no-open"])
+
+    assert "127.0.0.1" in capsys.readouterr().out

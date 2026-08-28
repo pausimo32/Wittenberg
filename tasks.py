@@ -547,13 +547,14 @@ def api(argv):
     uvicorn.run(create_app(argv), host=HOST, port=port, workers=1)
 
 
-@target("app", "build if stale, serve the local app, open the browser  [F6]")
+@target("app", "serve the local app, open the browser  [F6]")
 def app(argv):
-    """`python tasks.py app [--run <name>] [--port N] [--no-open] [--force-build]`.
+    """`python tasks.py app [--run <name>] [--port N] [--no-open]`.
 
-    What a field session runs (`docs/05` §2). Not the Vite dev server: hot-reload artefacts
-    and dev overlays in front of a participant invalidate the session, so this serves the
-    built bundle out of `web/dist` and never starts Vite.
+    What a field session runs (`docs/05` §2). The site in `site/` is plain HTML, CSS and
+    browser JavaScript: there is nothing to build, so there is no build step to be stale.
+    The one generated file, `site/js/classes.generated.js`, is written by `tasks.py modes`
+    from `config/classes.json` — the same command that freezes the class index.
 
     No reload, one worker, `127.0.0.1`. The gate runs first, in this process, so a
     checkpoint that disagrees with `config/preprocess.json` fails with the same message
@@ -564,10 +565,12 @@ def app(argv):
     from api import HOST, PORT, StartupRefused, create_app
 
     port = int(_option(argv, "--port", PORT))
-    build_frontend(force="--force-build" in argv)
+
+    if not SITE.is_dir():
+        die(f"{SITE} not found — the app has no pages to serve")
 
     try:
-        application = create_app(argv, web_dist=DIST)
+        application = create_app(argv, site_dir=SITE)
     except StartupRefused as exc:
         die(str(exc))
 
@@ -576,7 +579,7 @@ def app(argv):
     print(f"  run        {serving.run_dir.name}")
     print(f"  device     {serving.device.type}  ({len(serving.classes)} classes)")
     if serving.do_not_report:
-        # The app shows this as a banner on every view; the console says it too, because
+        # The app shows this as a banner on every page; the console says it too, because
         # whoever starts the server is the person who can still swap the checkpoint.
         print(f"  DO NOT REPORT  {serving.do_not_report}")
     print(f"  {url}  — 127.0.0.1 only, one worker, no outbound call")
@@ -584,46 +587,16 @@ def app(argv):
     if "--no-open" not in argv:
         webbrowser.open(url)
 
+    _serve(application, port)
+
+
+def _serve(application, port: int):
+    """The blocking call, alone, so a test can drive `app()` without binding a socket."""
     import uvicorn
 
+    from api import HOST
+
     uvicorn.run(application, host=HOST, port=port, workers=1)
-
-
-def build_frontend(force: bool = False):
-    """`npm run build` when `web/dist` is older than anything that goes into it.
-
-    Staleness by mtime rather than a hash: this exists so nobody demonstrates last week's
-    bundle, not to be a build system. `node_modules` and `dist` are excluded from the scan
-    or the check would always trip on itself.
-    """
-    if not WEB.is_dir():
-        die("web/ not found — F6 builds the frontend")
-
-    index = DIST / "index.html"
-    if force or not index.exists():
-        reason = "forced" if force else "no build yet"
-    else:
-        built = index.stat().st_mtime
-        newest = max(
-            (p.stat().st_mtime for p in _frontend_sources()),
-            default=0.0,
-        )
-        if newest <= built:
-            print(f"  web/dist is current ({index.parent.name}/)")
-            return
-        reason = "sources newer than the build"
-
-    print(f"  building the frontend ({reason})")
-    if not (WEB / "node_modules").is_dir():
-        npm("install")
-    npm("run", "build")
-
-
-def _frontend_sources():
-    skip = {"node_modules", "dist"}
-    for path in WEB.rglob("*"):
-        if path.is_file() and not any(part in skip for part in path.relative_to(WEB).parts):
-            yield path
 
 
 @target("annexes", "generate the TDR annexes into annexes/  [F7]")
@@ -632,7 +605,7 @@ def annexes(argv): not_implemented("F7")
 
 @target("clean", "remove build artefacts (never touches data/raw)")
 def clean(argv):
-    for p in ["web/dist", "web/node_modules/.vite", "__pycache__", ".pytest_cache"]:
+    for p in ["__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"]:
         t = ROOT / p
         if t.exists():
             shutil.rmtree(t, ignore_errors=True)
