@@ -625,7 +625,7 @@
     document.getElementById('result-mode').textContent =
       (freq && freq.mode) ? 'Mode ' + freq.mode : '';
     document.getElementById('result-desc').textContent = (freq && freq.description)
-      || t('analyser.no_desc', 'Aucune description n'est disponible pour cette fréquence.');
+      || t("analyser.no_desc", "Aucune description n'est disponible pour cette fréquence.");
 
     if (result.modelVersion) {
       document.getElementById('result-model-badge').textContent = result.modelVersion;

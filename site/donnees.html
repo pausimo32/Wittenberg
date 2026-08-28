@@ -446,6 +446,12 @@
   <script src="js/app.js"></script>
   <script>
     (function () {
+      /** « (3,4) » -> [3, 4]. Rien d'autre : une notice sans indices ne dessine pas. */
+      function parseMode(mode) {
+        const match = /^\((\d+)\s*,\s*(\d+)\)$/.exec(String(mode || '').trim());
+        return match ? [Number(match[1]), Number(match[2])] : null;
+      }
+
       const COMPLEXITY_COLORS = {
         'faible': '#16a34a',
         'moyenne': '#2a7a96',
@@ -464,16 +470,33 @@
         'extrême': 'complexity.extreme'
       };
 
-      FREQUENCIES.forEach(f => {
+      // La liste des classes vient de classes.generated.js, écrit par
+      // `python tasks.py modes` depuis config/classes.json. Elle n'est pas saisie ici :
+      // les fréquences ne sont pas encore choisies, et le jour où elles le seront cette
+      // page devra suivre sans qu'on touche au HTML.
+      //
+      // frequencies.js n'apporte plus que l'éditorial, indexé par fréquence. Une classe
+      // sans notice s'affiche sans description plutôt qu'avec une description fausse.
+      const CLASSES = window.WITTENBERG_CLASSES || [];
+
+      CLASSES.forEach(c => {
+        const f = Object.assign({}, getFrequencyByHz(c.hz) || {}, {
+          hz: c.hz,
+          label: c.label,
+          nodeCount: c.n_nodal_lines,
+          symmetry: c.symmetry
+        });
         const tr = document.createElement('tr');
         tr.setAttribute('role', 'row');
         const cColor = COMPLEXITY_COLORS[f.complexity] || '#4a6370';
-        const complexLabel = window.WI18n ? window.WI18n.t(COMPLEXITY_KEY_MAP[f.complexity] || f.complexity) : f.complexity;
+        const complexLabel = f.complexity
+          ? (window.WI18n ? window.WI18n.t(COMPLEXITY_KEY_MAP[f.complexity] || f.complexity) : f.complexity)
+          : '—';
         const imagesLabel = window.WI18n ? window.WI18n.t('data.images_obj') : '≥ 50 par sous-ensemble';
         const toCollectLabel = window.WI18n ? window.WI18n.t('badge.to_collect') : 'À collecter';
         tr.innerHTML = `
       <td role="cell" style="font-weight:600;color:var(--c-dark);">${f.label}</td>
-      <td role="cell"><code style="background:var(--c-bg2);padding:.15rem .4rem;border-radius:4px;font-size:.8rem;">${f.mode}</code></td>
+      <td role="cell"><code style="background:var(--c-bg2);padding:.15rem .4rem;border-radius:4px;font-size:.8rem;">${f.mode || '—'}</code></td>
       <td role="cell">${f.nodeCount}</td>
       <td role="cell"><span style="color:${cColor};font-size:.875rem;font-weight:600;text-transform:capitalize;">${complexLabel}</span></td>
       <td role="cell" style="color:var(--c-text-muted);">${imagesLabel}</td>
@@ -484,23 +507,30 @@
 
       // Visual grid with canvases
       const grid = document.getElementById('visual-grid');
-      const MODES = [
-        [1, 2], [2, 2], [1, 3], [2, 3], [3, 3], [2, 4], [3, 4], [4, 4], [3, 5], [4, 5], [5, 5], [4, 6], [5, 6]
-      ];
-      FREQUENCIES.forEach((f, i) => {
-        const m = MODES[i][0], n = MODES[i][1];
+
+      // Le tableau MODES qui vivait ici associait un couple (m,n) à chaque classe *par
+      // position*. Il tenait treize entrées : choisir quatorze modes réels aurait lu
+      // au-delà de sa fin et arrêté net le rendu de la grille. Les indices modaux sont
+      // désormais une donnée éditoriale comme une autre, et une classe qui n'en a pas
+      // s'affiche sans vignette au lieu de casser la page.
+      CLASSES.forEach(function (c) {
+        const ed = getFrequencyByHz(c.hz) || {};
+        const modeIndices = parseMode(ed.mode);
         const div = document.createElement('div');
         div.className = 'freq-class-card';
         div.style.flexDirection = 'column';
         div.style.padding = '1rem';
+        const f = { id: 'f' + c.hz, label: c.label, mode: ed.mode };
         div.innerHTML = `
-      <canvas id="thumb-${f.id}" width="120" height="120" style="width:100%;aspect-ratio:1;border-radius:8px;background:var(--c-dark);margin-bottom:.75rem;" aria-label="Motif de Chladni simulé pour ${f.label}"></canvas>
+      ${modeIndices ? `<canvas id="thumb-${f.id}" width="120" height="120" style="width:100%;aspect-ratio:1;border-radius:8px;background:var(--c-dark);margin-bottom:.75rem;" aria-label="Motif de Chladni simulé pour ${f.label}"></canvas>` : ''}
       <div style="font-size:.875rem;font-weight:700;color:var(--c-dark);">${f.label}</div>
-      <div style="font-size:.75rem;color:var(--c-text-muted);margin-top:.25rem;">${(window.WI18n ? window.WI18n.t('data.mode_label') : 'Mode ')}${f.mode}</div>
+      <div style="font-size:.75rem;color:var(--c-text-muted);margin-top:.25rem;">${f.mode ? (window.WI18n ? window.WI18n.t('data.mode_label') : 'Mode ') + f.mode : '—'}</div>
     `;
         grid.appendChild(div);
 
         // Draw after DOM insertion
+        if (!modeIndices) return;
+        const m = modeIndices[0], n = modeIndices[1];
         requestAnimationFrame(() => {
           const canvas = document.getElementById('thumb-' + f.id);
           if (!canvas) return;
