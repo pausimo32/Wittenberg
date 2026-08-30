@@ -1,0 +1,35 @@
+{
+  "session_id": "SYNTH-20260102-01",
+  "roi_mode": "homography",
+  "corners": [
+    [
+      104.0,
+      103.0
+    ],
+    [
+      495.0,
+      104.0
+    ],
+    [
+      495.0,
+      496.0
+    ],
+    [
+      104.0,
+      495.0
+    ]
+  ],
+  "px_per_mm": 1.957503204345703,
+  "n_markers": 4,
+  "marker_ids": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "dictionary": "DICT_4X4_50",
+  "corner_rule": "innermost",
+  "nominal_mismatch": [],
+  "flags": [],
+  "calibration_config_version": "1.1.0"
+}

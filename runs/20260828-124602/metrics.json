@@ -1,0 +1,67 @@
+{
+  "run": "20260828-124602",
+  "model": "wittenberg_v1",
+  "seed": 42,
+  "device": "cpu",
+  "synthetic": true,
+  "parameters": {
+    "trainable": 288102,
+    "total": 288102,
+    "buffers": 902
+  },
+  "epochs_run": 26,
+  "best_epoch": 13,
+  "best_val_loss": 0.247382,
+  "best_val_accuracy": 1.0,
+  "final_train_loss": 0.26183,
+  "train_seconds": 49.3,
+  "splits": {
+    "train": {
+      "images": 174,
+      "sessions": [
+        "SYNTH-20260103-01",
+        "SYNTH-20260104-01"
+      ],
+      "per_class": {
+        "0": 32,
+        "1": 28,
+        "2": 30,
+        "3": 28,
+        "4": 30,
+        "5": 26
+      }
+    },
+    "val": {
+      "images": 87,
+      "sessions": [
+        "SYNTH-20260101-01"
+      ],
+      "per_class": {
+        "0": 16,
+        "1": 14,
+        "2": 15,
+        "3": 14,
+        "4": 15,
+        "5": 13
+      }
+    }
+  },
+  "do_not_report": "This run used tools/synth_capture.py sessions. The images come from a closed-form mode shape, so any accuracy here measures how well the network inverted the formula that drew them, not anything about a plate. No number from this file may appear in the TDR (docs/00-master-plan.md F2.5).",
+  "evaluation": {
+    "split": "test",
+    "sessions": [
+      "SYNTH-20260102-01"
+    ],
+    "images": 87,
+    "accuracy": 1.0,
+    "accuracy_wilson_95": [
+      0.957712,
+      1.0
+    ],
+    "macro_f1": 1.0,
+    "worst_class_hz": 420,
+    "worst_class_recall": 1.0,
+    "errors": 0,
+    "adjacent_class_share": null
+  }
+}

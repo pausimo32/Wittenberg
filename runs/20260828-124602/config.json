@@ -1,0 +1,141 @@
+{
+  "model": "wittenberg_v1",
+  "n_classes": 6,
+  "classes": [
+    {
+      "index": 0,
+      "freq_hz": 420,
+      "width_hz": "12",
+      "n_nodal_lines": "3",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 1,
+      "freq_hz": 610,
+      "width_hz": "16",
+      "n_nodal_lines": "4",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 2,
+      "freq_hz": 860,
+      "width_hz": "20",
+      "n_nodal_lines": "5",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 3,
+      "freq_hz": 1170,
+      "width_hz": "12",
+      "n_nodal_lines": "5",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 4,
+      "freq_hz": 1540,
+      "width_hz": "16",
+      "n_nodal_lines": "6",
+      "symmetry": "diagonal"
+    },
+    {
+      "index": 5,
+      "freq_hz": 1970,
+      "width_hz": "20",
+      "n_nodal_lines": "7",
+      "symmetry": "diagonal"
+    }
+  ],
+  "hyperparameters": {
+    "optimizer": "AdamW",
+    "lr": 0.001,
+    "lr_min": 1e-05,
+    "scheduler": "CosineAnnealingLR",
+    "batch_size": 32,
+    "epochs": 80,
+    "early_stopping_patience": 12,
+    "early_stopping_metric": "val_loss",
+    "label_smoothing": 0.05,
+    "amp": false
+  },
+  "class_weights": null,
+  "determinism": {
+    "seed": 42,
+    "deterministic_algorithms": true,
+    "cudnn_benchmark": false,
+    "cublas_workspace_config": ":4096:8"
+  },
+  "preprocess_version": "1.1.0",
+  "preprocess_sha256": "815a2c11d49227493cbfb7f3e0f257bec52eee94fed2ee8e00893a58509d73ab",
+  "preprocess_sha256_method": "sha256 of json.dumps(resolved config/preprocess.json, sort_keys=True, separators=(',', ':')) \u2014 see src/runs.py",
+  "preprocess_config": {
+    "version": "1.1.0",
+    "roi": {
+      "mode": "homography",
+      "output_size": 512,
+      "interpolation": "INTER_LINEAR",
+      "border_mode": "BORDER_REPLICATE"
+    },
+    "grayscale": {
+      "code": "COLOR_RGBA2GRAY"
+    },
+    "clahe": {
+      "enabled": true,
+      "clip_limit": 2.0,
+      "tile_grid_size": [
+        8,
+        8
+      ]
+    },
+    "blur": {
+      "ksize": [
+        5,
+        5
+      ],
+      "sigma_x": 1.4,
+      "sigma_y": 1.4,
+      "border": "BORDER_DEFAULT"
+    },
+    "canny": {
+      "threshold1": 50,
+      "threshold2": 150,
+      "aperture_size": 3,
+      "l2_gradient": false
+    },
+    "resize": {
+      "size": [
+        128,
+        128
+      ],
+      "interpolation": "INTER_AREA"
+    },
+    "output": {
+      "dtype": "float32",
+      "scale": 0.00392156862745098,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    }
+  },
+  "opencv_version": "4.12.0",
+  "opencv_package": "opencv-contrib-python",
+  "opencv_wheel_version": "4.12.0.88",
+  "opencv_distributions_installed": [
+    "opencv-contrib-python"
+  ],
+  "environment": {
+    "python": "3.11.9",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "torch": "2.6.0+cpu",
+    "cuda": null,
+    "cudnn": null,
+    "numpy": "2.1.3",
+    "opencv_version": "4.12.0",
+    "opencv_package": "opencv-contrib-python",
+    "opencv_wheel_version": "4.12.0.88",
+    "opencv_distributions_installed": [
+      "opencv-contrib-python"
+    ]
+  }
+}
