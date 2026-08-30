@@ -13,8 +13,8 @@
  * n'est donc volontairement pas dupliqué dans le navigateur.
  *
  * Contrat du backend : docs/05-webapp-spec.md §3.
- *   GET  /api/health                  ce qui est chargé, et s'il est citable
- *   POST /api/predict?stages=false    multipart/form-data, champ « file »
+ *   GET  /api/health                 ce qui est chargé, et s'il est citable
+ *   POST /api/predict?stages=true    multipart/form-data, champ « file »
  *
  * La traduction de ce contrat vers la forme attendue par l'interface vit dans
  * adapter.js, chargé avant ce fichier. Ici il ne reste que le transport, la
@@ -156,9 +156,12 @@ const PredictionService = {
     let response;
     try {
       onProgress(PredictionState.ANALYZING, _t('pred.analysing', 'Analyse du motif en cours…'));
-      // stages=false : l'analyseur n'affiche que la carte de contours finale (≈ 29 ms
-      // au lieu de ≈ 82-129 ms). Les treize étapes sont le visualiseur, un autre écran.
-      response = await fetch(config.url('/api/predict?stages=false'), {
+      // stages=true : l'analyseur affiche le visualiseur de pipeline (docs/05 §8) sous
+      // le résultat, donc il lui faut les treize étapes. Elles coûtent ≈ 43 ms d'encodage
+      // et ≈ 1,8 Mo, ce qui n'est rien sur 127.0.0.1 — et c'est la même requête qui
+      // produit la réponse : §3 interdit de faire tourner le pipeline une seconde fois
+      // pour l'affichage. `?stages=false` reste servi par l'API pour tout autre appelant.
+      response = await fetch(config.url('/api/predict?stages=true'), {
         method: 'POST',
         body: formData,
         signal: controller.signal

@@ -1312,3 +1312,498 @@ h3, h4 {
   font-size: .8rem;
   padding: .4rem .625rem;
 }
+
+/* ============================================================
+   VISUALISEUR DE PIPELINE — docs/05 §8
+   La maquette « 1a » : un grand aperçu, une bande de vignettes
+   sous lui, et un pied qui porte l'avancement et les commandes.
+   Les couleurs sont celles du site (`--c-*`) et non les valeurs
+   littérales de la maquette : les deux palettes coïncident déjà,
+   et la variable est ce qui les garde d'accord ensuite.
+   ============================================================ */
+
+.pv {
+  /* Le reset du site pose `* { margin: 0 }`, ce qui écrase le `margin: auto` par lequel
+     un `<dialog>` se centre : sans cette ligne le panneau se colle au bord gauche. */
+  margin: auto;
+  width: min(43rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2.5rem);
+  /* La maquette pose le bandeau sombre bord à bord : le rembourrage vit dans les
+     sections, jamais sur le `<dialog>`, sinon un liseré blanc cerne l'en-tête. */
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--c-white);
+  color: var(--c-text);
+  box-shadow: 0 28px 90px rgba(9, 32, 41, .45);
+  overflow: hidden auto;
+}
+.pv::backdrop { background: rgba(18, 62, 77, .55); }
+
+/* ── L'en-tête sombre : marque, langue, sortie ────────────────────────────── */
+
+.pv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.375rem;
+  background: var(--c-dark);
+  /* L'en-tête reste visible quand le panneau défile : sur un portable en mode paysage
+     le pied et l'en-tête sont les deux seules sorties du film. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.pv-brand { display: flex; align-items: center; gap: .625rem; min-width: 0; }
+
+/* L'isotype est monochrome foncé ; sur le bandeau sombre il se retourne en blanc plutôt
+   que d'exister en double sur le disque. */
+.pv-iso { height: 1.375rem; width: auto; display: block; filter: brightness(0) invert(1); }
+
+.pv-brand-text { display: flex; flex-direction: column; gap: .125rem; min-width: 0; }
+
+.pv-brand-title {
+  font-family: var(--font-display);
+  font-size: .9375rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: var(--c-white);
+  /* « Ce que la machine a fait de votre photo » est long : il se coupe plutôt que de
+     pousser le sélecteur de langue hors du bandeau. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-brand-sub {
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.pv-head-actions { display: flex; align-items: center; gap: .625rem; flex: 0 0 auto; }
+
+/* Le sélecteur reprend `.lang-selector`, posé sur fond sombre. */
+.pv-lang {
+  background: rgba(255, 255, 255, .06);
+  border-radius: var(--radius-sm);
+  padding: .25rem;
+}
+
+.pv-close {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, .7);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.pv-close:hover { background: rgba(255, 255, 255, .12); color: var(--c-white); }
+.pv-close:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+
+/* ── Le corps ─────────────────────────────────────────────────────────────── */
+
+.pv-body { padding: 1.25rem 1.375rem .5rem; }
+
+/* ── Le grand aperçu ──────────────────────────────────────────────────────── */
+
+.pv-canvas {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .625rem;
+  /* Les étapes sont carrées à partir de l'étape 2 ; réserver la hauteur évite que le
+     panneau saute d'une étape à l'autre pendant la lecture. */
+  height: min(38vh, 18.125rem);
+  padding: .5rem;
+  background: #0c1418;
+  border: 1px solid rgba(18, 62, 77, .14);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+/* « Comparer avec l'original » met les deux images côte à côte. */
+.pv.pv-comparing .pv-canvas { grid-template-columns: 1fr 1fr; }
+
+.pv-frame {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* `display: flex` sur .pv-frame l'emporterait sur le `display: none` que l'attribut
+   `hidden` applique depuis la feuille de style du navigateur : les cadres rangés
+   resteraient de grands rectangles vides sous l'image. */
+.pv-frame[hidden] { display: none; }
+
+.pv-frame img {
+  display: block;
+  /* `width: auto` laisserait la capture 128 px à sa taille propre, perdue au milieu d'un
+     cadre de 290 px. §8 veut l'inverse : l'image remplit le cadre, `contain` garde ses
+     proportions, et rien n'est rogné. */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Les étapes 7 et 8 font 128 px et sont agrandies pour remplir le cadre : c'est
+   exactement ce que §8 demande de montrer — la grille de pixels que le réseau reçoit. */
+
+.pv-compare { position: relative; flex-direction: column; }
+.pv-compare figcaption {
+  position: absolute;
+  /* Sans point d'ancrage l'étiquette se pose à sa position statique — soit, dans un
+     cadre en colonne centrée, le milieu du panneau. Elle appartient au coin de l'image
+     qu'elle nomme. */
+  top: 0;
+  left: 0;
+  margin: .375rem;
+  padding: .125rem .4375rem;
+  border-radius: var(--radius-sm);
+  background: rgba(18, 62, 77, .82);
+  color: var(--c-white);
+  font-size: .625rem;
+  align-self: flex-start;
+}
+
+/* Le rang et les dimensions, posés sur l'image : la maquette les met là où l'œil est
+   déjà, plutôt qu'en légende sous le cadre. */
+.pv-badge {
+  position: absolute;
+  left: .75rem;
+  top: .75rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  padding: .3125rem .5625rem;
+  background: rgba(12, 20, 24, .72);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.pv-counter {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--c-accent);
+}
+
+.pv-note {
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: rgba(255, 255, 255, .72);
+}
+/* L'étape 13 est un diagramme en barres : elle n'a pas de forme, et la note s'efface
+   plutôt que d'afficher un tiret sans étiquette. */
+.pv-note[hidden] { display: none; }
+
+/* Le temps mesuré, en bas à droite. §8 : ce chiffre est celui de ce traitement-ci. */
+.pv-ms {
+  position: absolute;
+  right: .75rem;
+  bottom: .75rem;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, .55);
+  pointer-events: none;
+}
+
+/* ── Le nom de l'étape, l'explication, la ligne technique ─────────────────── */
+
+.pv-text {
+  display: flex;
+  flex-direction: column;
+  gap: .3125rem;
+  padding: 1rem .125rem .875rem;
+}
+
+.pv-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -.012em;
+  color: var(--c-dark);
+}
+
+.pv-caption {
+  margin: 0;
+  font-size: .875rem;
+  line-height: 1.6;
+  color: var(--c-text-muted);
+  max-width: 52ch;
+  text-wrap: pretty;
+}
+
+.pv-tech {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .625rem;
+  line-height: 1.7;
+  color: var(--c-text-muted);
+  margin: .25rem 0 0;
+  /* `scale` vaut 0.00392156862745098 et s'affiche en entier (§8) : la ligne doit
+     pouvoir revenir à la ligne plutôt qu'élargir le panneau. */
+  overflow-wrap: anywhere;
+}
+.pv-tech code { color: var(--c-dark); }
+
+/* ── L'étape 13 : la distribution ────────────────────────────────────────── */
+
+.pv-bars {
+  flex-direction: column;
+  justify-content: center;
+  gap: .5rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+.pv-bar-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+}
+
+.pv-bar-label {
+  flex: 0 0 3.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .6875rem;
+  color: rgba(255, 255, 255, .72);
+  text-align: right;
+}
+
+.pv-bar-track {
+  flex: 1;
+  height: .5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, .12);
+  overflow: hidden;
+}
+
+.pv-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--c-primary), var(--c-accent));
+}
+
+.pv-bar-value {
+  flex: 0 0 3.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .6875rem;
+  color: rgba(255, 255, 255, .72);
+  text-align: right;
+}
+
+/* ── La bande de vignettes ───────────────────────────────────────────────────
+   La maquette en pose neuf sur une ligne ; le pipeline en a treize, donc la bande
+   défile et `scrollIntoView` ramène la vignette courante au centre. Le nom de
+   l'étape n'est pas écrit sous la vignette — il est déjà en grand au-dessus — mais
+   il reste l'`aria-label` du bouton, donc la bande n'est pas muette. */
+
+.pv-rail {
+  display: flex;
+  gap: .375rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-bg2) transparent;
+  scroll-padding-inline: 1rem;
+  padding: .125rem .125rem .5rem;
+}
+
+.pv-step {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3125rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.pv-step:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+
+.pv-step-frame {
+  width: 3.25rem;
+  aspect-ratio: 1 / 1;
+  border-radius: 7px;
+  background: #0c1418;
+  border: 1px solid var(--c-bg2);
+  overflow: hidden;
+  display: block;
+  transition: border-color .25s ease, box-shadow .25s ease;
+}
+.pv-step-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Les étapes pas encore atteintes s'effacent : la bande dit où en est le film.
+
+     L'opacité porte sur l'image et non sur le cadre. Estomper le cadre entier laisserait
+     passer le blanc de la page à travers son fond sombre, et les vignettes à venir
+     viraient au gris laiteux au lieu de rester des cases sombres encore vides — c'est
+     l'effet qu'a la maquette, dont les vignettes non atteintes ne sont pas encore
+     dessinées. */
+  opacity: .3;
+  transition: opacity .35s ease;
+}
+
+.pv-step-n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .625rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .06em;
+  color: rgba(74, 99, 112, .4);
+  transition: color .25s ease;
+}
+
+.pv-step.seen .pv-step-frame img { opacity: 1; }
+.pv-step.seen .pv-step-n { color: var(--c-text-muted); }
+
+.pv-step.active .pv-step-frame {
+  border: 2px solid var(--c-accent);
+  box-shadow: 0 2px 10px rgba(207, 169, 106, .35);
+}
+.pv-step.active .pv-step-n { color: #a07830; }
+
+/* ── Le pied : l'avancement, puis les commandes ───────────────────────────── */
+
+.pv-foot {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: .875rem 1.375rem;
+  background: var(--c-bg);
+  border-top: 1px solid var(--c-bg2);
+  position: sticky;
+  bottom: 0;
+}
+
+.pv-progress { flex: 1 1 12rem; display: flex; flex-direction: column; gap: .4375rem; }
+
+.pv-progress-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--c-bg2);
+  overflow: hidden;
+}
+
+.pv-progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--c-primary), var(--c-accent));
+  transition: width .5s cubic-bezier(.4, 0, .2, 1);
+}
+
+.pv-progress-text { font-size: .75rem; color: var(--c-text-muted); }
+
+.pv-controls { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+.pv-btn {
+  font-family: var(--font-sans);
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  background: var(--c-white);
+  border: 1px solid var(--c-bg2);
+  border-radius: var(--radius-sm);
+  height: 2.125rem;
+  padding: 0 .875rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.pv-btn:hover { background: var(--c-bg2); }
+.pv-btn:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+.pv-btn[hidden] { display: none; }
+
+.pv-btn-icon {
+  width: 2.125rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-primary);
+}
+.pv-btn-icon svg { width: .875rem; height: .875rem; display: block; }
+
+/* Le bouton porte l'état de lecture dans `aria-pressed` ; l'icône ne fait que le
+   suivre, donc les deux ne peuvent pas se contredire. */
+.pv-btn-icon[aria-pressed="true"]  .pv-ico-play  { display: none; }
+.pv-btn-icon[aria-pressed="false"] .pv-ico-pause { display: none; }
+
+/* « Comparer » reste un interrupteur, et se marque comme tel une fois enfoncé. */
+.pv-btn-compare[aria-pressed="true"] {
+  background: var(--c-dark);
+  border-color: var(--c-dark);
+  color: var(--c-white);
+}
+
+/* La sortie du film : elle n'apparaît qu'à la dernière étape. */
+.pv-btn-done {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: var(--c-white);
+  font-weight: 700;
+  letter-spacing: .02em;
+  box-shadow: 0 2px 8px rgba(32, 95, 117, .3);
+}
+.pv-btn-done:hover { background: #277a96; border-color: #277a96; color: var(--c-white); }
+
+/* ── Utilitaire ──────────────────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .pv-head { padding: .875rem 1rem; align-items: flex-start; }
+  /* Tronqué, « Ce que la machine a fait de votre photo » devient « Ce que la … » et ne
+     dit plus rien. Sur un écran étroit il passe à la ligne : l'en-tête grandit d'une
+     ligne, ce qui coûte moins que le titre. */
+  .pv-brand-title { white-space: normal; }
+  .pv-body { padding: 1rem 1rem .5rem; }
+  .pv-foot { padding: .875rem 1rem; }
+  /* En dessous de 640 px deux images côte à côte font deux vignettes illisibles :
+     la comparaison passe l'une au-dessus de l'autre. */
+  .pv.pv-comparing .pv-canvas { grid-template-columns: 1fr; grid-auto-rows: 1fr; }
+  /* Le pied déborderait : l'avancement prend la ligne, les commandes la suivante. */
+  .pv-progress { flex-basis: 100%; }
+}
+
+/* Le film ne démarre pas seul quand l'utilisateur a demandé moins de mouvement ; ce qui
+   reste animé ici — la barre, les vignettes qui s'allument — s'immobilise aussi. */
+@media (prefers-reduced-motion: reduce) {
+  .pv-progress-fill,
+  .pv-step-frame,
+  .pv-step-n { transition: none; }
+}

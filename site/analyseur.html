@@ -299,6 +299,9 @@
                 <figcaption style="font-size:.75rem;color:var(--c-text-muted);margin-top:.375rem;" data-i18n="analyser.edges_caption">Ce que le modèle voit réellement</figcaption>
               </figure>
 
+              <button id="pv-open" class="btn btn-outline w-full" style="margin-bottom:1.5rem;display:none;"
+                      data-i18n="viewer.reopen">Revoir les étapes du traitement</button>
+
               <!-- Description -->
               <div class="card card-alt" style="margin-bottom:1.5rem;">
                 <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin-bottom:.5rem;" data-i18n="analyser.desc_label">Description du motif</div>
@@ -325,6 +328,106 @@
         </div>
       </section>
     </div>
+
+    <!-- ══ VISUALISEUR DE PIPELINE (docs/05 §8) ═══════════════════════════════
+         Un panneau superposé, ouvert dès que l'analyse répond et refermable à tout
+         moment. `<dialog>` natif : le piège à focus, la touche Échap et le fond
+         assombri viennent du navigateur, sans bibliothèque ni étape de build.
+
+         Les treize étapes viennent de la réponse qui a produit le résultat, et rien
+         n'est recalculé pour l'affichage. Toute la logique vit dans js/pipelineViewer.js. -->
+    <dialog id="pipeline-viewer" class="pv" aria-labelledby="pv-title">
+
+      <!-- L'en-tête reprend le bandeau sombre du site : isotype, titre, surtitre doré.
+           Le sélecteur de langue y est repris parce qu'un `<dialog>` modal rend celui de
+           la page inatteignable — ce sont des `.lang-btn[data-lang]` comme les autres, donc
+           `WI18n.init` les câble sans une ligne de plus et `_syncButtons` les tient à jour. -->
+      <header class="pv-head">
+        <div class="pv-brand">
+          <img src="assets/isotype.svg" alt="" class="pv-iso" />
+          <span class="pv-brand-text">
+            <span class="pv-brand-title" data-i18n="viewer.title">Ce que la machine a fait de votre photo</span>
+            <span class="pv-brand-sub" data-i18n="viewer.subtitle">Pipeline d'analyse</span>
+          </span>
+        </div>
+        <div class="pv-head-actions">
+          <div class="lang-selector pv-lang" role="group" aria-label="Sélection de la langue">
+            <button type="button" class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+            <button type="button" class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+            <button type="button" class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+          </div>
+          <button type="button" id="pv-close" class="pv-close"
+                  data-i18n-aria="viewer.close" aria-label="Fermer">&times;</button>
+        </div>
+      </header>
+
+      <div class="pv-body">
+        <!-- Le grand aperçu. Le rang et les dimensions se posent en surimpression en haut à
+             gauche, le temps mesuré en bas à droite : la maquette met le chiffre sur l'image
+             plutôt qu'en légende, là où l'œil est déjà. -->
+        <div class="pv-canvas">
+          <figure id="pv-figure" class="pv-frame">
+            <img id="pv-image" alt="" />
+          </figure>
+          <div id="pv-bars" class="pv-frame pv-bars" hidden></div>
+          <figure id="pv-compare" class="pv-frame pv-compare" hidden>
+            <img id="pv-compare-img" alt="" />
+            <figcaption data-i18n="viewer.stage.capture">Capture</figcaption>
+          </figure>
+
+          <p class="pv-badge">
+            <span class="pv-counter" id="pv-counter">01 / 13</span>
+            <span class="pv-note" id="pv-note"></span>
+          </p>
+          <p class="pv-ms" id="pv-ms">&mdash;</p>
+        </div>
+
+        <div class="pv-text">
+          <h2 class="pv-title" id="pv-title">&mdash;</h2>
+          <p class="pv-caption" id="pv-caption"></p>
+          <!-- La ligne technique : l'appel OpenCV exact et les paramètres lus dans
+               config/preprocess.json (§8). Elle reste sous la description, jamais supprimée. -->
+          <p class="pv-tech">
+            <code id="pv-call"></code>
+            <span id="pv-params"></span>
+          </p>
+        </div>
+
+        <div id="pv-rail" class="pv-rail" data-i18n-aria="viewer.rail_aria" aria-label="Les treize étapes du traitement"></div>
+      </div>
+
+      <!-- Le pied : l'avancement à gauche, les commandes à droite. « Voir le résultat »
+           ne paraît qu'une fois le film fini et ne fait que refermer le panneau — le
+           résultat est déjà là, dessous. -->
+      <footer class="pv-foot">
+        <div class="pv-progress">
+          <div class="pv-progress-track">
+            <div class="pv-progress-fill" id="pv-progress"></div>
+          </div>
+          <span class="pv-progress-text" id="pv-progress-text"></span>
+        </div>
+
+        <div class="pv-controls">
+          <button type="button" id="pv-compare-toggle" class="pv-btn pv-btn-compare" aria-pressed="false" data-i18n="viewer.compare">Comparer avec l'original</button>
+          <!-- Un simple chevron, et non le « retour au début » de la maquette : ce bouton
+               recule d'une étape, et l'icône qui promet un retour au début mentirait sur
+               ce qu'il fait — en plus de se lire « K » à cette taille. -->
+          <button type="button" id="pv-prev" class="pv-btn pv-btn-icon" data-i18n-aria="viewer.prev" aria-label="Étape précédente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="15 5 8 12 15 19"></polyline></svg>
+          </button>
+          <button type="button" id="pv-play" class="pv-btn pv-btn-icon" aria-pressed="false" data-i18n-aria="viewer.play" aria-label="Lecture">
+            <svg class="pv-ico-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><polygon points="7 4 20 12 7 20"></polygon></svg>
+            <svg class="pv-ico-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect></svg>
+          </button>
+          <button type="button" id="pv-next" class="pv-btn" data-i18n="viewer.next_label" data-i18n-aria="viewer.next" aria-label="Étape suivante">Suivant</button>
+          <button type="button" id="pv-done" class="pv-btn pv-btn-done" data-i18n="viewer.result" hidden>Voir le résultat &rarr;</button>
+        </div>
+      </footer>
+
+      <!-- L'annonce ne part que lorsque la lecture est en pause : une région live qui
+           change toutes les 1,1 s est inutilisable au lecteur d'écran. -->
+      <p id="pv-live" class="sr-only" aria-live="polite"></p>
+    </dialog>
 
     <!-- HOW TO USE -->
     <section style="margin-top:4rem;padding-top:3rem;border-top:1px solid var(--c-bg2);" aria-labelledby="howto-a-title">
@@ -394,6 +497,7 @@
 <script src="js/adapter.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/banner.js"></script>
+<script src="js/pipelineViewer.js"></script>
 <script src="js/predictionService.js"></script>
 <script src="js/app.js"></script>
 <script>
@@ -420,6 +524,17 @@
   const cameraFeed      = document.getElementById('camera-feed');
   const cameraPlaceholder = document.getElementById('camera-placeholder');
   const captureCanvas   = document.getElementById('capture-canvas');
+
+  // Le visualiseur de pipeline (docs/05 §8). Monté une fois ; le panneau ne s'ouvre
+  // qu'une fois qu'une analyse a renvoyé ses treize étapes.
+  const pipelineViewer = window.WittenbergPipelineViewer.mount(
+    document.getElementById('pipeline-viewer')
+  );
+  const reopenBtn = document.getElementById('pv-open');
+  let lastStages = null;
+  reopenBtn.addEventListener('click', function () {
+    if (lastStages) pipelineViewer.show(lastStages);
+  });
 
   const emptyState      = document.getElementById('empty-state');
   const loadingState    = document.getElementById('loading-state');
@@ -651,6 +766,12 @@
     showGeometryWarning(result.geometry);
     showQualityWarning(result.quality);
     showEdgeMap(result.stages);
+    // Les mêmes étapes, déroulées dans le panneau superposé : la surface la plus
+    // didactique du projet (§8). Elles sont retenues pour que « revoir » n'ait pas
+    // besoin d'une seconde analyse — §3 interdit de refaire tourner le pipeline.
+    lastStages = result.stages;
+    reopenBtn.style.display = (result.stages && result.stages.length > 1) ? 'block' : 'none';
+    pipelineViewer.show(result.stages);
 
     loadingState.style.display = 'none';
     emptyState.style.display = 'none';
@@ -698,13 +819,16 @@
    */
   function showEdgeMap(stages) {
     const fig = document.getElementById('result-edges');
-    const stage = (stages && stages.length) ? stages[stages.length - 1] : null;
-    if (!stage || !stage.png) { fig.style.display = 'none'; return; }
-    document.getElementById('result-edges-img').src = 'data:image/png;base64,' + stage.png;
+    const src = window.WittenbergPipelineViewer.edgeMapSrc(stages);
+    if (!src) { fig.style.display = 'none'; return; }
+    document.getElementById('result-edges-img').src = src;
     fig.style.display = 'block';
   }
 
   function showLoading() {
+    // Le film de l'analyse précédente s'arrête ici : le laisser tourner pendant qu'une
+    // autre image est analysée montrerait des étapes qui ne sont plus celles du résultat.
+    pipelineViewer.hide();
     emptyState.style.display = 'none';
     resultSection.style.display = 'none';
     loadingState.style.display = 'block';
@@ -752,6 +876,9 @@
     document.getElementById('quality-warning').style.display = 'none';
     document.getElementById('geometry-warning').style.display = 'none';
     document.getElementById('result-edges').style.display = 'none';
+    reopenBtn.style.display = 'none';
+    lastStages = null;
+    pipelineViewer.hide();
   }
 
   function enableAnalyze() {
