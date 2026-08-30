@@ -77,6 +77,28 @@ SITE_DIR = ROOT / "site"
 HOST = "127.0.0.1"
 PORT = 8000
 
+
+class RevalidatedStaticFiles(StaticFiles):
+    """`StaticFiles`, but the browser is told to check back every time.
+
+    Starlette sends `etag` and `last-modified` and no `Cache-Control`. With no directive
+    the browser is free to guess how long a file stays fresh, and Chrome and Edge guess
+    from the age of the file: a stylesheet last modified an hour ago is treated as good
+    for another six minutes, and is served from disk cache without ever asking. Editing
+    `site/css/style.css` and reloading then shows the old page, which reads exactly like
+    "the change did not apply" — and cost an afternoon once already.
+
+    `no-cache` does not mean "do not store". The browser keeps the file and still
+    revalidates: it sends the `etag` back, and an unchanged file answers `304` with an
+    empty body. So the traffic saved by caching is kept, and only the guessing is
+    removed. On `127.0.0.1` the extra round trip is under a millisecond.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["cache-control"] = "no-cache"
+        return response
+
 #: §4: top-3, never a bare single number.
 TOP_K = 3
 
@@ -380,6 +402,8 @@ def create_app(
 
     site = Path(SITE_DIR if site_dir is None else site_dir)
     if site.is_dir():
+        # `RevalidatedStaticFiles` rather than `StaticFiles`: see its docstring. Editing a
+        # page and reloading has to show the edit.
         # Mounted last so it cannot shadow /api. `html=True` serves index.html for `/`.
         #
         # No SPA fallback, and no `directory=ROOT`. Both were deliberate: this is a
@@ -388,7 +412,7 @@ def create_app(
         # `site/` rather than the repo it lives in, because mounting the repo would put
         # `data/raw/`, `runs/`, `src/` and `.git/` on an HTTP port. Binding to 127.0.0.1
         # is not a reason to serve them.
-        app.mount("/", StaticFiles(directory=site, html=True), name="site")
+        app.mount("/", RevalidatedStaticFiles(directory=site, html=True), name="site")
 
     return app
 
