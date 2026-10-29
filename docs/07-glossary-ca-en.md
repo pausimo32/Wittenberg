@@ -19,6 +19,8 @@ Never invent a Catalan physics term — if it is missing here, add it here first
 | pitch | to | tono | perceptual |
 | frequency | freqüència | frecuencia | dieresis on the ü |
 | plate | placa | placa | |
+| steel | acer | acero | the plate's material: 1 mm, black-lacquered (`docs/02` §1) |
+| lacquered | lacat | lacado | as in "acer lacat negre" |
 | granular material | material granular | material granular | |
 | sand / semolina / salt | sorra / sèmola / sal | arena / sémola / sal | |
 | oscillator | oscil·lador | oscilador | **punt volat**: l·l |

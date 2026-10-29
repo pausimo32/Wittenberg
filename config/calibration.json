@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "_note": "ArUco calibration for ingest. Defined by docs/02-dataset-spec.md §1.1 - this file carries the rig convention as values, it does not define the rule. Recorded in every data/calib/<session_id>.json.",
   "dictionary": "DICT_4X4_50",
   "marker_ids": { "top_left": 0, "top_right": 1, "bottom_right": 2, "bottom_left": 3 },
@@ -7,5 +7,5 @@
   "_corner_rule_note": "See docs/02-dataset-spec.md §1.1 for the rule and why the marker centre and the outer corner are both wrong.",
   "nominal_corner_index": { "0": 2, "1": 3, "2": 0, "3": 1 },
   "_nominal_corner_index_note": "What the innermost rule EVALUATES TO on the nominal zenithal rig: index into the marker's detectMarkers quad (TL, TR, BR, BL). Not the selection rule - src/calibrate.py selects geometrically, then compares with this and reports a divergence. A divergence means a marker is taped on rotated or the plate is turned within the frame; both are legitimate, so it is a flag in data/ingest_report.json, never an error.",
-  "plate_size_mm": 200.0
+  "plate_size_mm": 180.0
 }

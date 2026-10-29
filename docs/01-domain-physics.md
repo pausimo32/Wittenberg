@@ -22,8 +22,9 @@ project's favour.
 For a plate, the mode shape depends on:
 
 - **Geometry** — side length and thickness. Square and circular plates give different families.
-- **Material** — Young's modulus, Poisson ratio, density. Aluminium: E ≈ 71 GPa, ν = 0.33,
-  ρ = 2770 kg/m³.
+- **Material** — Young's modulus, Poisson ratio, density. Ours is **1 mm black-lacquered steel,
+  180 × 180 mm**: typical carbon steel is E ≈ 200 GPa, ν ≈ 0.29, ρ ≈ 7850 kg/m³ — textbook
+  values, not measured on our plate, and the lacquer coat is not in them.
 - **Boundary conditions** — centre-clamped vs free edges changes everything. Ours is
   centre-driven with free edges; state this explicitly in the TDR methodology.
 - **Frequency** — higher frequency → higher mode order → more nodal lines → more complex figure.
