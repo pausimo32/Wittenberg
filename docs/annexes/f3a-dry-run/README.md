@@ -19,6 +19,7 @@ and is not a claim anyone should have to take on trust.
 | `metadata.csv` | 480 rows, one per rendered frame, 348 accepted |
 | `ingest_report.json` | the yield, the `config/quality_gate.json` thresholds verbatim, and every rejected frame with its measurements |
 | `calib/` | the four session calibrations, ArUco corners and px/mm |
+| `run-20260828-124602/` | `config.json` and `metrics.json` of the synthetic training run (F4a), moved here from `runs/` on 2026-10-24. `metrics.json` carries `synthetic: true` and `do_not_report` |
 
 Four sessions, `SYNTH-20260101-01` through `SYNTH-20260104-01`, on four consecutive days, in a
 2 × 2 factorial of material × lighting so that no condition predicts the split. 27.5 % of frames
@@ -29,7 +30,7 @@ fraction of frames, one per §6 rejection reason, so the yield report has someth
 
 The images come from a closed-form square-plate mode shape. A CNN reaches ~100 % on them — both
 architectures did — and that figure measures how well the network inverted the formula that drew
-the pictures. It says nothing whatsoever about a vibrating aluminium plate.
+the pictures. It says nothing whatsoever about a real vibrating plate.
 
 The rejection rate is the same kind of number: it describes the renderer's deliberate defect
 schedule, not a capture session. Research question S4 is answered from the **real**
