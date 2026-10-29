@@ -23,10 +23,22 @@ runs/         one directory per training run
 src/          preprocess, imageio, calibrate, quality, ingest, split, metadata, modes
 tools/        synth_capture.py, check_capture.py — lab and dry-run helpers
 tasks.py      the task runner (there is no make)
+run.py        one command that starts the app, environment included
 web/          the front end
 ```
 
 ## Getting started
+
+```bash
+python run.py              # prepares the environment if it has to, then starts the app
+```
+
+One command, for whoever is running a session rather than developing. It creates `.venv`,
+installs `requirements.txt` when that file has changed, and serves the app at
+`http://127.0.0.1:8000`. It needs Python 3.11 and, the first time only, the internet. It
+does not need Node, and it re-installs nothing on later runs.
+
+For development, the task runner:
 
 ```bash
 python tasks.py setup      # venv, dependencies, version and device checks

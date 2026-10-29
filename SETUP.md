@@ -126,6 +126,12 @@ the trigger words.
 python tasks.py setup
 ```
 
+If all you want is to **run** the app, `python run.py` does the Python half of this on its
+own and then starts the server. It skips `npm install` deliberately: the frontend in `site/`
+is plain HTML, CSS and browser JS with nothing to build (`docs/adr/0007`), so Node is a
+prerequisite of `setup` and not of the app. Use `tasks.py setup` when you are going to
+develop, `run.py` when you are going to run a session.
+
 That creates `.venv`, installs `requirements.txt`, runs `npm install`, and then asserts two
 things that are easy to get silently wrong:
 
