@@ -347,7 +347,10 @@ Four sessions minimum, on **different days**, each covering every class. Per ses
 
 1. Fresh sand, fixed mass (record it). Same material within a session.
 2. Lock exposure and focus. Photograph the ArUco calibration frame first.
-3. Per frequency: set it, wait for the dwell time, capture ≥ 60 frames.
+3. Per frequency: set it, wait for the dwell time, capture ≥ 60 frames. With the capture
+   station (`docs/adr/0008`) the ≥ 60 frames per class are taken **round-robin** across all
+   classes, not as one burst per class — so drift during the session is not a function of the
+   label.
 4. Log material, grain mass, distance, lighting, dwell, anything anomalous.
 5. Lighting is constant **within** a session and varies **between** sessions — but every
    lighting value must appear in **at least two** sessions. See the warning below.

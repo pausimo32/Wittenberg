@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Station probe</title>
+  <style>
+    :root { color-scheme: light dark; --fg: #1b1b1b; --bg: #fafafa; --muted: #666; --line: #ccc;
+            --ok: #1a7f37; --bad: #b42318; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #eee; --bg: #161616; --muted: #999; --line: #444; --ok: #4ac26b; --bad: #ff7b72; }
+    }
+    body { font: 15px/1.45 system-ui, sans-serif; color: var(--fg); background: var(--bg);
+           max-width: 980px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    h2 { font-size: 1.05rem; margin: 0 0 8px; }
+    section { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 14px 0; }
+    p.note { color: var(--muted); margin: 4px 0 10px; }
+    button { font: inherit; padding: 5px 12px; margin: 2px 6px 2px 0; cursor: pointer; }
+    input, select { font: inherit; }
+    input[type=number] { width: 7em; }
+    pre { background: rgba(127,127,127,.12); padding: 8px; overflow: auto; max-height: 260px;
+          font-size: 12px; margin: 8px 0 0; }
+    video, img, canvas.plot { max-width: 100%; border: 1px solid var(--line); display: block; margin-top: 8px; }
+    video { max-height: 420px; }
+    .row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .ok { color: var(--ok); } .bad { color: var(--bad); }
+  </style>
+</head>
+<body>
+  <h1>Capture-station feasibility probe</h1>
+  <p class="note">ADR 0008. Run each block top to bottom with the iPhone 13 on the mount, then
+    <b>Save report</b>. Nothing here reaches <code>data/</code>: frames go to a throwaway draft under
+    <span id="run-dir">runs/station-probe-…</span>. Before block 1, in Control Centre → Video Effects,
+    turn <b>Center Stage, Portrait, Studio Light and Reactions off</b>.</p>
+
+  <section id="b1">
+    <h2>1 · Cameras, resolution, aspect ratio</h2>
+    <div class="row">
+      <button id="cam-list">Grant access &amp; list cameras</button>
+      <select id="cam-select"></select>
+      <button id="cam-open">Open at maximum resolution</button>
+      <button id="cam-formats">Try 16:9 and 4:3</button>
+    </div>
+    <video id="video" autoplay muted playsinline></video>
+    <pre id="b1-out"></pre>
+  </section>
+
+  <section id="b2">
+    <h2>2 · Exposure and focus lock — supported, and honoured?</h2>
+    <p class="note">Each test samples the mean luminance of the <b>left quarter</b> of the frame for
+      10 s. From second 3 to second 7, <b>cover the right half of the frame with your hand</b> (do not
+      touch the left quarter). If exposure is really locked, the left quarter stays flat.</p>
+    <div class="row">
+      <button id="lock-auto">Test with auto exposure</button>
+      <button id="lock-apply">Lock exposure / focus / white balance</button>
+      <button id="lock-test">Test while locked</button>
+      <span id="lock-clock"></span>
+    </div>
+    <pre id="b2-out"></pre>
+  </section>
+
+  <section id="b3">
+    <h2>3 · Calibration through <code>calibrate</code>, and marker jitter</h2>
+    <p class="note">Plate with the four ArUco markers, no sand pattern needed. "Jitter" calibrates
+      8 consecutive frames 1 s apart without touching anything: the spread is the noise floor the
+      marker-position check must tolerate.</p>
+    <div class="row">
+      <label>Printed marker side (mm, black square only) <input id="marker-mm" type="number" step="0.5"></label>
+      <label>Measured lens-to-plate distance (mm) <input id="distance-mm" type="number" step="1"></label>
+    </div>
+    <div class="row">
+      <button id="calib-one">Calibrate one frame</button>
+      <button id="calib-jitter">Jitter: 8 frames</button>
+    </div>
+    <img id="calib-preview" alt="">
+    <pre id="b3-out"></pre>
+  </section>
+
+  <section id="b4">
+    <h2>4 · One pattern frame through <code>ingest.assess_frame</code></h2>
+    <p class="note">Form a pattern with sand (block 6 can play the tone), then grab. The label is a
+      dummy (1 Hz) in the throwaway draft: this measures the gate and the timings, it labels nothing.</p>
+    <button id="frame-one">Grab, upload, gate</button>
+    <pre id="b4-out"></pre>
+  </section>
+
+  <section id="b5">
+    <h2>5 · Framing</h2>
+    <p class="note">Computed from the last successful calibration and the stream size.</p>
+    <button id="framing">Compute framing</button>
+    <pre id="b5-out"></pre>
+  </section>
+
+  <section id="b6">
+    <h2>6 · Test tone, microphone FFT, and how long the pattern takes to form</h2>
+    <div class="row">
+      <label>Tone (Hz) <input id="tone-hz" type="number" value="440" min="20" max="20000"></label>
+      <label>Volume <input id="tone-vol" type="range" min="0" max="1" step="0.01" value="0.2"></label>
+      <span id="tone-vol-val">0.20</span>
+      <button id="tone-on">Tone on</button>
+      <button id="tone-off">Tone off</button>
+    </div>
+    <div class="row">
+      <select id="mic-select"></select>
+      <button id="mic-fft">Microphone FFT (2 s, tone must be on)</button>
+    </div>
+    <p class="note">Formation curve: scatter the sand evenly with the tone <b>off</b>, then press. The
+      page records 3 s of stillness, starts the tone, and records frame-to-frame change for the given
+      time. The time the change falls back to the noise floor is what fixes <code>dwell_s</code>.
+      Use a frequency that you know forms a pattern.</p>
+    <div class="row">
+      <label>Record for (s) <input id="settle-s" type="number" value="25" min="5" max="120"></label>
+      <button id="settle-run">Record formation</button>
+      <span id="settle-clock"></span>
+    </div>
+    <canvas id="settle-plot" class="plot" width="900" height="200"></canvas>
+    <pre id="b6-out"></pre>
+  </section>
+
+  <section id="b7">
+    <h2>7 · Report</h2>
+    <div class="row">
+      <label>Notes <input id="notes" type="text" size="60" placeholder="mount, lighting, anything odd"></label>
+      <button id="save">Save report</button>
+    </div>
+    <pre id="report"></pre>
+  </section>
+
+  <script src="probe.js"></script>
+</body>
+</html>

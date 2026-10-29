@@ -45,8 +45,8 @@ Ordered. No step may be reordered, skipped or fused.
 1. **Decode** → RGBA, 8-bit, sRGB. EXIF orientation applied then stripped; ICC profile
    discarded (force sRGB). See §5.1.
 2. **ROI / geometric normalisation** → warp the plate to a `512×512` square.
-   - `mode: "homography"` — the four plate corners are fixed by the rig (zenithal iPhone 11
-     mount, d = 210 mm, ≈14.5 px/mm — see `docs/02-dataset-spec.md`). The homography is
+   - `mode: "homography"` — the four plate corners are fixed by the rig (zenithal phone mount;
+     camera, distance and px/mm in `docs/02-dataset-spec.md` §1). The homography is
      calibrated **once per session** from four ArUco markers taped at the plate corners and
      stored in `data/calib/<session_id>.json`.
    - Fallback `mode: "center_crop"` — largest centred square, for images with no calibration.
@@ -191,12 +191,20 @@ This is a hard failure, never a warning. It is the whole of what used to be a pa
 Most of the old divergence traps concerned two implementations and are gone. Three survive
 because they are about the *input*, not about a second language.
 
-**5.1 iPhone EXIF and HEIC.** iPhone 11 writes EXIF orientation and a Display P3 ICC profile.
+**5.1 iPhone EXIF and HEIC.** An iPhone — the 11 and the 13 alike — writes EXIF orientation and a
+Display P3 ICC profile.
 Untreated, the same photo arrives rotated and colour-shifted. Handled **once**, in the ingest
 layer: HEIC→PNG, orientation applied then stripped, P3→sRGB, profiles stripped. The API applies
 the identical normalisation to uploads before calling `preprocess` — this is the one place where
 "the same thing must happen in two code paths" still holds, so it lives in a single shared
 helper, `src/imageio.py`, used by both.
+
+Capture-station frames (`docs/adr/0008`) arrive differently: PNG grabbed from the Continuity
+Camera stream by the browser, with no EXIF orientation and, expected but not yet verified, no
+ICC profile. The same helper decodes them, so nothing in the pipeline changes. What the station
+does change is the *source*: a video frame, already compressed by the stream before the PNG
+encode. That is the §5.2 question asked of training data rather than of a user's upload, and
+ADR 0008 says how to test it.
 
 **5.2 JPEG is lossy and the camera is not.** Training images come from HEIC via a lossless PNG
 conversion. If a user later feeds a re-compressed JPEG, quantisation artefacts survive Canny as

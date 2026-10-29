@@ -36,6 +36,9 @@ not part of the app. Three consequences that bite if forgotten:
 
 - **Never require CUDA.** `device = "cuda" if torch.cuda.is_available() else "cpu"`, and CPU is
   the supported configuration, not a degraded one: inference is ≈ 12 ms there.
+- **The capture station runs on a MacBook** with the iPhone 13 as a Continuity Camera
+  (`docs/adr/0008`). That is where it runs, not a requirement: `site/acquisition.html` stays plain
+  browser code, with no macOS-only path.
 
 Prefer `pathlib` over string paths, and never hard-code `/` separators.
 
@@ -57,6 +60,7 @@ the team picks. Never deployed, never bound to `0.0.0.0`, never calls out to the
 
 | Command | What it does |
 |---|---|
+| `python run.py` | **one command for a session.** prepares `.venv` if needed, then starts the app. No Node |
 | `python tasks.py --list` | every target and what it does |
 | `python tasks.py setup` | venv, deps, version and device checks |
 | `python tasks.py ingest` | raw captures → `data/processed/` + `data/metadata.csv` |

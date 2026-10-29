@@ -104,6 +104,7 @@ this — the reversal was a team decision, not an accident.
 | `experience.html` | the didactic sequence (`docs/01-domain-physics.md` §4) |
 | `donnees.html` | the class table and the dataset, read from `js/classes.generated.js` |
 | `apropos.html` | method, limits, team, TDR reference |
+| `acquisition.html` | the capture station: tone, wait, check, capture, store — §10. Team only |
 
 French UI copy by default, with a `ca`/`es`/`fr` switcher in `js/i18n.js`; English code
 (`CLAUDE.md`). The French default and the French filenames are ADR 0007's second decision and
@@ -457,3 +458,77 @@ Two of these are worth knowing are *load-bearing* rather than decorative, becaus
 by breaking the thing they guard: `test_concurrent_stores_do_not_lose_each_other` fails five times
 out of five with the frames-log lock removed, and `test_the_quad_is_drawn_where_the_markers_are`
 fails when the preview's scale factor is forced to 1.
+
+## 10. `acquisition.html` — the capture station
+
+**Decided in `docs/adr/0008`, status *proposed* until its feasibility probe has run.** Read the
+ADR for every *why*; this section is the *what*.
+
+The station automates a lab session end to end: play a class's frequency through the plate's
+driver, wait for the pattern, check it, photograph it, store it, move on. It runs on a MacBook
+with the iPhone 13 as a Continuity Camera, but nothing in the page is specific to macOS.
+
+Like `/dades` (§9), it is the team's working surface, **never shown during a field session**.
+It has a tab in the navigation, which `js/config.js` can hide.
+
+### It is a client, not a second pipeline
+
+The page adds no storage path and no gate. It drives the `/api/drafts` endpoints of §9 —
+create the draft, calibrate, upload frames with `freq_hz`, commit — so every rule of §9 holds
+unchanged: calibration first, raw bytes stored once, the gate is the ingest gate, nothing in
+`data/` until the commit. The classes come from `js/classes.generated.js`; **the station
+never takes a frequency typed by hand.** A class that is not in `config/classes.json` cannot be
+captured.
+
+### The flow
+
+```
+1  Session      →  the session.json fields of docs/02 §4, plus camera, dwell_s, rounds,
+                   re-seed interval and the order seed
+2  Pre-flight   →  camera found, stream resolution shown, macOS video effects off (reminder),
+                   test tone through the amplifier, Wake Lock held
+3  Calibration  →  one frame of the ArUco plate through POST /calibration; no way past it
+                   without four markers
+4  First frame  →  one pattern frame through the gate before the run starts — the
+                   check_capture step of docs/02 §6, on the day, not on day four
+5  Run          →  rounds × classes, round-robin, each frame through the checks below
+6  Review       →  yield by class and by rejection reason, skipped slots, pauses; commit
+                   through the existing endpoint, or discard the draft
+```
+
+### One capture
+
+```
+tone on (gain ramp)  →  dwell_s  →  wait until the pattern settles  →  grab a stream frame as PNG
+→  POST /frames?freq_hz=…  →  markers where the calibration put them?  →  ingest gate verdict
+→  accepted: next slot  ·  rejected: retry up to N  ·  still rejected: log, next slot
+```
+
+The checks, their order and what each failure does are ADR 0008 decision 6. Two rules from it
+belong here, because they are the easiest to "improve" away:
+
+- **The classifier is never a check.** No prediction is run on a station frame before it is
+  stored.
+- **The order is round-robin**, shuffled per round from the recorded seed. Never sixty frames of
+  one class, then sixty of the next.
+
+### Rules
+
+- **The tone stops whenever the run is not capturing**: pause, error, re-seed, review, page
+  hidden. Ramps on every start and stop; a volume control that is visible at all times.
+- **A pause is resumable.** Draft state is on the server (§9), so a reload or a crash resumes
+  at the next empty slot, not at the start.
+- **A moved rig stops the run.** A failed marker-position check pauses the session and says
+  why. It does not retry: the calibration no longer describes the frame, and retrying would
+  only collect more frames that warp to the wrong place.
+- **Every skipped or failed slot is logged and counted**, like a rejected frame. A class that
+  ends the session short of its target is shown as short, not padded.
+
+### Testing — to be written with the page
+
+| Property | How |
+|---|---|
+| The round-robin order is a pure function of the seed, and every class appears once per round | `node --test` over the scheduler |
+| A frame the station uploads gets the verdict `tasks.py ingest` would give it | already held by `test_dataset_api.py::test_the_live_gate_is_the_ingest_gate`; the station adds no gate to test |
+| The marker-position check rejects a frame shifted after the calibration | pytest, on a synthetic calibration and a translated copy of its frame |
+| The tone is stopped on pause, error and page hide | `node --test` over the run state machine |

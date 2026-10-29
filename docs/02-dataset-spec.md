@@ -2,16 +2,24 @@
 
 ## 1. Capture rig
 
-Fixed zenithal mount (documented in `Montura_cenital_iPhone11_Wittemberg.pdf`).
+Fixed zenithal mount (documented in `Montura_cenital_iPhone11_Wittemberg.pdf`, which is not in
+this repository).
+
+**The camera is an iPhone 13, not the iPhone 11 this mount was designed for** (`docs/adr/0008`).
+Every row marked *iPhone 11* below was computed for the old phone and is kept only until the
+feasibility probe of ADR 0008 replaces it with a measurement on the iPhone 13. Check first that
+the iPhone 13 fits the mount at all: its body is a different size and its lens sits elsewhere,
+so the mount may not put the optical axis over the plate centre.
 
 | Parameter | Value |
 |---|---|
-| Camera | iPhone 11, wide lens, f = 4.25 mm, sensor 5.645 × 4.234 mm |
-| Plate | 200 × 200 mm, top face of the rig at z = 333 |
-| Nominal distance | **210 mm** (frame 209 × 279 mm, ≈ 14.5 px/mm) |
-| Useful range | 150–270 mm |
-| Mount height | `H = d − 29.3 mm`; nominal `H = 180.7 mm` |
-| Capture mode | manual exposure locked, AE/AF locked, HDR **off**, Live Photo **off** |
+| Camera | **iPhone 13**, wide camera, f = 5.1 mm, sensor ≈ 6.85 × 5.14 mm (*published spec*, 12 MP at 1.7 µm). The same physical phone in every session — §1.3 |
+| Plate | **180 × 180 mm, 1 mm black-lacquered steel**, centre-driven, free edges. Top face of the rig at z = 333 (*measured on the old rig*). `plate_size_mm` in `config/calibration.json` |
+| Nominal distance | *iPhone 11:* **210 mm** (frame 209 × 279 mm, ≈ 14.5 px/mm). iPhone 13 at 210 mm: frame ≈ 212 × 282 mm (*computed*) — but see §1.2, the markers do not fit |
+| Useful range | *iPhone 11:* 150–270 mm |
+| Mount height | *iPhone 11 mount:* `H = d − 29.3 mm`; nominal `H = 180.7 mm` |
+| Capture mode, photos by hand | manual exposure locked, AE/AF locked, HDR **off**, Live Photo **off** |
+| Capture mode, capture station | Continuity Camera on the MacBook; **Center Stage, Portrait, Studio Light and Reactions off**; exposure and focus locked if the browser can lock them (ADR 0008 — unknown until probed) |
 
 Lock focus and exposure before the first capture of a session and do not touch them again.
 An auto-exposure change mid-session is the single biggest source of within-class variance.
@@ -78,6 +86,52 @@ four points. This section is the definition; the config refers to it and must no
 Fewer than four markers in a frame is a `partial` rejection under §6, never a silent fall-back to
 `center_crop`.
 
+### 1.2 Framing — plate *and* markers must fit, which fixes the distance
+
+The markers sit **outside** the plate (§1.1), diagonally off each corner, so the frame must
+cover, on its *short* side:
+
+```
+180 mm  +  2 × 1.2 × s  +  2 × m        s = printed marker side, 1.2 = the §1.1 quiet zone,
+                                        m = a safety margin per side
+```
+
+With `s = 25 mm` and `m = 10 mm` that is **260 mm**. The short side of the frame at distance `d`
+is `d × (short sensor side / f)`:
+
+| Source | Short side per mm of `d` | At 210 mm | `d` needed for 260 mm |
+|---|---|---|---|
+| iPhone 11 photo, 4:3 | 0.996 | 209 mm | ≈ 261 mm |
+| iPhone 13 photo, 4:3 | 1.008 | 212 mm | ≈ 258 mm |
+| iPhone 13 stream, 16:9, full sensor width | 0.756 | 159 mm | ≈ 344 mm |
+
+*All computed from published sensor sizes, none measured.*
+
+**This is not new with the iPhone 13: the nominal 210 mm never fitted the markers.** With the
+original 200 mm plate, a 209 mm short side left 4.5 mm per side, less than any usable marker.
+With the 180 mm plate it leaves 14.5 mm per side — room for a marker of at most 12 mm with its
+quiet zone and no margin at all, which is not a design either. No real session has been captured
+yet, so nothing was lost. The synthetic sessions do not show the problem because
+`tools/synth_capture.py` draws the scene rather than photographing it.
+
+Two things follow:
+
+- **The working distance is set by the framing, then measured**, not taken from this table.
+  Fix `s` when the markers are printed, read the stream's real aspect ratio, place the phone
+  where plate plus markers fit with margin, and let the calibration report the px/mm.
+  `data/calib/<session_id>.json` records it per session either way.
+- **Resolution is not what limits the distance.** The 512 px ROI needs ≥ 2.84 px/mm over the
+  180 mm plate. A 1920 px stream across the long side gives that up to ≈ 500 mm (*computed*),
+  well beyond the 344 mm the framing asks for.
+
+### 1.3 One camera for every session
+
+The camera is a capture condition, exactly like lighting and material
+(`docs/00-master-plan.md` F3b): a phone used in only one session predicts the session-wise
+split perfectly, and the test accuracy would measure "a different phone" instead of "a
+different pattern". **Use the same iPhone 13 in every session**, and record how each frame was
+taken in the session log's `camera` key (§4).
+
 ## 2. Session model — why it matters more than anything else
 
 A **session** = one continuous run: rig untouched, lighting unchanged, sand replenished the
@@ -104,7 +158,10 @@ its split, and its 5-test-images-per-class protocol cannot rule out this leak.
 ## 3. Frequency classes
 
 Do **not** copy the reference study's 14 frequencies (330–3910 Hz). Those belong to a
-16 × 16 cm, 0.61 mm aluminium plate. Ours is 200 × 200 mm — the modes are elsewhere.
+16 × 16 cm, 0.61 mm aluminium plate. Ours is 180 × 180 mm, 1 mm black-lacquered steel — the modes
+are elsewhere. It is closer in size to the reference plate than the 200 mm one it replaced, which
+makes the temptation to reuse their list stronger, not the list more applicable: thickness and
+material move every mode as much as the side length does.
 
 Classes are determined empirically in phase F1:
 
@@ -123,6 +180,7 @@ Expect 10–18 usable modes. Record all of them in `data/modes.csv`, keep the us
 data/
 ├── raw/<session_id>/session.json               # the session log — REQUIRED, see below
 ├── raw/<session_id>/<freq_hz>/IMG_<n>.HEIC     # untouched, straight off the phone
+│                                               #   (.png for a capture-station frame, ADR 0008)
 ├── calib/<session_id>.json                     # homography, 4 corner points, px/mm
 ├── processed/<split>/<freq_hz>/<session_id>_<n>.png
 ├── metadata.csv
@@ -160,6 +218,7 @@ from the images: four days after the lab, nobody knows what the grain mass was.
 | `material`, `grain_mass_g`, `distance_mm`, `lighting`, `dwell_s` | the §4 columns |
 | `notes` | required to be present; **may be empty** — empty means "nothing anomalous", which is itself information |
 | `synthetic` | `true`, on `SYNTH-*` sessions only. What keeps a rendered frame from later reading as a measurement |
+| `camera` | *optional.* How the frames were taken: `iphone13-continuity-png` (capture station, ADR 0008) or `iphone13-heic` (photos by hand). Optional because ingest refuses only on missing *required* keys; it reaches the TDR through `data/ingest_report.json`, which records the whole log |
 
 Ten seconds before the first capture against a whole session afterwards is not a close call.
 A warning would be read as "carry on", the session would be ingested without the fields, and by
@@ -204,6 +263,10 @@ whichever way its frames were sampled.
 
 A burst of 60 frames at 1 fps with the rig untouched is **not** 60 independent samples.
 Treat a burst as one observation for confidence-interval purposes and say so in the TDR.
+
+The capture station's round-robin order (ADR 0008) does not change this. Its 60 frames of a
+class are patterns that re-formed between frames rather than consecutive near-duplicates, which
+buys variety, but they share the session's rig, sand and light. The session is still the unit.
 
 ### What ingesting this volume costs, measured before it exists
 
