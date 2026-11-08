@@ -53,6 +53,12 @@
   fetch('/probe/context').then(json).then(function (ctx) {
     report.context = ctx;
     $('run-dir').textContent = ctx.run_dir;
+    (ctx.classes_hz || []).forEach(function (hz) {
+      var o = document.createElement('option');
+      o.value = hz; o.textContent = hz + ' Hz';
+      $('tone-class').appendChild(o);
+    });
+    if (ctx.classes_hz && ctx.classes_hz.length) $('tone-hz').value = ctx.classes_hz[0];
     show('report', report);
   }).catch(function (e) { fail('report', e); });
 
@@ -576,6 +582,129 @@
       }
     }, 250);
   };
+
+  // ------------------------------------------------------------------ 6c sand loss
+  $('tone-class').onchange = function () { $('tone-hz').value = this.value; };
+
+  // Seeded, so a probe run can be repeated in the same order. Not the station's scheduler.
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffled(list, rand) {
+    var a = list.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(rand() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // Mean luminance of the plate: the box of the four calibrated corners, shrunk by 10 % so
+  // the markers' quiet zones and the plate edge stay out of it.
+  function plateLuma() {
+    var c = grabCanvas(640);
+    var scale = c.width / $('video').videoWidth;
+    var xs = lastCalibration.info.corners.map(function (p) { return p[0] * scale; });
+    var ys = lastCalibration.info.corners.map(function (p) { return p[1] * scale; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var dx = 0.1 * (x1 - x0), dy = 0.1 * (y1 - y0);
+    x0 = Math.round(x0 + dx); x1 = Math.round(x1 - dx); y0 = Math.round(y0 + dy); y1 = Math.round(y1 - dy);
+    var g = gray(c), s = 0, n = 0;
+    for (var y = y0; y < y1; y++) for (var x = x0; x < x1; x++) { s += g[y * c.width + x]; n++; }
+    return n ? s / n : null;
+  }
+
+  function plotLoss(slots) {
+    var cv = $('loss-plot'), g = cv.getContext('2d');
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (!slots.length) return;
+    var ys = slots.map(function (s) { return s.plate_luma; });
+    var lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys);
+    var span = hi - lo || 1;
+    slots.forEach(function (s, i) {
+      var x = (i + 0.5) / slots.length * cv.width;
+      var y = cv.height - 10 - (s.plate_luma - lo) / span * (cv.height - 20);
+      g.fillStyle = s.quality === 'ok' ? '#2f81f7' : '#d1242f';
+      g.fillRect(x - 3, y - 3, 6, 6);
+    });
+  }
+
+  var lossStop = false;
+  $('loss-stop').onclick = function () { lossStop = true; toneOff(); };
+
+  $('loss-run').onclick = function () {
+    if (!track) return fail('b6c-out', new Error('open the camera in block 1 first'));
+    if (!lastCalibration) return fail('b6c-out', new Error('no successful calibration yet (block 3)'));
+    var classes = report.context.classes_hz || [];
+    var rounds = Number($('loss-rounds').value), dwell = Number($('loss-dwell').value);
+    var rand = mulberry32(42);
+    var slots = [];
+    lossStop = false;
+    var t0 = performance.now();
+    var chain = ensureDraft();
+    for (var r = 0; r < rounds; r++) {
+      (function (n) {
+        var order = shuffled(classes, rand);
+        order.forEach(function (hz) {
+          chain = chain.then(function (id) {
+            if (lossStop) return id;
+            var ts = performance.now();
+            toneOn(hz);
+            $('loss-clock').textContent = 'round ' + (n + 1) + '/' + rounds + ' · ' + hz + ' Hz';
+            return sleep(dwell * 1000).then(function () {
+              if (lossStop) return id;
+              var luma = plateLuma();
+              return grabPng().then(function (png) {
+                return postFile('/api/drafts/' + id + '/frames?freq_hz=' + hz, png.blob,
+                  'loss-r' + (n + 1) + '-' + hz + '-' + Date.now() + '.png');
+              }).then(function (x) {
+                slots.push({
+                  round: n + 1, freq_hz: hz, plate_luma: round2(luma),
+                  quality: x.body.quality, reason: x.body.reason,
+                  upload_and_gate_ms: x.ms, slot_s: round2((performance.now() - ts) / 1000)
+                });
+                plotLoss(slots);
+                return id;
+              }, function (e) {
+                slots.push({ round: n + 1, freq_hz: hz, plate_luma: round2(luma), error: e.message });
+                return id;
+              });
+            });
+          });
+        });
+      })(r);
+    }
+    chain.then(function () {
+      toneOff();
+      $('loss-clock').textContent = '';
+      var byRound = {};
+      slots.forEach(function (s) {
+        var b = byRound[s.round] = byRound[s.round] || { luma: [], ok: 0, n: 0 };
+        b.luma.push(s.plate_luma); b.n++; if (s.quality === 'ok') b.ok++;
+      });
+      var summary = Object.keys(byRound).map(function (k) {
+        var b = byRound[k];
+        return { round: Number(k), mean_plate_luma: round2(b.luma.reduce(function (a, x) { return a + x; }, 0) / b.luma.length), accepted: b.ok + '/' + b.n };
+      });
+      var r = {
+        grain_mass_g: Number($('loss-grams').value), dwell_s: dwell, rounds_asked: rounds,
+        stopped_early: lossStop, total_s: round2((performance.now() - t0) / 1000),
+        mean_slot_s: slots.length ? round2(slots.reduce(function (a, s) { return a + (s.slot_s || 0); }, 0) / slots.length) : null,
+        per_round: summary, slots: slots
+      };
+      report.sand_loss = report.sand_loss || [];
+      report.sand_loss.push(r);
+      show('b6c-out', Object.assign({}, r, { slots: '(' + slots.length + ' slots, in report)' }));
+    }).catch(function (e) { toneOff(); fail('b6c-out', e); });
+  };
+
+  function round2(x) { return x === null || x === undefined ? null : round(x, 2); }
 
   // ------------------------------------------------------------------ 7 save
   $('save').onclick = function () {

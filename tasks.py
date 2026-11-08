@@ -549,7 +549,7 @@ def api(argv):
 
 @target("app", "serve the local app, open the browser  [F6]")
 def app(argv):
-    """`python tasks.py app [--run <name>] [--port N] [--no-open]`.
+    """`python tasks.py app [--run <name> | --capture] [--port N] [--no-open]`.
 
     What a field session runs (`docs/05` §2). The site in `site/` is plain HTML, CSS and
     browser JavaScript: there is nothing to build, so there is no build step to be stale.
@@ -576,6 +576,15 @@ def app(argv):
 
     url = f"http://{HOST}:{port}"
     serving = application.state.serving
+    if serving is None:
+        # `--capture`: no run was resolved, so there is no run to print. Said in capitals
+        # because whoever reads this console may be about to start a field session by mistake.
+        print("  CAPTURE MODE  no model loaded — the analyser is off, capture sessions are on")
+        print(f"  {url}/acquisition.html  — 127.0.0.1 only, one worker, no outbound call")
+        if "--no-open" not in argv:
+            _open_station(f"{url}/acquisition.html")
+        _serve(application, port)
+        return
     print(f"  run        {serving.run_dir.name}")
     print(f"  device     {serving.device.type}  ({len(serving.classes)} classes)")
     if serving.do_not_report:
@@ -588,6 +597,25 @@ def app(argv):
         webbrowser.open(url)
 
     _serve(application, port)
+
+
+def _open_station(url: str) -> None:
+    """Safari on a Mac, the default browser anywhere else.
+
+    Measured 2026-11-08 (macOS 27, Chrome 156): macOS shows Continuity Camera only to apps
+    that declare `NSCameraUseContinuityCameraDeviceType`, and Chrome does not — it lists the
+    built-in camera and nothing else, while Safari sees the iPhone. The page itself stays
+    plain browser code; this only picks which browser opens it.
+    """
+    import webbrowser
+
+    if sys.platform == "darwin":
+        try:
+            webbrowser.get("safari").open(url)
+            return
+        except webbrowser.Error:
+            pass
+    webbrowser.open(url)
 
 
 def _serve(application, port: int):

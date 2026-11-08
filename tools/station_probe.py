@@ -47,13 +47,16 @@ PAGE_DIR = ROOT / "tools" / "station_probe"
 def build_app(run_dir: Path) -> FastAPI:
     app = FastAPI(title="Wittenberg station probe")
     calibration_config = load_calibration_config()
+    classes = json.loads((ROOT / "config" / "classes.json").read_text("utf-8"))["classes"]
 
     @app.get("/probe/context")
     def context() -> dict[str, Any]:
-        """What the page cannot know by itself: the rig convention it is measured against."""
+        """What the page cannot know by itself: the rig convention it is measured against,
+        and the class frequencies — read from `config/classes.json`, never typed."""
         return {
             "run_dir": str(run_dir),
             "calibration_config": calibration_config,
+            "classes_hz": [int(c["freq_hz"]) for c in classes],
             "today": datetime.now().strftime("%Y%m%d"),
         }
 

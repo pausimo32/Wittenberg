@@ -17,6 +17,7 @@ Three rules shape every route here:
 from __future__ import annotations
 
 import base64
+import math
 import threading
 from pathlib import Path
 from typing import Annotated, Any, NamedTuple
@@ -27,7 +28,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 
 import drafts as drafts_module
-from calibrate import ROI_MODE_HOMOGRAPHY
+from calibrate import ROI_MODE_HOMOGRAPHY, calibrate
 from imageio import UnsupportedImageError, decode_bytes, thumbnail
 from ingest import IngestError, assess_frame, ingest_session, verdict_of
 from metadata import MixedProvenanceError, is_accepted, read_metadata
@@ -206,6 +207,10 @@ def dataset_router(state: DatasetState) -> APIRouter:
         draft_id: str,
         freq_hz: Annotated[int, Query(ge=1, description="the class label, in Hz")],
         file: Annotated[UploadFile, File()],
+        max_marker_shift_px: Annotated[
+            float | None,
+            Query(gt=0, description="station only: refuse a frame whose markers moved this far"),
+        ] = None,
     ) -> dict[str, Any]:
         """Steps 3 and 4: store the bytes, then gate them.
 
@@ -257,6 +262,33 @@ def dataset_router(state: DatasetState) -> APIRouter:
             keep_input=True,
         )
         quality, reason, metrics = verdict_of(assessment.result)
+
+        # ADR 0008 decision 6, check 3 — asked for by the capture station, which shoots for an
+        # hour without anyone looking. Every frame is warped with the *session's* quad, so a
+        # phone that rotated or a plate that slid after the calibration still produces a
+        # plausible-looking plate, warped to the wrong place. The markers are found again on
+        # this frame and compared with the calibration; a frame too far off is taken back out
+        # and refused, and the station pauses. Fewer than four markers is not this check's
+        # business: the gate already calls that `partial`.
+        if max_marker_shift_px is not None and assessment.decoded is not None:
+            stored = (drafts_module.calibration(draft) or {}).get("corners")
+            now = calibrate(
+                assessment.decoded.pixels, draft.session_id, state.calibration_config
+            ).corners
+            if stored and now:
+                shift = max(math.dist(a, b) for a, b in zip(stored, now))
+                if shift > max_marker_shift_px:
+                    drafts_module.remove_frame(draft, freq_hz, record["name"])
+                    raise HTTPException(
+                        status_code=409,
+                        detail={
+                            "code": "rig_moved",
+                            "message": f"the markers moved {shift:.1f} px since the "
+                            f"calibration (limit {max_marker_shift_px:g} px) — the phone or "
+                            f"the plate moved, so the calibration no longer describes the frame",
+                            "shift_px": round(shift, 1),
+                        },
+                    )
 
         # Previews first: `record_verdict` records whether they exist, and a verdict claiming
         # `preview: true` about a file that is not there is worse than no preview at all.

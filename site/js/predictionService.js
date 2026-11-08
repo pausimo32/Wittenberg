@@ -52,7 +52,8 @@ const HTTP_ERROR_CODES = {
   400: PredictionErrorCode.EMPTY_FILE,
   413: PredictionErrorCode.FILE_TOO_LARGE,
   415: PredictionErrorCode.UNSUPPORTED,
-  422: PredictionErrorCode.CORRUPT
+  422: PredictionErrorCode.CORRUPT,
+  503: PredictionErrorCode.MODEL_UNAVAILABLE
 };
 
 function _config() {

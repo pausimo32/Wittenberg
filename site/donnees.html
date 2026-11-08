@@ -101,6 +101,7 @@
         <a href="index.html" class="nav-link" data-i18n="nav.home">Accueil</a>
         <a href="analyseur.html" class="nav-link" data-i18n="nav.analyser">Analyseur</a>
         <a href="experience.html" class="nav-link" data-i18n="nav.experience">Expérience</a>
+        <a href="presentation.html" class="nav-link" data-i18n="nav.presentation">Présentation</a>
         <a href="donnees.html" class="nav-link" data-i18n="nav.data">Données</a>
         <a href="apropos.html" class="nav-link" data-i18n="nav.about">À propos</a>
       </div>
@@ -120,6 +121,7 @@
     <a href="index.html" data-i18n="nav.home">Accueil</a>
     <a href="analyseur.html" data-i18n="nav.analyser">Analyseur</a>
     <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+    <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
     <a href="donnees.html" data-i18n="nav.data">Données</a>
     <a href="apropos.html" data-i18n="nav.about">À propos</a>
     <div class="lang-selector-mobile">
@@ -160,25 +162,37 @@
         </div>
       </div>
 
+      <!-- CAPTURE SESSIONS (team) -->
+      <div class="card flex items-start gap-3" style="margin-bottom:2.5rem;justify-content:space-between;flex-wrap:wrap;">
+        <div style="flex:1;min-width:240px;">
+          <strong style="display:block;margin-bottom:.25rem;color:var(--c-dark);" data-i18n="data.sessions_title">Sessions de capture (équipe)</strong>
+          <span style="font-size:.9rem;color:var(--c-text-muted);" data-i18n="data.sessions_desc">Étalonnage, photos par classe et contrôle qualité au fil de l'envoi, puis incorporation au jeu de données.</span>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          <a href="acquisition.html" class="btn btn-primary btn-sm" data-i18n="data.station_cta">Station automatique →</a>
+          <a href="sessions.html" class="btn btn-outline btn-sm" data-i18n="data.sessions_cta">Ouvrir les sessions →</a>
+        </div>
+      </div>
+
       <!-- STATS -->
       <div class="grid grid-cols-4 gap-4 slide-up" style="margin-bottom:3rem;">
         <div class="stat-card">
-          <div class="stat-card-value" style="color:var(--c-primary);">13</div>
+          <div class="stat-card-value" style="color:var(--c-primary);" data-class-count>5</div>
           <div class="stat-card-label" data-i18n="data.stat_classes">Classes</div>
           <div class="stat-card-sub" data-i18n="data.stat_classes_sub">Fréquences cibles</div>
         </div>
         <div class="stat-card">
           <div class="stat-card-value">0</div>
           <div class="stat-card-label" data-i18n="data.stat_images">Images collectées</div>
-          <div class="stat-card-sub" data-i18n="data.stat_images_sub">Objectif : ≥ 500</div>
+          <div class="stat-card-sub" data-i18n="data.stat_images_sub">Objectif : ≥ 240 par classe</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-value" style="color:var(--c-accent);">70 / 15 / 15</div>
+          <div class="stat-card-value" style="color:var(--c-accent);">2 / 1 / 1</div>
           <div class="stat-card-label" data-i18n="data.stat_split">Split entraînement</div>
-          <div class="stat-card-sub" data-i18n="data.stat_split_sub">Train / Validation / Test</div>
+          <div class="stat-card-sub" data-i18n="data.stat_split_sub">Sessions : train / val. / test</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-value">224 px</div>
+          <div class="stat-card-value">128 px</div>
           <div class="stat-card-label" data-i18n="data.stat_res">Résolution</div>
           <div class="stat-card-sub" data-i18n="data.stat_res_sub">Entrée du CNN</div>
         </div>
@@ -204,10 +218,10 @@
             <ul style="font-size:.9rem;color:var(--c-text-muted);line-height:2;list-style:disc;padding-left:1.125rem;">
               <li>Position de caméra fixe, perpendiculaire à la plaque</li>
               <li>Hauteur de caméra identique pour chaque session</li>
-              <li>Éclairage diffus uniforme (éviter les reflets)</li>
-              <li>Masse de sel identique : <strong>2,0 g ± 0,1 g</strong></li>
-              <li>Durée d'exposition : <strong>≥ 30 secondes</strong> par fréquence</li>
-              <li>Fond de plaque uni et mat (noir ou blanc)</li>
+              <li>Éclairage constant pendant une session, varié d'une session à l'autre</li>
+              <li>Matériau (sable, semoule ou sel) et masse notés dans <code style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">session.json</code></li>
+              <li>Mise au point et exposition verrouillées pour toute la session</li>
+              <li>Plaque d'acier laqué noir, <strong>180 × 180 mm</strong>, repérée par 4 marqueurs ArUco</li>
             </ul>
           </div>
 
@@ -224,17 +238,17 @@
             <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.625rem;"
               data-i18n="data.m2_title">Étiquetage &amp; nomenclature</h3>
             <ul style="font-size:.9rem;color:var(--c-text-muted);line-height:2;list-style:disc;padding-left:1.125rem;">
-              <li>Fichier nommé : <code
-                  style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">chladni_{Hz}_{idx:04d}.jpg</code>
+              <li>Fichier : <code
+                  style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">data/raw/{session}/{Hz}/IMG_{n}.HEIC</code>
               </li>
               <li>Ex. : <code
-                  style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">chladni_660_0001.jpg</code>
+                  style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">data/raw/20261108-01/863/IMG_0001.HEIC</code>
               </li>
-              <li>Dossier par classe : <code
-                  style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">dataset/660hz/</code>
+              <li>Une session par dossier, un sous-dossier par fréquence : <code
+                  style="font-size:.8rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">863/</code>
               </li>
-              <li>Métadonnées CSV associées : fréquence, date, conditions</li>
-              <li>Vérification visuelle systématique de chaque image</li>
+              <li>Métadonnées CSV : fréquence, session, date, matériau, éclairage</li>
+              <li>Contrôle qualité automatique : netteté, luminosité, marqueurs, contours</li>
             </ul>
           </div>
 
@@ -250,11 +264,11 @@
             <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.625rem;"
               data-i18n="data.m3_title">Prétraitement avant entraînement</h3>
             <ul style="font-size:.9rem;color:var(--c-text-muted);line-height:2;list-style:disc;padding-left:1.125rem;">
-              <li>Redimensionnement : 224 × 224 pixels</li>
-              <li>Conversion en niveaux de gris (1 canal)</li>
+              <li>Redressement de la perspective par les 4 marqueurs ArUco (512 × 512)</li>
+              <li>Conversion en niveaux de gris (1 canal), contraste local (CLAHE)</li>
+              <li>Flou gaussien, puis détection de contours (Canny)</li>
+              <li>Redimensionnement : 128 × 128 pixels</li>
               <li>Normalisation des pixels : [0, 1]</li>
-              <li>Augmentation de données : rotations ±15°, flips horizontaux</li>
-              <li>Soustraction de la moyenne de l'ensemble d'entraînement</li>
             </ul>
           </div>
 
@@ -268,11 +282,11 @@
             <h3 style="font-family:var(--font-serif);font-size:1.0625rem;color:var(--c-dark);margin-bottom:.625rem;"
               data-i18n="data.m4_title">Métriques d'évaluation</h3>
             <ul style="font-size:.9rem;color:var(--c-text-muted);line-height:2;list-style:disc;padding-left:1.125rem;">
-              <li>Précision globale (accuracy) sur jeu de test</li>
+              <li>Précision globale (accuracy) sur une session jamais vue, avec intervalle de confiance à 95 %</li>
               <li>Matrice de confusion par classe de fréquence</li>
               <li>F1-score par classe (gestion des déséquilibres)</li>
               <li>Courbe d'apprentissage (loss / accuracy par époque)</li>
-              <li>Analyse des erreurs sur les classes ambiguës</li>
+              <li>Analyse des erreurs selon l'écart de fréquence, et cartes Grad-CAM</li>
             </ul>
           </div>
         </div>
@@ -285,19 +299,17 @@
           data-i18n="data.split_title">Répartition des données</h2>
         <div class="card" style="max-width:700px;">
           <div class="split-bar" style="margin-bottom:1rem;" role="img"
-            aria-label="Répartition : 70% entraînement, 15% validation, 15% test">
-            <div class="split-bar-train" style="width:70%;display:flex;align-items:center;justify-content:center;">
-              <span style="font-size:.8125rem;font-weight:700;color:#fff;" data-i18n="data.split_train">Entraînement 70
-                %</span>
+            aria-label="Répartition par session : 2 sessions d'entraînement, 1 de validation, 1 de test">
+            <div class="split-bar-train" style="width:50%;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:.8125rem;font-weight:700;color:#fff;" data-i18n="data.split_train">Entraînement · 2 sessions</span>
             </div>
-            <div class="split-bar-val" style="width:15%;display:flex;align-items:center;justify-content:center;">
-              <span style="font-size:.8125rem;font-weight:700;color:var(--c-dark);" data-i18n="data.split_val">Val. 15
-                %</span>
+            <div class="split-bar-val" style="width:25%;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:.8125rem;font-weight:700;color:var(--c-dark);" data-i18n="data.split_val">Val. · 1</span>
             </div>
             <div class="split-bar-test"
-              style="width:15%;display:flex;align-items:center;justify-content:center;background:var(--c-bg);border:1px solid var(--c-bg2);">
+              style="width:25%;display:flex;align-items:center;justify-content:center;background:var(--c-bg);border:1px solid var(--c-bg2);">
               <span style="font-size:.8125rem;font-weight:600;color:var(--c-text-muted);"
-                data-i18n="data.split_test">Test 15 %</span>
+                data-i18n="data.split_test">Test · 1</span>
             </div>
           </div>
           <div class="grid grid-cols-3 gap-4">
@@ -309,8 +321,8 @@
                   data-i18n="data.split_train_title">Entraînement</span>
               </div>
               <p style="font-size:.8125rem;color:var(--c-text-muted);line-height:1.6;"
-                data-i18n="data.split_train_desc">Images utilisées pour ajuster les poids du réseau. Cible : ~270 images
-                / classe.</p>
+                data-i18n="data.split_train_desc">Images utilisées pour ajuster les poids du réseau. Cible : ≈ 120 images
+                / classe (2 sessions sur 4).</p>
             </div>
             <div>
               <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.375rem;">
@@ -330,7 +342,7 @@
                   data-i18n="data.split_test_title">Test</span>
               </div>
               <p style="font-size:.8125rem;color:var(--c-text-muted);line-height:1.6;" data-i18n="data.split_test_desc">
-                Images non vues pendant l'entraînement. Mesurent la précision réelle du modèle.</p>
+                Images d'une session entière jamais vue pendant l'entraînement. Mesurent la précision réelle du modèle.</p>
             </div>
           </div>
         </div>
@@ -379,23 +391,24 @@
       <section aria-labelledby="pipeline-title" class="slide-up" style="margin-top:3rem;">
         <h2 id="pipeline-title"
           style="font-family:var(--font-serif);font-size:1.625rem;color:var(--c-dark);margin-bottom:1.5rem;"
-          data-i18n="data.pipeline_title">Pipeline d'entraînement (cible)</h2>
+          data-i18n="data.pipeline_title">Pipeline d'entraînement</h2>
         <div class="info-box">
           <div style="font-family:var(--font-sans);font-size:.875rem;line-height:2;color:var(--c-text);">
-            <strong style="color:var(--c-primary);">Architecture CNN cible :</strong><br>
-            Conv2D(32, 3×3) → ReLU → MaxPool →
-            Conv2D(64, 3×3) → ReLU → MaxPool →
-            Conv2D(128, 3×3) → ReLU → MaxPool →
-            Flatten → Dense(256) → Dropout(0.4) → Dense(13, softmax)
+            <strong style="color:var(--c-primary);">Architecture CNN (wittenberg_v1) :</strong><br>
+            Entrée 128 × 128 × 1 →
+            [Conv 3×3 → BatchNorm → ReLU] ×2 → MaxPool (32 canaux) →
+            [Conv 3×3 → BatchNorm → ReLU] ×2 → MaxPool (64) →
+            [Conv 3×3 → BatchNorm → ReLU] ×2 → MaxPool (128) →
+            Global Average Pooling → Dropout(0.4) → Linear(<span data-class-count>5</span> classes)
             <br><br>
-            <strong style="color:var(--c-primary);">Framework :</strong> TensorFlow / Keras (Python) — puis export
-            TensorFlow.js pour intégration navigateur
+            <strong style="color:var(--c-primary);">Framework :</strong> PyTorch (Python) — entraînement sur GPU,
+            inférence sur le processeur (CPU) dans un serveur local
             <br>
-            <strong style="color:var(--c-primary);">Optimiseur :</strong> Adam (lr = 0.001) — réduction sur plateau
+            <strong style="color:var(--c-primary);">Optimiseur :</strong> AdamW (lr = 0.001), décroissance cosinus jusqu'à 0.00001
             <br>
-            <strong style="color:var(--c-primary);">Loss :</strong> Categorical Crossentropy
+            <strong style="color:var(--c-primary);">Loss :</strong> Cross-entropy (label smoothing 0.05)
             <br>
-            <strong style="color:var(--c-primary);">Métriques :</strong> Accuracy, F1-score par classe
+            <strong style="color:var(--c-primary);">Métriques :</strong> Accuracy (intervalle de Wilson à 95 %), F1-score par classe
           </div>
         </div>
       </section>
@@ -420,6 +433,7 @@
           <a href="index.html" data-i18n="nav.home">Accueil</a>
           <a href="analyseur.html" data-i18n="nav.analyser">Analyseur</a>
           <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+          <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
           <a href="donnees.html" data-i18n="nav.data">Données</a>
           <a href="apropos.html" data-i18n="nav.about">À propos</a>
         </div>
@@ -472,8 +486,7 @@
 
       // La liste des classes vient de classes.generated.js, écrit par
       // `python tasks.py modes` depuis config/classes.json. Elle n'est pas saisie ici :
-      // les fréquences ne sont pas encore choisies, et le jour où elles le seront cette
-      // page devra suivre sans qu'on touche au HTML.
+      // si la liste change, cette page suit sans qu'on touche au HTML.
       //
       // frequencies.js n'apporte plus que l'éditorial, indexé par fréquence. Une classe
       // sans notice s'affiche sans description plutôt qu'avec une description fausse.
@@ -492,12 +505,12 @@
         const complexLabel = f.complexity
           ? (window.WI18n ? window.WI18n.t(COMPLEXITY_KEY_MAP[f.complexity] || f.complexity) : f.complexity)
           : '—';
-        const imagesLabel = window.WI18n ? window.WI18n.t('data.images_obj') : '≥ 50 par sous-ensemble';
+        const imagesLabel = window.WI18n ? window.WI18n.t('data.images_obj') : '≥ 60 par session (≥ 240 au total)';
         const toCollectLabel = window.WI18n ? window.WI18n.t('badge.to_collect') : 'À collecter';
         tr.innerHTML = `
       <td role="cell" style="font-weight:600;color:var(--c-dark);">${f.label}</td>
       <td role="cell"><code style="background:var(--c-bg2);padding:.15rem .4rem;border-radius:4px;font-size:.8rem;">${f.mode || '—'}</code></td>
-      <td role="cell">${f.nodeCount}</td>
+      <td role="cell">${f.nodeCount || '—'}</td>
       <td role="cell"><span style="color:${cColor};font-size:.875rem;font-weight:600;text-transform:capitalize;">${complexLabel}</span></td>
       <td role="cell" style="color:var(--c-text-muted);">${imagesLabel}</td>
       <td role="cell"><span class="badge badge-warn" style="font-size:.7rem;">${toCollectLabel}</span></td>

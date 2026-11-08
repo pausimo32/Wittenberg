@@ -858,3 +858,63 @@ def test_the_committed_report_points_at_files_that_exist(client, roots):
         assert ".incoming" not in item["path"], item["path"]
         assert (data_root / item["path"]).is_file(), item["path"]
         assert item["reason"]
+
+
+# --------------------------------------------------------------------------- #
+# ADR 0008 check 3 — the capture station's "the rig moved"
+# --------------------------------------------------------------------------- #
+
+def test_a_frame_shifted_after_the_calibration_is_refused_for_the_station(client, roots):
+    """A moved phone still warps to a plausible plate; only the markers say it moved."""
+    import numpy as np
+
+    from calibrate import load_calibration_config
+
+    _data_root, drafts_root = roots
+    calibrated_draft(client)
+    board = marker_board(load_calibration_config())[..., :3]
+    moved = np.full_like(board, 255)
+    moved[:, 30:] = board[:, :-30]  # the whole frame, 30 px to the right
+
+    response = upload(
+        client, "/api/drafts/20260830-01/frames?freq_hz=440&max_marker_shift_px=6",
+        a_png(moved), "moved.png", "image/png",
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"]["code"] == "rig_moved"
+    assert response.json()["detail"]["shift_px"] >= 25
+    # Taken back out: a refused frame must not stay in the draft.
+    assert client.get("/api/drafts/20260830-01").json()["total"] == 0
+
+
+def test_an_unmoved_frame_passes_the_station_check(client):
+    from calibrate import load_calibration_config
+
+    calibrated_draft(client)
+    board = marker_board(load_calibration_config())[..., :3]
+
+    response = upload(
+        client, "/api/drafts/20260830-01/frames?freq_hz=440&max_marker_shift_px=6",
+        a_png(board), "same.png", "image/png",
+    )
+
+    assert response.status_code == 200, response.text
+
+
+def test_without_the_parameter_a_moved_frame_is_only_gated(client):
+    """§9's manual flow is unchanged: the check is the station's, asked for per upload."""
+    import numpy as np
+
+    from calibrate import load_calibration_config
+
+    calibrated_draft(client)
+    board = marker_board(load_calibration_config())[..., :3]
+    moved = np.full_like(board, 255)
+    moved[:, 30:] = board[:, :-30]
+
+    response = upload(
+        client, "/api/drafts/20260830-01/frames?freq_hz=440", a_png(moved), "m.png", "image/png"
+    )
+
+    assert response.status_code == 200, response.text

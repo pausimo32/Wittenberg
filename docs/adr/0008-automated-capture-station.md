@@ -106,6 +106,14 @@ is ≈ 25 % shorter than the 4:3 photo the 210 mm distance was computed for, and
 *outside* the plate. The working distance has to be re-derived from the real marker size and
 the real stream format, which is the first thing the probe measures.
 
+**The station runs in Safari, not Chrome** (*measured* 2026-11-08, macOS 27, Chrome 156). macOS
+shows Continuity Camera only to apps whose `Info.plist` declares
+`NSCameraUseContinuityCameraDeviceType`; Chrome's does not, so `enumerateDevices()` in Chrome lists
+the built-in camera alone while `system_profiler SPCameraDataType` and Photo Booth list the iPhone.
+Safari receives it. `python run.py --capture` therefore opens Safari on a Mac, and the page tells a
+non-Safari browser on a Mac why it sees no iPhone. Continuity Camera is also held by one app at a
+time: Photo Booth or FaceTime open on the iPhone camera makes it unavailable to the browser.
+
 **Exposure may not be lockable.** `docs/02` §1 requires AE/AF locked. Whether Continuity Camera
 honours exposure and focus constraints from the browser is unknown. If it does not, the station
 records the mean ROI luminance of every frame and flags drift from the calibration frame; the

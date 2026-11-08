@@ -35,6 +35,15 @@ viewer is didactic, and a clean invented figure teaches worse than a blank.
 stage is PNG-encoded in memory, and there is no upload directory to configure. The one part
 of this process that does write is `/dades` (§9), whose routes live in `src/dataset_api.py`
 and whose writes go to `drafts/` until the moment someone presses commit.
+
+**`--capture` starts the app with no model at all.** The capture sessions exist to collect
+the data the first real checkpoint is trained on, so they cannot wait for one. In that mode
+no run is resolved and neither gate runs — there is no checkpoint for them to compare — and
+`/api/predict` answers 503 rather than anything that could be read as a prediction.
+`/api/health` says `"mode": "capture"` with `model_run: null`, which the analyser already
+renders as "no model". Without the flag nothing changes: a missing or mismatched run is still
+`StartupRefused`, never a silent fall-back into capture mode, because a field session that
+quietly started without its model is the failure this gate exists to make loud.
 """
 
 from __future__ import annotations
@@ -76,6 +85,9 @@ SITE_DIR = ROOT / "site"
 
 HOST = "127.0.0.1"
 PORT = 8000
+
+#: Start without a checkpoint, for capture sessions — see the module docstring.
+CAPTURE_FLAG = "--capture"
 
 
 class RevalidatedStaticFiles(StaticFiles):
@@ -338,14 +350,95 @@ def create_app(
     The loading happens here rather than in an `on_startup` handler on purpose: a refusal
     must stop the process before uvicorn opens a socket, not after it has told the user the
     server is running.
+
+    With `--capture` in `argv` there is nothing to load but the configs the capture routes
+    read, and `app.state.serving` is `None`.
     """
-    serving = load_serving(argv, runs_root, config_path, classes_path)
+    capture = CAPTURE_FLAG in (argv or [])
+    if capture:
+        serving = None
+        config = _current_preprocess_config(config_path)
+        calibration_config = load_calibration_config()
+    else:
+        serving = load_serving(argv, runs_root, config_path, classes_path)
+        config = serving.config
+        calibration_config = serving.calibration_config
 
     # No CORS middleware, by omission: the built frontend is served from this same origin,
     # and in development Vite proxies /api to it (§2). A wildcard here would let any page
     # the browser happens to open drive the API on the user's behalf.
-    app = FastAPI(title="Wittenberg", version=str(serving.config.get("version", "?")))
+    app = FastAPI(title="Wittenberg", version=str(config.get("version", "?")))
     app.state.serving = serving
+    app.state.capture = capture
+
+    if capture:
+        _capture_routes(app, config)
+    else:
+        _serving_routes(app, serving)
+
+    # §9 — `/dades`. The only routes in this process that write anything, and they live in
+    # their own module so §3's "nothing is written to disk" stays a readable property of the
+    # code above rather than a claim with an exception attached. Included before the static
+    # mount for the same reason that mount comes last: `/` catches everything.
+    app.include_router(
+        dataset_router(
+            DatasetState(
+                data_root=Path(DATA_ROOT if data_root is None else data_root),
+                drafts_root=Path(DRAFTS_ROOT if drafts_root is None else drafts_root),
+                calibration_config=calibration_config,
+                preprocess_config=config,
+                gate=load_gate(),
+            )
+        )
+    )
+
+    site = Path(SITE_DIR if site_dir is None else site_dir)
+    if site.is_dir():
+        # `RevalidatedStaticFiles` rather than `StaticFiles`: see its docstring. Editing a
+        # page and reloading has to show the edit.
+        # Mounted last so it cannot shadow /api. `html=True` serves index.html for `/`.
+        #
+        # No SPA fallback, and no `directory=ROOT`. Both were deliberate: this is a
+        # multipage site where `/analyseur.html` is a real file, so a mistyped page must
+        # stay a 404 rather than silently render the home page; and the doc root is
+        # `site/` rather than the repo it lives in, because mounting the repo would put
+        # `data/raw/`, `runs/`, `src/` and `.git/` on an HTTP port. Binding to 127.0.0.1
+        # is not a reason to serve them.
+        app.mount("/", RevalidatedStaticFiles(directory=site, html=True), name="site")
+
+    return app
+
+
+def _capture_routes(app: FastAPI, config: dict[str, Any]) -> None:
+    """`--capture`: the same two routes, saying there is no model rather than pretending."""
+
+    @app.get("/api/health")
+    def health() -> dict[str, Any]:
+        # Every key the serving answer has, so the frontend reads one shape; the ones that
+        # describe a model are null because there is none.
+        return {
+            "mode": "capture",
+            "model_run": None,
+            "preprocess_version": config.get("version"),
+            "preprocess_sha256": runs_module.preprocess_hash(config),
+            "device": None,
+            "classes": [],
+            "model": None,
+            "opencv": None,
+            "synthetic": False,
+            "do_not_report": None,
+        }
+
+    @app.post("/api/predict")
+    async def predict() -> dict[str, Any]:
+        raise HTTPException(
+            status_code=503,
+            detail="capture mode: this server was started with --capture and has no model",
+        )
+
+
+def _serving_routes(app: FastAPI, serving: Serving) -> None:
+    """The normal app: a gated checkpoint behind `/api/health` and `/api/predict`."""
 
     @app.get("/api/health")
     def health() -> dict[str, Any]:
@@ -358,6 +451,7 @@ def create_app(
         misled by the app rather than by anyone in particular.
         """
         return {
+            "mode": "serving",
             "model_run": serving.run_dir.name,
             "preprocess_version": serving.config.get("version"),
             "preprocess_sha256": serving.preprocess_sha256,
@@ -383,38 +477,6 @@ def create_app(
             return _predict(serving, data, file.filename, with_stages=stages)
         except UnsupportedImageError as exc:
             raise HTTPException(status_code=415, detail=str(exc)) from exc
-
-    # §9 — `/dades`. The only routes in this process that write anything, and they live in
-    # their own module so §3's "nothing is written to disk" stays a readable property of the
-    # code above rather than a claim with an exception attached. Included before the static
-    # mount for the same reason that mount comes last: `/` catches everything.
-    app.include_router(
-        dataset_router(
-            DatasetState(
-                data_root=Path(DATA_ROOT if data_root is None else data_root),
-                drafts_root=Path(DRAFTS_ROOT if drafts_root is None else drafts_root),
-                calibration_config=serving.calibration_config,
-                preprocess_config=serving.config,
-                gate=load_gate(),
-            )
-        )
-    )
-
-    site = Path(SITE_DIR if site_dir is None else site_dir)
-    if site.is_dir():
-        # `RevalidatedStaticFiles` rather than `StaticFiles`: see its docstring. Editing a
-        # page and reloading has to show the edit.
-        # Mounted last so it cannot shadow /api. `html=True` serves index.html for `/`.
-        #
-        # No SPA fallback, and no `directory=ROOT`. Both were deliberate: this is a
-        # multipage site where `/analyseur.html` is a real file, so a mistyped page must
-        # stay a 404 rather than silently render the home page; and the doc root is
-        # `site/` rather than the repo it lives in, because mounting the repo would put
-        # `data/raw/`, `runs/`, `src/` and `.git/` on an HTTP port. Binding to 127.0.0.1
-        # is not a reason to serve them.
-        app.mount("/", RevalidatedStaticFiles(directory=site, html=True), name="site")
-
-    return app
 
 
 # --------------------------------------------------------------------------- #

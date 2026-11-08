@@ -584,3 +584,59 @@ def test_a_file_that_is_not_an_image_is_refused_not_crashed(client):
 
 def test_an_empty_upload_is_refused(client):
     assert post(client, b"").status_code == 400
+
+
+# --------------------------------------------------------------------------- #
+# --capture — the app with no model, for the sessions that produce the first one
+# --------------------------------------------------------------------------- #
+
+@pytest.fixture
+def capture_app(tmp_path):
+    """`--capture` over a runs root with nothing in it: the case it exists for."""
+    (tmp_path / "runs").mkdir()
+    return TestClient(
+        api.create_app(
+            ["--capture"],
+            runs_root=tmp_path / "runs",
+            data_root=tmp_path / "data",
+            drafts_root=tmp_path / "drafts",
+        )
+    )
+
+
+def test_without_the_flag_an_empty_runs_root_still_refuses(tmp_path):
+    """Capture mode is asked for, never fallen into: a field session must not start blind."""
+    (tmp_path / "runs").mkdir()
+    with pytest.raises(api.StartupRefused):
+        api.create_app([], runs_root=tmp_path / "runs")
+
+
+def test_capture_mode_starts_with_no_run(capture_app):
+    body = capture_app.get("/api/health").json()
+    assert body["mode"] == "capture"
+    assert body["model_run"] is None
+    assert body["classes"] == []
+    assert body["do_not_report"] is None
+
+
+def test_capture_mode_reports_the_preprocessing_the_gate_will_use(capture_app):
+    """The quality gate on every upload runs under this config; the hash says which one."""
+    config = api._current_preprocess_config(None)
+    body = capture_app.get("/api/health").json()
+    assert body["preprocess_sha256"] == runs_module.preprocess_hash(config)
+
+
+def test_capture_mode_never_answers_a_prediction(capture_app):
+    response = capture_app.post(
+        "/api/predict", files={"file": ("x.png", b"not looked at", "image/png")}
+    )
+    assert response.status_code == 503
+    assert "capture" in response.json()["detail"]
+
+
+def test_capture_mode_serves_the_drafts_routes(capture_app):
+    assert capture_app.get("/api/drafts").json() == {"drafts": []}
+
+
+def test_a_served_health_says_it_is_serving(client):
+    assert client.get("/api/health").json()["mode"] == "serving"

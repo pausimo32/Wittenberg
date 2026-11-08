@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Wittenberg — Présentation animée : ondes, son, ondes stationnaires et lignes nodales.">
+  <title>Présentation — Wittenberg</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/isotype.svg" type="image/svg+xml">
+  <style>
+    /* ── Player ─────────────────────────────────────────────────────── */
+    .pres-player {
+      background: var(--c-dark);
+      border-radius: var(--radius-md);
+      padding: .75rem;
+      box-shadow: 0 12px 40px rgba(6,24,31,.25);
+    }
+    .pres-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #082430;
+    }
+    .pres-stage {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1920px; height: 1080px;
+      transform-origin: 0 0;
+    }
+    .pres-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .5rem;
+      padding: .75rem .25rem .125rem;
+    }
+    .pres-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      min-height: 40px;
+      padding: .45rem .9rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      font-size: .875rem;
+      font-weight: 600;
+    }
+    .pres-btn:hover { background: rgba(255,255,255,.14); }
+    .pres-btn:focus-visible, .pres-dot:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+    .pres-btn-icon { font-size: .8rem; color: var(--c-accent); }
+    .pres-counter { color: rgba(255,255,255,.75); font-size: .875rem; font-variant-numeric: tabular-nums; min-width: 3.5rem; text-align: center; }
+    .pres-dots { display: flex; gap: .4rem; margin: 0 auto; }
+    .pres-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.45);
+      background: transparent;
+      padding: 0;
+    }
+    .pres-dot[aria-current="step"] { background: var(--c-accent); border-color: var(--c-accent); }
+    .pres-hint { width: 100%; color: rgba(255,255,255,.5); font-size: .75rem; padding: .25rem .25rem 0; }
+    .pres-reduced { color: var(--c-accent); }
+
+    .pres-player:fullscreen, .pres-player:-webkit-full-screen {
+      display: flex; flex-direction: column;
+      width: 100%; height: 100%;
+      padding: 0; border-radius: 0;
+    }
+    .pres-player:fullscreen .pres-viewport, .pres-player:-webkit-full-screen .pres-viewport {
+      flex: 1; aspect-ratio: auto; border-radius: 0;
+    }
+    .pres-player:fullscreen .pres-controls { padding: .5rem 1rem; }
+    .pres-player:fullscreen .pres-hint { display: none; }
+
+    @media (max-width: 640px) {
+      .pres-btn-label { display: none; }
+      .pres-dots { order: 10; width: 100%; justify-content: center; margin-top: .25rem; }
+      .pres-hint { display: none; }
+    }
+
+    /* ── Notes ──────────────────────────────────────────────────────── */
+    .pres-notes {
+      margin-top: 1.5rem;
+      background: #fff;
+      border: 1px solid var(--c-bg2);
+      border-left: 4px solid var(--c-primary);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 1.5rem 1.75rem;
+    }
+    .pres-notes-step { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--c-primary); margin-bottom: .375rem; }
+    .pres-notes h2 { font-family: var(--font-display); font-size: 1.375rem; color: var(--c-dark); margin-bottom: .75rem; }
+    .pres-notes p { color: var(--c-text); line-height: 1.8; font-size: 1.0625rem; max-width: 72ch; }
+
+    /* ── Slides: stage pixels, 1920 × 1080 ──────────────────────────── */
+    .pres-slide {
+      position: absolute;
+      inset: 0;
+      width: 1920px; height: 1080px;
+      padding: 128px 128px 160px;
+      background: var(--c-bg);
+      color: var(--c-text);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+    }
+    /* Only after the first slide is up, so a deep link does not fade in from slide 1. */
+    .pres-stage.is-ready .pres-slide { transition: opacity .4s ease, visibility .4s; }
+    .pres-slide.is-active { opacity: 1; visibility: visible; }
+    .pres-slide--alt { background: var(--c-bg2); }
+    .pres-slide--full { padding: 0; }
+    .pres-slide--dark { background: #082430; }
+    .pres-slide--full canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+    .ps-eyebrow { font-weight: 700; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-primary); margin: 0 0 20px; }
+    .ps-title { font-family: var(--font-display); font-size: 72px; font-weight: 700; line-height: 1.1; letter-spacing: -1px; color: var(--c-dark); margin: 0; }
+    .ps-canvas { position: absolute; left: 128px; width: 1664px; }
+    .ps-legend { position: absolute; font-size: 34px; line-height: 1.3; color: var(--c-text); margin: 0; }
+    .ps-legend .k-blue { color: var(--c-primary); font-weight: 700; }
+    .ps-legend .k-gold { color: #b08a48; font-weight: 700; }
+    .ps-foot { position: absolute; left: 128px; bottom: 64px; font-size: 24px; color: var(--c-text-muted); margin: 0; }
+
+    .ps-inter-controls {
+      position: absolute; left: 128px; top: 830px; width: 1664px;
+      display: flex; align-items: center; gap: 48px;
+    }
+    .ps-range { display: flex; align-items: center; gap: 20px; font-size: 28px; font-weight: 600; color: var(--c-dark); }
+    .ps-range input { width: 440px; height: 44px; accent-color: var(--c-primary); }
+    .ps-auto {
+      margin-left: auto;
+      font-size: 26px; font-weight: 700;
+      padding: 14px 32px;
+      border-radius: 32px;
+      border: 2px solid var(--c-primary);
+      background: transparent;
+      color: var(--c-primary);
+    }
+    .ps-auto[aria-pressed="true"] { background: var(--c-primary); color: var(--c-bg); }
+    .ps-auto:focus-visible, .ps-range input:focus-visible { outline: 4px solid var(--c-accent); outline-offset: 4px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pres-stage.is-ready .pres-slide { transition: none; }
+    }
+
+    /* Six links do not fit beside the call to action on a narrow desktop. */
+    @media (max-width: 1100px) { .nav-cta { display: none; } }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" role="navigation" aria-label="Navigation principale">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="Wittenberg — Accueil">
+      <img class="imagotype" src="assets/imagotip4-white.svg" alt="" aria-hidden="true">
+    </a>
+    <div class="nav-links">
+      <a href="index.html"        class="nav-link" data-i18n="nav.home">Accueil</a>
+      <a href="analyseur.html"    class="nav-link" data-i18n="nav.analyser">Analyseur</a>
+      <a href="experience.html"   class="nav-link" data-i18n="nav.experience">Expérience</a>
+      <a href="presentation.html" class="nav-link" data-i18n="nav.presentation">Présentation</a>
+      <a href="donnees.html"      class="nav-link" data-i18n="nav.data">Données</a>
+      <a href="apropos.html"      class="nav-link" data-i18n="nav.about">À propos</a>
+    </div>
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+    <a href="analyseur.html" class="nav-cta" data-i18n="nav.cta">Analyser un motif →</a>
+    <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile-menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <a href="index.html"        data-i18n="nav.home">Accueil</a>
+  <a href="analyseur.html"    data-i18n="nav.analyser">Analyseur</a>
+  <a href="experience.html"   data-i18n="nav.experience">Expérience</a>
+  <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
+  <a href="donnees.html"      data-i18n="nav.data">Données</a>
+  <a href="apropos.html"      data-i18n="nav.about">À propos</a>
+  <div class="lang-selector-mobile">
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<header class="page-header">
+  <div class="page-header-grid" aria-hidden="true"></div>
+  <div class="page-header-glow" aria-hidden="true"></div>
+  <div class="container page-header-content">
+    <div class="page-header-eyebrow" data-i18n="pres.page_eyebrow">Séance didactique</div>
+    <h1 class="page-header-title" data-i18n="pres.page_title">Ondes et son, en animations</h1>
+    <p class="page-header-desc" data-i18n="pres.page_desc">
+      Six animations pour comprendre, pas à pas, ce qu'est une onde, pourquoi le son en est une
+      et pourquoi le sel dessine des lignes sur une plaque qui vibre.
+    </p>
+  </div>
+</header>
+
+<main style="padding:2.5rem 0 5rem;" role="main">
+  <div class="container">
+
+    <div class="pres-player" id="pres-player" role="region" data-i18n-aria="pres.player_aria" aria-label="Présentation animée">
+      <div class="pres-viewport" id="pres-viewport">
+        <div class="pres-stage" id="pres-stage">
+
+          <!-- 1 · The wave -->
+          <section class="pres-slide is-active" data-slide="ona" role="group" aria-roledescription="slide">
+            <p class="ps-eyebrow" data-i18n="pres.ona.eyebrow">01 · L'onde</p>
+            <h2 class="ps-title" data-i18n="pres.ona.title">La propagation d'une perturbation</h2>
+            <canvas class="ps-canvas" id="cv-ona" style="top:340px;height:420px;" aria-hidden="true"></canvas>
+            <p class="ps-legend" style="top:800px;left:128px;width:780px;" data-i18n-html="pres.ona.leg1"></p>
+            <p class="ps-legend" style="top:800px;left:960px;width:832px;" data-i18n-html="pres.ona.leg2"></p>
+            <p class="ps-foot" data-i18n="pres.footer">Wittenberg · Ondes et son</p>
+          </section>
+
+          <!-- 2 · Sound -->
+          <section class="pres-slide pres-slide--alt" data-slide="so" role="group" aria-roledescription="slide">
+            <p class="ps-eyebrow" data-i18n="pres.so.eyebrow">02 · Le son</p>
+            <h2 class="ps-title" data-i18n="pres.so.title">Le son est une onde : l'air vibre</h2>
+            <canvas class="ps-canvas" id="cv-so" style="top:340px;height:420px;" aria-hidden="true"></canvas>
+            <p class="ps-legend" style="top:800px;left:128px;width:780px;" data-i18n-html="pres.so.leg1"></p>
+            <p class="ps-legend" style="top:800px;left:960px;width:832px;" data-i18n-html="pres.so.leg2"></p>
+            <p class="ps-foot" data-i18n="pres.footer">Wittenberg · Ondes et son</p>
+          </section>
+
+          <!-- 3 · Amplitude and frequency -->
+          <section class="pres-slide" data-slide="inter" role="group" aria-roledescription="slide">
+            <p class="ps-eyebrow" data-i18n="pres.inter.eyebrow">03 · Amplitude et fréquence</p>
+            <h2 class="ps-title" data-i18n="pres.inter.title">Amplitude et fréquence d'une onde</h2>
+            <canvas class="ps-canvas" id="cv-inter" style="top:330px;height:470px;" aria-hidden="true"></canvas>
+            <div class="ps-inter-controls">
+              <label class="ps-range"><span data-i18n="pres.inter.amp">Amplitude</span>
+                <input type="range" id="inter-amp" min="0.4" max="2" step="0.1" value="1.4"></label>
+              <label class="ps-range"><span data-i18n="pres.inter.freq">Fréquence</span>
+                <input type="range" id="inter-freq" min="0.5" max="4" step="0.25" value="1.5"></label>
+              <button type="button" class="ps-auto" id="inter-auto" aria-pressed="true" data-i18n="pres.inter.auto">Démo automatique</button>
+            </div>
+            <p class="ps-foot" data-i18n="pres.footer">Wittenberg · Ondes et son</p>
+          </section>
+
+          <!-- 4 · How a standing wave forms -->
+          <section class="pres-slide pres-slide--full" data-slide="form" role="group" aria-roledescription="slide">
+            <canvas id="cv-form" aria-hidden="true"></canvas>
+          </section>
+
+          <!-- 5 · The standing wave -->
+          <section class="pres-slide" data-slide="estac" role="group" aria-roledescription="slide">
+            <p class="ps-eyebrow" data-i18n="pres.estac.eyebrow">05 · Onde stationnaire</p>
+            <h2 class="ps-title" data-i18n="pres.estac.title">Une onde qui n'avance pas</h2>
+            <canvas class="ps-canvas" id="cv-estac" style="top:380px;height:400px;" aria-hidden="true"></canvas>
+            <p class="ps-legend" style="top:812px;left:128px;width:780px;" data-i18n-html="pres.estac.leg1"></p>
+            <p class="ps-legend" style="top:812px;left:960px;width:832px;" data-i18n-html="pres.estac.leg2"></p>
+            <p class="ps-foot" data-i18n="pres.footer">Wittenberg · Ondes et son</p>
+          </section>
+
+          <!-- 6 · Nodal lines on the plate -->
+          <section class="pres-slide pres-slide--full pres-slide--dark" data-slide="lin" role="group" aria-roledescription="slide">
+            <canvas id="cv-lin" aria-hidden="true"></canvas>
+          </section>
+
+        </div>
+      </div>
+
+      <div class="pres-controls">
+        <button type="button" class="pres-btn" id="pres-prev"><span class="pres-btn-icon" aria-hidden="true">◀</span><span class="pres-btn-label" data-i18n="pres.prev">Précédente</span></button>
+        <span class="pres-counter" id="pres-counter" aria-live="polite">1 / 6</span>
+        <button type="button" class="pres-btn" id="pres-next"><span class="pres-btn-label" data-i18n="pres.next">Suivante</span><span class="pres-btn-icon" aria-hidden="true">▶</span></button>
+        <div class="pres-dots" id="pres-dots"></div>
+        <button type="button" class="pres-btn" id="pres-play" aria-pressed="true"><span class="pres-btn-icon" aria-hidden="true">❚❚</span><span class="pres-btn-label">Pause</span></button>
+        <button type="button" class="pres-btn" id="pres-restart"><span class="pres-btn-icon" aria-hidden="true">↺</span><span class="pres-btn-label" data-i18n="pres.restart">Recommencer</span></button>
+        <button type="button" class="pres-btn" id="pres-fs"><span class="pres-btn-icon" aria-hidden="true">⛶</span><span class="pres-btn-label">Plein écran</span></button>
+        <p class="pres-hint"><span data-i18n="pres.keys_hint">← → pour changer de diapositive · Espace pour mettre en pause · F pour le plein écran</span>
+          <span class="pres-reduced" id="pres-reduced" hidden> · <span data-i18n="pres.reduced_motion">Animations en pause : votre système demande moins de mouvement.</span></span></p>
+      </div>
+    </div>
+
+    <section class="pres-notes" aria-live="polite" aria-labelledby="pres-note-title">
+      <div class="pres-notes-step" id="pres-note-step">Diapositive 1 sur 6</div>
+      <h2 id="pres-note-title">La propagation d'une perturbation</h2>
+      <p id="pres-note"></p>
+    </section>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="grid grid-cols-4 gap-8">
+      <div style="grid-column:span 2;">
+        <div class="footer-logo">
+          <img class="imagotype" src="assets/imagotip4-white.svg" alt="" aria-hidden="true">
+        </div>
+        <p class="footer-desc" data-i18n="footer.desc">Outil de recherche pour l'identification visuelle de fréquences sonores par analyse de motifs de Chladni.</p>
+        <span class="footer-tdr" data-i18n="footer.tdr">Projet TDR — Lycée, 2025–2026</span>
+      </div>
+      <div class="footer-links">
+        <h4 data-i18n="footer.nav_title">Navigation</h4>
+        <a href="index.html"        data-i18n="nav.home">Accueil</a>
+        <a href="analyseur.html"    data-i18n="nav.analyser">Analyseur</a>
+        <a href="experience.html"   data-i18n="nav.experience">Expérience</a>
+        <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
+        <a href="donnees.html"      data-i18n="nav.data">Données</a>
+        <a href="apropos.html"      data-i18n="nav.about">À propos</a>
+      </div>
+      <div class="footer-links">
+        <h4 data-i18n="pres.footer_title">Présentation</h4>
+        <a href="presentation.html#ona"   data-i18n="pres.ona.title">La propagation d'une perturbation</a>
+        <a href="presentation.html#form"  data-i18n="pres.form.title">Comment se forme une onde stationnaire</a>
+        <a href="presentation.html#lin"   data-i18n="pres.lin.title">Les lignes nodales de la plaque</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer.bottom_copy">© 2026 Wittenberg — Projet de recherche éducative</span>
+      <span data-i18n="footer.bottom_ref">Ernst Chladni (1756–1827) — Wittenberg, Saxe</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/classes.generated.js"></script>
+<script src="js/adapter.js"></script>
+<script src="js/frequencies.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/banner.js"></script>
+<script src="js/app.js"></script>
+<script src="js/presentation.js"></script>
+</body>
+</html>

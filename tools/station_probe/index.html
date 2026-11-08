@@ -66,7 +66,7 @@
       8 consecutive frames 1 s apart without touching anything: the spread is the noise floor the
       marker-position check must tolerate.</p>
     <div class="row">
-      <label>Printed marker side (mm, black square only) <input id="marker-mm" type="number" step="0.5"></label>
+      <label>Printed marker side (mm, black square only) <input id="marker-mm" type="number" step="0.5" value="25"></label>
       <label>Measured lens-to-plate distance (mm) <input id="distance-mm" type="number" step="1"></label>
     </div>
     <div class="row">
@@ -95,6 +95,7 @@
   <section id="b6">
     <h2>6 · Test tone, microphone FFT, and how long the pattern takes to form</h2>
     <div class="row">
+      <label>Class <select id="tone-class"></select></label>
       <label>Tone (Hz) <input id="tone-hz" type="number" value="440" min="20" max="20000"></label>
       <label>Volume <input id="tone-vol" type="range" min="0" max="1" step="0.01" value="0.2"></label>
       <span id="tone-vol-val">0.20</span>
@@ -116,6 +117,27 @@
     </div>
     <canvas id="settle-plot" class="plot" width="900" height="200"></canvas>
     <pre id="b6-out"></pre>
+  </section>
+
+  <section id="b6c">
+    <h2>6c · Sand loss over rounds — what fixes the re-seed interval K</h2>
+    <p class="note">Needs a calibration (block 3). Seed the plate with the session's sand mass, then
+      press. The page plays every class once per round, in a shuffled order, for
+      <code>dwell</code> seconds each, grabs a frame and sends it through the gate of the throwaway
+      draft, labelled with its class. Per frame it records the mean luminance inside the plate
+      quad (sand is the bright part of a black plate) and the verdict. K is the last round before
+      the luminance has clearly dropped or the gate starts rejecting for low edge density.
+      <b>Stop</b> ends it at once, tone off.</p>
+    <div class="row">
+      <label>Rounds <input id="loss-rounds" type="number" value="12" min="1" max="60"></label>
+      <label>Dwell (s) <input id="loss-dwell" type="number" value="5" min="1" max="30" step="0.5"></label>
+      <label>Sand (g) <input id="loss-grams" type="number" value="10" min="1" step="0.5"></label>
+      <button id="loss-run">Run</button>
+      <button id="loss-stop">Stop</button>
+      <span id="loss-clock"></span>
+    </div>
+    <canvas id="loss-plot" class="plot" width="900" height="200"></canvas>
+    <pre id="b6c-out"></pre>
   </section>
 
   <section id="b7">

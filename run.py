@@ -39,7 +39,7 @@ perfectly well.
 Console output is English, like the rest of `tasks.py`. The French of CLAUDE.md rule 6 is
 the browser UI, not the terminal.
 
-    python run.py [--run <name>] [--port N] [--no-open]
+    python run.py [--run <name> | --capture] [--port N] [--no-open]
 """
 
 from __future__ import annotations
@@ -290,9 +290,10 @@ def check_checkpoint(argv: list[str]) -> None:
     the pointer to them. `resolve_run` is right to refuse; it is just not a sentence
     anyone can act on.
 
-    `--run` is left to `resolve_run`, which already reports a named directory precisely.
+    `--run` is left to `resolve_run`, which already reports a named directory precisely, and
+    `--capture` asks for no checkpoint at all (`src/api.py`).
     """
-    if "--run" in argv:
+    if "--run" in argv or "--capture" in argv:
         return
 
     import runs as runs_module
@@ -306,7 +307,9 @@ def check_checkpoint(argv: list[str]) -> None:
             "  are git-ignored (CLAUDE.md rule 4), so cloning does not bring them.\n"
             "  Copy a run directory from the training machine into runs/, write its name\n"
             "  into runs/latest.txt, and run this file again — or point at one directly:\n"
-            "      python run.py --run <name>".format(reason=exc)
+            "      python run.py --run <name>\n"
+            "  To run a capture session, which needs no model:\n"
+            "      python run.py --capture".format(reason=exc)
         ) from None
 
 

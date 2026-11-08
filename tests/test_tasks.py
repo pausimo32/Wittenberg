@@ -144,3 +144,17 @@ def test_the_app_target_does_not_shell_out_to_npm(monkeypatch, capsys):
     tasks.app(["--no-open"])
 
     assert "127.0.0.1" in capsys.readouterr().out
+
+
+def test_the_app_target_says_capture_mode_out_loud(monkeypatch, capsys):
+    """No run to print, and a console that does not say so reads like a working analyser."""
+    import tasks
+
+    monkeypatch.setattr(tasks, "_serve", lambda *a, **k: None)
+    monkeypatch.setattr("webbrowser.open", lambda *a, **k: None)
+
+    tasks.app(["--capture", "--no-open"])
+
+    out = capsys.readouterr().out
+    assert "CAPTURE MODE" in out
+    assert "acquisition.html" in out

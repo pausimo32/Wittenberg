@@ -123,3 +123,10 @@ test('the adapter is indifferent to how many classes exist and what they are', (
   assert.strictEqual(r.runnerUp.label, '1042 Hz');
   assert.strictEqual(r.frequency.hasLocalMetadata, false);
 });
+
+test('a server started with --capture is reachable and has no model', () => {
+  const h = adapter.mapHealth({ mode: 'capture', model_run: null, do_not_report: null });
+  assert.strictEqual(h.available, false);
+  assert.strictEqual(h.reachable, true);
+  assert.strictEqual(h.status, 'no_model');
+});

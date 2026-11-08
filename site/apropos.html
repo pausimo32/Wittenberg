@@ -98,6 +98,7 @@
       <a href="index.html"      class="nav-link" data-i18n="nav.home">Accueil</a>
       <a href="analyseur.html"  class="nav-link" data-i18n="nav.analyser">Analyseur</a>
       <a href="experience.html" class="nav-link" data-i18n="nav.experience">Expérience</a>
+      <a href="presentation.html" class="nav-link" data-i18n="nav.presentation">Présentation</a>
       <a href="donnees.html"    class="nav-link" data-i18n="nav.data">Données</a>
       <a href="apropos.html"    class="nav-link" data-i18n="nav.about">À propos</a>
     </div>
@@ -116,6 +117,7 @@
   <a href="index.html"      data-i18n="nav.home">Accueil</a>
   <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
   <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+  <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
   <a href="donnees.html"    data-i18n="nav.data">Données</a>
   <a href="apropos.html"    data-i18n="nav.about">À propos</a>
   <div class="lang-selector-mobile">
@@ -258,7 +260,7 @@
               </div>
               <div>
                 <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;">Interface web (HTML / JS)</h3>
-                <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">L'interface permet une utilisation dans un navigateur sans installation. Le modèle entraîné sera exporté en TensorFlow.js ou ONNX pour une inférence côté client, ce qui garantit la confidentialité des données et l'indépendance vis-à-vis d'un serveur.</p>
+                <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">L'interface s'ouvre dans un navigateur. Le modèle entraîné tourne sur le processeur de l'ordinateur, dans un petit serveur local (127.0.0.1) : aucune connexion Internet, et aucune image ne quitte la machine.</p>
               </div>
             </div>
           </div>
@@ -319,12 +321,12 @@
               <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Certaines fréquences adjacentes produisent des motifs visuellement très similaires. La précision de classification sera naturellement plus faible dans ces zones du spectre.</p>
             </div>
             <div class="card card-accent" style="border-left-color:var(--c-primary);">
-              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l4_title">Absence d'interprétabilité</h3>
-              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Un CNN classique ne fournit pas d'explication de sa décision. Il sera difficile de savoir quelles zones du motif influencent la prédiction. Des méthodes comme Grad-CAM pourraient être explorées dans une version future.</p>
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l4_title">Interprétabilité limitée</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Un CNN ne justifie pas sa décision. L'analyseur affiche une carte Grad-CAM, qui montre quelles zones de l'image ont pesé dans la prédiction : elle dit où le réseau regarde, pas pourquoi.</p>
             </div>
             <div class="card card-accent" style="border-left-color:var(--c-primary);">
-              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l5_title">Modèle non encore entraîné</h3>
-              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">À ce stade du projet, le modèle réel n'existe pas encore. L'analyseur est relié au service d'inférence, mais celui-ci se déclare indisponible tant qu'aucun modèle entraîné n'y est déployé : aucune estimation n'est produite, et aucune valeur simulée n'est présentée comme un résultat.</p>
+              <h3 style="font-size:.9375rem;font-weight:600;color:var(--c-dark);margin-bottom:.375rem;" data-i18n="about.l5_title">Pas encore de modèle sur photos réelles</h3>
+              <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;">Les cinq classes réelles sont fixées (165, 497, 863, 1218 et 2241 Hz), mais aucun modèle n'a encore été entraîné sur des photos réelles. Sans modèle entraîné, l'application refuse de démarrer ; un modèle d'essai entraîné sur des images synthétiques s'affiche avec un bandeau d'avertissement, et aucun de ses chiffres n'est un résultat.</p>
             </div>
           </div>
         </section>
@@ -413,13 +415,13 @@
               <span style="width:24px;height:24px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
                 <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </span>
-              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend2">Entraînement du modèle CNN</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
+              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend2">Captures des 5 classes réelles (4 sessions)</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
             </div>
             <div class="flex items-center gap-3">
               <span style="width:24px;height:24px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
                 <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </span>
-              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend3">Intégration TensorFlow.js / ONNX dans l'analyseur</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
+              <span style="font-size:.9375rem;color:var(--c-text);"><span data-i18n="about.proto_pend3">Entraînement sur les 5 classes réelles et rapport d'évaluation</span> — <em style="color:var(--c-text-muted);" data-i18n="about.proto_coming">à venir</em></span>
             </div>
           </div>
         </section>
@@ -445,6 +447,7 @@
         <a href="index.html"      data-i18n="nav.home">Accueil</a>
         <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
         <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+        <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
         <a href="donnees.html"    data-i18n="nav.data">Données</a>
         <a href="apropos.html"    data-i18n="nav.about">À propos</a>
       </div>

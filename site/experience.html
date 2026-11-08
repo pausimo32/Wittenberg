@@ -62,6 +62,7 @@
       <a href="index.html"      class="nav-link" data-i18n="nav.home">Accueil</a>
       <a href="analyseur.html"  class="nav-link" data-i18n="nav.analyser">Analyseur</a>
       <a href="experience.html" class="nav-link" data-i18n="nav.experience">Expérience</a>
+      <a href="presentation.html" class="nav-link" data-i18n="nav.presentation">Présentation</a>
       <a href="donnees.html"    class="nav-link" data-i18n="nav.data">Données</a>
       <a href="apropos.html"    class="nav-link" data-i18n="nav.about">À propos</a>
     </div>
@@ -80,6 +81,7 @@
   <a href="index.html"      data-i18n="nav.home">Accueil</a>
   <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
   <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+  <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
   <a href="donnees.html"    data-i18n="nav.data">Données</a>
   <a href="apropos.html"    data-i18n="nav.about">À propos</a>
   <div class="lang-selector-mobile">
@@ -134,7 +136,7 @@
             <canvas id="plate-canvas" width="360" height="360" style="width:100%;height:100%;" aria-label="Représentation simulée du motif de Chladni mode (2,3)"></canvas>
             <!-- Labels -->
             <div style="position:absolute;top:.75rem;left:.75rem;background:rgba(18,62,77,.85);border-radius:6px;padding:.4rem .7rem;font-size:.7rem;font-weight:700;color:var(--c-accent);" data-i18n="exp.sim_label">Lignes nodales</div>
-            <div style="position:absolute;bottom:.75rem;right:.75rem;background:rgba(18,62,77,.85);border-radius:6px;padding:.4rem .7rem;font-size:.7rem;color:rgba(255,255,255,.6);">Mode (2,3) — 660 Hz</div>
+            <div style="position:absolute;bottom:.75rem;right:.75rem;background:rgba(18,62,77,.85);border-radius:6px;padding:.4rem .7rem;font-size:.7rem;color:rgba(255,255,255,.6);">Mode (2,3) — simulation</div>
           </div>
           <p style="text-align:center;font-size:.8125rem;color:var(--c-text-muted);margin-top:.75rem;" data-i18n="exp.sim_caption">Motif simulé — les grains réels (sel fin) s'accumulent sur les lignes en or.</p>
         </div>
@@ -213,7 +215,7 @@
           </div>
           <div class="param-row">
             <span class="param-name" data-i18n="exp.p_light">Éclairage</span>
-            <span class="param-value" data-i18n="exp.p_light_v">Diffus, 2 × sources symétriques</span>
+            <span class="param-value" data-i18n="exp.p_light_v">Constant dans une session, varié entre sessions</span>
           </div>
           <div class="param-row">
             <span class="param-name" data-i18n="exp.p_mat">Matériau plaque</span>
@@ -240,7 +242,7 @@
             <span class="param-value"><code>100 — 5 000 Hz</code></span>
           </div>
           <p style="font-size:.875rem;color:var(--c-text-muted);line-height:1.7;margin-top:.75rem;" data-i18n="exp.var_desc">
-            La fréquence est la seule variable que l'on fait varier intentionnellement. Chaque valeur de fréquence constitue une classe dans la base de données.
+            La fréquence est la variable que l'on fait varier intentionnellement. Seules les fréquences de résonance retenues forment des classes : cinq, à 165, 497, 863, 1218 et 2241 Hz.
           </p>
 
           <div style="margin-top:1.5rem;">
@@ -288,11 +290,11 @@
         </li>
         <li style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;">
           <span style="width:32px;height:32px;border-radius:50%;background:var(--c-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0;">7</span>
-          <div data-i18n-html="exp.proto7"><strong style="color:var(--c-dark);">Enregistrement &amp; étiquetage.</strong> Nommer le fichier selon la convention <code style="font-size:.85rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">chladni_{Hz}_{idx:04d}.jpg</code> et l'enregistrer dans le dossier de la classe correspondante.</div>
+          <div data-i18n-html="exp.proto7"><strong style="color:var(--c-dark);">Enregistrement &amp; étiquetage.</strong> Ranger la photo selon la convention <code style="font-size:.85rem;background:var(--c-bg2);padding:.1rem .3rem;border-radius:4px;">data/raw/{session}/{Hz}/IMG_{n}.HEIC</code> : un dossier par session, un sous-dossier par fréquence.</div>
         </li>
         <li style="display:flex;gap:1rem;align-items:flex-start;">
           <span style="width:32px;height:32px;border-radius:50%;background:var(--c-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0;">8</span>
-          <div data-i18n-html="exp.proto8"><strong style="color:var(--c-dark);">Répétition.</strong> Recommencer les étapes 2–7 pour chaque image (≥ 50 par fréquence). Varier légèrement la répartition initiale du sel entre les prises pour diversifier les données.</div>
+          <div data-i18n-html="exp.proto8"><strong style="color:var(--c-dark);">Répétition.</strong> Recommencer les étapes 2–7 pour chaque image (≥ 60 par fréquence et par session, sur 4 sessions). Varier légèrement la répartition initiale du sel entre les prises pour diversifier les données.</div>
         </li>
       </ol>
     </section>
@@ -360,6 +362,7 @@
         <a href="index.html"      data-i18n="nav.home">Accueil</a>
         <a href="analyseur.html"  data-i18n="nav.analyser">Analyseur</a>
         <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+        <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
         <a href="donnees.html"    data-i18n="nav.data">Données</a>
         <a href="apropos.html"    data-i18n="nav.about">À propos</a>
       </div>

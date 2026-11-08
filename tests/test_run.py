@@ -374,3 +374,17 @@ def _forbidden(what: str):
         raise AssertionError("run.py must not use {what} here".format(what=what))
 
     return fail
+
+
+def test_capture_mode_needs_no_checkpoint(monkeypatch, tmp_path):
+    """`--capture` collects the data the first checkpoint is trained on."""
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    (tmp_path / "runs").mkdir()
+    run.check_checkpoint(["--capture"])
+
+
+def test_the_missing_checkpoint_message_offers_capture_mode(monkeypatch, tmp_path):
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    (tmp_path / "runs").mkdir()
+    with pytest.raises(run.LaunchError, match="--capture"):
+        run.check_checkpoint([])

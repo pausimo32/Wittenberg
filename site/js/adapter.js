@@ -113,6 +113,10 @@
   /** `/api/health` remplace `/api/v1/model-info`. */
   function mapHealth(health) {
     if (!health) return { available: false, status: 'unreachable', reachable: false, doNotReport: null };
+    // `python run.py --capture`: the server answers, and says it has no model.
+    if (health.mode === 'capture' || !health.model_run) {
+      return { available: false, status: 'no_model', reachable: true, reason: null, doNotReport: null };
+    }
     return {
       available: true,
       status: 'ready',

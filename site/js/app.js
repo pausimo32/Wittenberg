@@ -138,3 +138,14 @@ function drawChladniPattern(canvas, m, n, options = {}) {
 document.addEventListener('DOMContentLoaded', function() {
   if (window.WI18n) window.WI18n.init();
 });
+
+// ── Class count ──────────────────────────────────────────────────────────
+// From js/classes.generated.js, never typed: the static number in the HTML is only
+// the fallback for a page that loads without the generated list.
+document.addEventListener('DOMContentLoaded', function() {
+  var n = (window.WITTENBERG_CLASSES || []).length;
+  if (!n) return;
+  document.querySelectorAll('[data-class-count]').forEach(function(el) {
+    el.textContent = String(n);
+  });
+});

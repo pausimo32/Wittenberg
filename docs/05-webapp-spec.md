@@ -32,6 +32,7 @@ Two consequences that a "it's only local" mindset would miss:
 | | |
 |---|---|
 | Production (field sessions) | `python tasks.py app` — builds the frontend if stale, starts uvicorn, opens the browser at `127.0.0.1:8000` |
+| Capture sessions (team) | `python run.py --capture` — the same app with **no model**: `/api/health` says `"mode": "capture"`, `/api/predict` answers 503, and the §9 routes work. Opens `sessions.html`. Asked for, never fallen into — without the flag a missing run is still `StartupRefused` |
 | Development | `python tasks.py api` (uvicorn, reload) + `npm run dev` in `web/` (Vite on 5173, proxying `/api` to 8000) |
 
 Run field sessions from the built app, never from the Vite dev server: hot-reload artefacts and
@@ -102,8 +103,10 @@ this — the reversal was a team decision, not an accident.
 | `index.html` | one sentence, one button |
 | `analyseur.html` | file, drag-drop or camera → prediction |
 | `experience.html` | the didactic sequence (`docs/01-domain-physics.md` §4) |
+| `presentation.html` | the six animated slides of the session deck ("Ones i so"), played locally: pausable, keyboard and fullscreen, one explanation per slide in all three languages |
 | `donnees.html` | the class table and the dataset, read from `js/classes.generated.js` |
 | `apropos.html` | method, limits, team, TDR reference |
+| `sessions.html` | §9's session wizard — session log, calibration, photos per class with the gate answering as they arrive, review and commit. Team only, linked from `donnees.html`; ported from `web/src/routes/dades/` |
 | `acquisition.html` | the capture station: tone, wait, check, capture, store — §10. Team only |
 
 French UI copy by default, with a `ca`/`es`/`fr` switcher in `js/i18n.js`; English code
@@ -510,7 +513,38 @@ belong here, because they are the easiest to "improve" away:
 - **The classifier is never a check.** No prediction is run on a station frame before it is
   stored.
 - **The order is round-robin**, shuffled per round from the recorded seed. Never sixty frames of
-  one class, then sixty of the next.
+  one class, then sixty of the next. The operator chooses which classes a session shoots (from
+  `config/classes.json`, never typed) and may instead fix the within-round order — every round
+  still visits every chosen class once. Shuffled is the default and the recommendation; the
+  choice, the classes, the seed and the station settings are written into `session.json` under
+  `station`, so any session's order can be recomputed (`site/js/stationSchedule.js`).
+
+**Implemented (2026-11-08)** as `site/acquisition.html` + `site/js/acquisition.js`, before the
+probe's `probe.json` existed, at the team's request. Started with `python run.py --capture`. The
+marker-position check is `POST /frames?max_marker_shift_px=…` (`src/dataset_api.py`), off unless
+the station asks for it. Not yet implemented: the microphone FFT check (optional, check 5) and
+exposure/focus locking.
+
+**The tone leaves by one channel** (`site/js/stationAudio.js`): a mono oscillator connected straight
+to the output is up-mixed to both, so the station routes it through a `ChannelMergerNode` into the
+session's channel only — right by default, recorded as `station.channel` in `session.json`.
+Verified by rendering through an `OfflineAudioContext`: the unused channel is exactly 0.
+
+**Volume is a percent, on onlinemictest.com's scale** (`stationAudio.gainFor`), the tone generator the
+team set the rig up with: `gain = percent / 100`, linear, 0–100 in whole steps — instead of dB.
+Independent of the channel setting. Every settled change and the level at each start or resume
+go into the run log.
+
+**"Settled" is measured on the structure, not the grains** (`site/js/stationMotion.js`). A vibrating
+plate never stops moving: antinode grains jump for as long as the tone plays, and the first
+version — any pixel of the whole frame, frame to frame — never called a real pattern settled.
+Motion is now measured on the plate only (the calibration quad), downsampled to 48 px across so
+single grains average out, against the frame one second earlier. Settled = under the threshold
+(default 3.0) for one second, *or* steady for three (the residual jitter of a formed pattern is
+flat). If neither happens before the timeout the frame is taken anyway and logged — the gate
+decides usability, not this heuristic; skipping is a per-session option. The threshold can be
+tuned live beside a motion readout. It and the marker tolerance (8 px) remain guesses until the
+first real sessions tune them.
 
 ### Rules
 

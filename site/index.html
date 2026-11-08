@@ -26,6 +26,7 @@
         <a href="index.html" class="nav-link" role="menuitem" data-i18n="nav.home">Accueil</a>
         <a href="analyseur.html" class="nav-link" role="menuitem" data-i18n="nav.analyser">Analyseur</a>
         <a href="experience.html" class="nav-link" role="menuitem" data-i18n="nav.experience">Expérience</a>
+        <a href="presentation.html" class="nav-link" role="menuitem" data-i18n="nav.presentation">Présentation</a>
         <a href="donnees.html" class="nav-link" role="menuitem" data-i18n="nav.data">Données</a>
         <a href="apropos.html" class="nav-link" role="menuitem" data-i18n="nav.about">À propos</a>
       </div>
@@ -49,6 +50,7 @@
     <a href="index.html" role="menuitem" data-i18n="nav.home">Accueil</a>
     <a href="analyseur.html" role="menuitem" data-i18n="nav.analyser">Analyseur</a>
     <a href="experience.html" role="menuitem" data-i18n="nav.experience">Expérience</a>
+    <a href="presentation.html" role="menuitem" data-i18n="nav.presentation">Présentation</a>
     <a href="donnees.html" role="menuitem" data-i18n="nav.data">Données</a>
     <a href="apropos.html" role="menuitem" data-i18n="nav.about">À propos</a>
     <a href="analyseur.html" class="btn btn-primary btn-sm" style="margin-top:.75rem;display:inline-flex;"
@@ -104,7 +106,7 @@
 
         <div class="hero-stats">
           <div>
-            <span class="hero-stat-value">13</span>
+            <span class="hero-stat-value" data-class-count>5</span>
             <span class="hero-stat-label" data-i18n="index.hero.stat_classes">Classes de fréquences</span>
           </div>
           <div>
@@ -112,7 +114,7 @@
             <span class="hero-stat-label" data-i18n="index.hero.stat_arch">Architecture cible</span>
           </div>
           <div>
-            <span class="hero-stat-value">224×</span>
+            <span class="hero-stat-value">128×</span>
             <span class="hero-stat-label" data-i18n="index.hero.stat_res">Résolution d'entrée (px)</span>
           </div>
         </div>
@@ -127,7 +129,7 @@
             <!-- Badge -->
             <div
               style="position:absolute;bottom:1.25rem;left:50%;transform:translateX(-50%);display:flex;gap:.5rem;white-space:nowrap;">
-              <span class="badge badge-accent" style="font-size:.7rem;">Mode (2,3) — 660 Hz</span>
+              <span class="badge badge-accent" style="font-size:.7rem;">Mode (2,3) — simulation</span>
             </div>
           </div>
           <!-- Annotations -->
@@ -441,7 +443,7 @@
                 <div style="font-weight:600;color:#fff;margin-bottom:.25rem;font-size:.9375rem;"
                   data-i18n="index.ml.s4_title">Déploiement dans l'interface</div>
                 <div style="color:rgba(255,255,255,.6);font-size:.875rem;line-height:1.6;" data-i18n="index.ml.s4_desc">
-                  Le modèle exporté (TensorFlow.js / ONNX) est intégré directement dans le navigateur.</div>
+                  Le modèle tourne sur le processeur de l'ordinateur, dans un serveur local : sans Internet, aucune image ne quitte la machine.</div>
               </div>
             </div>
           </div>
@@ -462,7 +464,7 @@
               </div>
               <div>
                 <div style="font-weight:600;color:#fff;font-size:.875rem;" data-i18n="index.ml.node1_title">Image
-                  d'entrée (224×224 px)</div>
+                  d'entrée (128×128 px)</div>
                 <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node1_sub">JPEG / PNG —
                   niveaux de gris</div>
               </div>
@@ -501,8 +503,7 @@
               <div>
                 <div style="font-weight:600;color:var(--c-accent);font-size:.875rem;" data-i18n="index.ml.node3_title">
                   Réseau CNN (inférence)</div>
-                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node3_sub">TensorFlow.js
-                  / ONNX — local ou API</div>
+                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node3_sub">PyTorch sur CPU — serveur local (127.0.0.1)</div>
               </div>
             </div>
             <div style="text-align:center;color:rgba(255,255,255,.2);font-size:1.25rem;">↓</div>
@@ -518,7 +519,7 @@
               <div>
                 <div style="font-weight:600;color:#fff;font-size:.875rem;" data-i18n="index.ml.node4_title">Résultat :
                   fréquence + confiance</div>
-                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node4_sub">Ex. : 660 Hz —
+                <div style="color:rgba(255,255,255,.45);font-size:.75rem;" data-i18n="index.ml.node4_sub">Ex. : 863 Hz —
                   confiance 87 %</div>
               </div>
             </div>
@@ -656,6 +657,7 @@
           <a href="index.html" data-i18n="nav.home">Accueil</a>
           <a href="analyseur.html" data-i18n="nav.analyser">Analyseur</a>
           <a href="experience.html" data-i18n="nav.experience">Expérience</a>
+          <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
           <a href="donnees.html" data-i18n="nav.data">Données</a>
           <a href="apropos.html" data-i18n="nav.about">À propos</a>
         </div>

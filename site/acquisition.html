@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Wittenberg — Station de capture automatique : fréquence, attente, photo, contrôle qualité.">
+  <title>Station de capture — Wittenberg</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/isotype.svg" type="image/svg+xml">
+  <style>
+    .st-box { background: #fff; border: 1px solid var(--c-bg2); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; }
+    .st-box + .st-box { margin-top: 1rem; }
+    .st-box[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+    .st-h2 { font-family: var(--font-display); font-size: 1.25rem; color: var(--c-dark); margin-bottom: .5rem; }
+    .st-muted { color: var(--c-text-muted); font-size: .9rem; }
+    .st-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .st-warn { background: rgba(251,191,36,.10); border: 1px solid rgba(180,83,9,.35); color: #7a3d06; border-radius: var(--radius-sm); padding: .75rem 1rem; }
+    .st-info { background: rgba(32,95,117,.07); border: 1px solid rgba(32,95,117,.25); color: var(--c-dark); border-radius: var(--radius-sm); padding: .75rem 1rem; }
+    .st-ok { background: rgba(34,197,94,.10); border: 1px solid rgba(22,163,74,.35); color: #14532d; border-radius: var(--radius-sm); padding: .75rem 1rem; }
+    .st-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+    .st-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .875rem 1.25rem; }
+    .st-grid .st-wide { grid-column: 1 / -1; }
+    @media (max-width: 720px) { .st-grid { grid-template-columns: 1fr; } }
+    .st-field label, .st-label { display: block; font-weight: 600; color: var(--c-dark); font-size: .875rem; margin-bottom: .25rem; }
+    .st-field input, .st-field select, .st-field textarea {
+      width: 100%; padding: .5rem .7rem; font: inherit; border: 1px solid #c9d8de; border-radius: var(--radius-sm); background: #fff;
+    }
+    .st-hint { font-size: .78rem; color: var(--c-text-muted); margin-top: .2rem; }
+    details.st-adv summary { cursor: pointer; font-weight: 600; color: var(--c-primary); margin-top: .5rem; }
+
+    .st-classes { list-style: none; padding: 0; margin: .25rem 0 0; }
+    .st-classes li { display: flex; align-items: center; gap: .6rem; padding: .4rem .6rem; border: 1px solid var(--c-bg2); border-radius: var(--radius-sm); background: var(--c-bg); }
+    .st-classes li + li { margin-top: .35rem; }
+    .st-classes li.is-off { opacity: .5; }
+    .st-classes .st-pos { width: 1.5rem; text-align: right; color: var(--c-text-muted); font-size: .8rem; }
+    .st-classes .st-hz { font-family: ui-monospace, Menlo, monospace; font-weight: 700; color: var(--c-dark); flex: 1; }
+    .st-mini { font-size: .8rem; padding: .2rem .55rem; border-radius: 4px; border: 1px solid #c9d8de; background: #fff; }
+    .st-mini:disabled { opacity: .35; }
+
+    .st-live { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+    @media (max-width: 900px) { .st-live { grid-template-columns: 1fr; } }
+    .st-video { width: 100%; background: #082430; border-radius: var(--radius-sm); aspect-ratio: 16 / 9; object-fit: contain; display: block; }
+    .st-now { font-family: ui-monospace, Menlo, monospace; font-size: 2.25rem; color: var(--c-dark); line-height: 1.1; }
+    .st-phase { font-size: 1rem; color: var(--c-primary); font-weight: 600; min-height: 1.5rem; }
+    .st-bar { height: 8px; border-radius: 4px; background: var(--c-bg2); overflow: hidden; margin-top: .5rem; }
+    .st-bar > span { display: block; height: 100%; background: var(--c-primary); width: 0; transition: width .3s; }
+    .st-table { border-collapse: collapse; font-size: .875rem; width: 100%; margin-top: .75rem; }
+    .st-table th, .st-table td { border-bottom: 1px solid var(--c-bg2); padding: .35rem .5rem; text-align: right; }
+    .st-table th:first-child, .st-table td:first-child { text-align: left; }
+    .st-log { list-style: none; padding: 0; margin: .5rem 0 0; max-height: 14rem; overflow: auto; font-size: .8rem; font-family: ui-monospace, Menlo, monospace; }
+    .st-log li { padding: .15rem 0; border-bottom: 1px dashed var(--c-bg2); }
+    .st-log .bad { color: #9a3412; }
+    .st-log .good { color: #166534; }
+    .st-volume { display: flex; align-items: center; gap: .6rem; }
+    .st-volume input { width: 160px; accent-color: var(--c-primary); }
+    .st-preview { max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--c-bg2); margin-top: .75rem; }
+    .st-hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" role="navigation" aria-label="Navigation principale">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="Wittenberg — Accueil">
+      <img class="imagotype" src="assets/imagotip4-white.svg" alt="" aria-hidden="true">
+    </a>
+    <div class="nav-links">
+      <a href="index.html"        class="nav-link" data-i18n="nav.home">Accueil</a>
+      <a href="analyseur.html"    class="nav-link" data-i18n="nav.analyser">Analyseur</a>
+      <a href="experience.html"   class="nav-link" data-i18n="nav.experience">Expérience</a>
+      <a href="presentation.html" class="nav-link" data-i18n="nav.presentation">Présentation</a>
+      <a href="donnees.html"      class="nav-link" data-i18n="nav.data">Données</a>
+      <a href="apropos.html"      class="nav-link" data-i18n="nav.about">À propos</a>
+    </div>
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+    <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile-menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <a href="index.html"        data-i18n="nav.home">Accueil</a>
+  <a href="analyseur.html"    data-i18n="nav.analyser">Analyseur</a>
+  <a href="experience.html"   data-i18n="nav.experience">Expérience</a>
+  <a href="presentation.html" data-i18n="nav.presentation">Présentation</a>
+  <a href="donnees.html"      data-i18n="nav.data">Données</a>
+  <a href="apropos.html"      data-i18n="nav.about">À propos</a>
+  <div class="lang-selector-mobile">
+    <div class="lang-selector" role="group" aria-label="Sélection de la langue">
+      <button class="lang-btn" data-lang="fr" aria-pressed="true">FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button class="lang-btn" data-lang="ca" aria-pressed="false">CA</button>
+    </div>
+  </div>
+</div>
+
+<header class="page-header" style="padding:4rem 0 2rem;">
+  <div class="page-header-grid" aria-hidden="true"></div>
+  <div class="container page-header-content">
+    <div class="page-header-eyebrow" data-i18n="st.page_eyebrow">Équipe · capture automatique</div>
+    <h1 class="page-header-title" data-i18n="st.page_title">Station de capture</h1>
+    <p class="page-header-desc" data-i18n="st.page_desc">Joue chaque fréquence, attend que le motif se forme, prend la photo et la fait passer par le contrôle qualité, toute seule.</p>
+  </div>
+</header>
+
+<main style="padding:2rem 0 5rem;" role="main">
+  <div class="container" style="max-width:1100px;">
+    <p class="st-warn" data-i18n="st.warning" style="margin-bottom:1rem;">Surface de travail de l'équipe. À ne jamais montrer pendant une séance avec des participants.</p>
+    <div id="st-server" aria-live="polite"></div>
+
+    <!-- 1 · SESSION -->
+    <section class="st-box" id="st-session">
+      <h2 class="st-h2" data-i18n="st.s1">1 · La session</h2>
+      <div class="st-row" style="margin-bottom:.75rem;">
+        <label class="st-label" for="st-resume" style="margin:0;" data-i18n="st.resume_label">Reprendre une session commencée</label>
+        <select id="st-resume" class="st-mini" style="padding:.35rem .5rem;font-size:.875rem;"></select>
+        <button type="button" class="btn btn-outline btn-sm" id="st-resume-btn" data-i18n="st.resume_btn">Reprendre</button>
+      </div>
+
+      <form id="st-form" class="st-grid">
+        <div class="st-field"><label for="f-session_id" data-i18n="sess.form.id">Identifiant de la session</label><input id="f-session_id" required class="st-mono"><p class="st-hint" data-i18n="sess.form.id_hint">AAAAMMJJ-NN</p></div>
+        <div class="st-field"><label for="f-date" data-i18n="sess.form.date">Date</label><input id="f-date" type="date" required></div>
+        <div class="st-field"><label for="f-operator" data-i18n="sess.form.operator">Qui a fait la capture</label><input id="f-operator" required></div>
+        <div class="st-field"><label for="f-plate" data-i18n="sess.form.plate">Plaque</label><input id="f-plate" required></div>
+        <div class="st-field"><label for="f-material" data-i18n="sess.form.material">Matériau</label>
+          <select id="f-material"><option value="sand" data-i18n="sess.form.mat_sand">sable</option><option value="semolina" data-i18n="sess.form.mat_semolina">semoule</option><option value="salt" data-i18n="sess.form.mat_salt">sel</option></select></div>
+        <div class="st-field"><label for="f-grain_mass_g" data-i18n="sess.form.grain">Masse de grain (g)</label><input id="f-grain_mass_g" type="number" step="0.1" min="0" value="10" required></div>
+        <div class="st-field"><label for="f-distance_mm" data-i18n="sess.form.distance">Distance de la caméra (mm)</label><input id="f-distance_mm" type="number" step="1" min="0" value="210" required></div>
+        <div class="st-field"><label for="f-lighting" data-i18n="sess.form.lighting">Éclairage</label>
+          <select id="f-lighting"><option value="lamp_diffuse" data-i18n="sess.form.light_diffuse">diffuse</option><option value="lamp_grazing" data-i18n="sess.form.light_grazing">rasante</option><option value="ambient" data-i18n="sess.form.light_ambient">ambiante</option></select></div>
+
+        <div class="st-wide">
+          <span class="st-label" data-i18n="st.classes_label">Fréquences et ordre</span>
+          <p class="st-hint" data-i18n="st.classes_hint">Cochez les fréquences de la session et rangez-les avec les flèches.</p>
+          <ol class="st-classes" id="st-classes"></ol>
+        </div>
+        <div class="st-field st-wide"><span class="st-label" data-i18n="st.order_label">Ordre à chaque ronde</span>
+          <label style="font-weight:400;display:flex;gap:.5rem;align-items:baseline;"><input type="radio" name="st-order" value="shuffle" checked style="width:auto;"> <span data-i18n="st.order_shuffle">Mélangé à chaque ronde (recommandé)</span></label>
+          <label style="font-weight:400;display:flex;gap:.5rem;align-items:baseline;"><input type="radio" name="st-order" value="fixed" style="width:auto;"> <span data-i18n="st.order_fixed">Toujours dans mon ordre</span></label>
+          <p class="st-hint" data-i18n="st.order_hint">Dans les deux cas, chaque ronde passe une fois par chaque fréquence : jamais 60 photos d'une classe puis 60 de la suivante.</p>
+        </div>
+        <div class="st-field"><label for="f-channel" data-i18n="st.channel">Sortie du son</label>
+          <select id="f-channel"><option value="right" data-i18n="st.channel_right" selected>canal droit (R) seulement</option><option value="left" data-i18n="st.channel_left">canal gauche (L) seulement</option><option value="both" data-i18n="st.channel_both">les deux canaux</option></select>
+          <p class="st-hint" data-i18n="st.channel_hint">Le canal sur lequel est branché l'amplificateur du transducteur. L'autre reste muet.</p></div>
+        <div class="st-field"><label for="f-dwell_s" data-i18n="sess.form.dwell">Temps de stabilisation (s)</label><input id="f-dwell_s" type="number" step="0.5" min="0" value="5" required></div>
+        <div class="st-field"><label for="f-rounds" data-i18n="st.rounds">Rondes</label><input id="f-rounds" type="number" step="1" min="1" value="60" required></div>
+        <div class="st-field"><label for="f-reseed" data-i18n="st.reseed">Pause pour remettre du grain toutes les … rondes</label><input id="f-reseed" type="number" step="1" min="0" value="10"><p class="st-hint" data-i18n="st.reseed_hint">0 = jamais.</p></div>
+        <div class="st-field"><label for="f-notes" data-i18n="sess.form.notes">Notes</label><input id="f-notes"></div>
+
+        <details class="st-adv st-wide"><summary data-i18n="st.advanced">Réglages avancés</summary>
+          <div class="st-grid" style="margin-top:.75rem;">
+            <div class="st-field"><label for="f-retries" data-i18n="st.retries">Nouveaux essais si le contrôle qualité rejette</label><input id="f-retries" type="number" min="0" step="1" value="2"></div>
+            <div class="st-field"><label for="f-settle_timeout" data-i18n="st.settle_timeout">Attente maximale du motif stable (s)</label><input id="f-settle_timeout" type="number" min="1" step="1" value="15"></div>
+            <div class="st-field"><label for="f-settle_threshold" data-i18n="st.settle_threshold">Seuil de « motif stable » (différence moyenne, 0–255)</label><input id="f-settle_threshold" type="number" min="0.1" step="0.1" value="3"></div>
+            <div class="st-field"><label for="f-max_shift" data-i18n="st.max_shift">Déplacement maximal des marqueurs (px)</label><input id="f-max_shift" type="number" min="1" step="1" value="8"></div>
+            <div class="st-field"><label for="f-unsettled" data-i18n="st.unsettled">Si le motif ne se stabilise pas</label>
+              <select id="f-unsettled"><option value="capture" data-i18n="st.unsettled_capture">prendre la photo quand même</option><option value="skip" data-i18n="st.unsettled_skip">sauter la case</option></select></div>
+            <div class="st-field"><label for="f-seed" data-i18n="st.seed">Graine de l'ordre</label><input id="f-seed" type="number" min="0" step="1" class="st-mono"></div>
+          </div>
+        </details>
+        <div class="st-wide"><button type="submit" class="btn btn-primary" id="st-create" data-i18n="st.create">Créer la session</button></div>
+      </form>
+      <div id="st-session-msg" aria-live="polite"></div>
+    </section>
+
+    <!-- 2 · CAMERA AND SOUND -->
+    <section class="st-box" id="st-devices" aria-disabled="true">
+      <h2 class="st-h2" data-i18n="st.s2">2 · Caméra et son</h2>
+      <p class="st-info" data-i18n="st.effects">Sur le Mac, désactivez Center Stage, Portrait, Studio Light et les Réactions de Continuity Camera : ils recadrent ou modifient l'image.</p>
+      <div class="st-row" style="margin-top:.75rem;">
+        <select id="st-cam" class="st-mini" style="padding:.4rem .5rem;font-size:.875rem;min-width:220px;"></select>
+        <button type="button" class="btn btn-outline btn-sm" id="st-cam-list" data-i18n="st.cam_list">Chercher les caméras</button>
+        <button type="button" class="btn btn-primary btn-sm" id="st-cam-open" data-i18n="st.cam_open">Ouvrir la caméra</button>
+        <span class="st-mono st-muted" id="st-cam-size"></span>
+      </div>
+      <div id="st-cam-msg" aria-live="polite"></div>
+      <video id="st-cam-preview" class="st-video" autoplay playsinline muted style="max-width:480px;margin-top:.75rem;"></video>
+      <p class="st-hint" data-i18n="st.cam_help">Si l'iPhone n'apparaît pas : fermez Photo Booth et toute autre application ou onglet qui utilise la caméra, verrouillez l'iPhone en mode paysage près du Mac, puis « Chercher les caméras ».</p>
+      <div class="st-row" style="margin-top:.75rem;">
+        <select id="st-test-hz" class="st-mini" style="padding:.4rem .5rem;font-size:.875rem;"></select>
+        <button type="button" class="btn btn-outline btn-sm" id="st-test-tone" data-i18n="st.test_tone">Tester le son</button>
+        <button type="button" class="btn btn-outline btn-sm" id="st-test-stop" data-i18n="st.stop_tone">Couper le son</button>
+        <span class="st-mono st-muted" id="st-channel-now"></span>
+      </div>
+    </section>
+
+    <!-- 3 · CALIBRATION -->
+    <section class="st-box" id="st-calib" aria-disabled="true">
+      <h2 class="st-h2" data-i18n="st.s3">3 · L'étalonnage</h2>
+      <p class="st-muted" data-i18n="sess.cal.lead">Les quatre marqueurs doivent être visibles.</p>
+      <button type="button" class="btn btn-primary btn-sm" id="st-calib-btn" style="margin-top:.75rem;" data-i18n="st.calib_btn">Photographier l'étalonnage</button>
+      <div id="st-calib-out" aria-live="polite"></div>
+    </section>
+
+    <!-- 4 · RUN -->
+    <section class="st-box" id="st-run" aria-disabled="true">
+      <h2 class="st-h2" data-i18n="st.s4">4 · La capture</h2>
+      <div class="st-live">
+        <div><video id="st-video" class="st-video" autoplay playsinline muted></video></div>
+        <div>
+          <div class="st-muted" id="st-round"></div>
+          <div class="st-now" id="st-now">—</div>
+          <div class="st-phase" id="st-phase" aria-live="polite"></div>
+          <div class="st-mono st-muted" id="st-motion" style="font-size:.8rem;"></div>
+          <div class="st-row" style="margin-top:.4rem;gap:.5rem;">
+            <label for="st-threshold-live" class="st-muted" style="font-size:.8rem;" data-i18n="st.threshold_live">Seuil de mouvement</label>
+            <input id="st-threshold-live" type="number" min="0.1" step="0.5" class="st-mini st-mono" style="width:5rem;">
+          </div>
+          <div class="st-bar"><span id="st-progress"></span></div>
+          <div class="st-volume" style="margin-top:1rem;">
+            <label for="st-volume" class="st-label" style="margin:0;" data-i18n="st.volume">Volume</label>
+            <input id="st-volume" type="range" min="0" max="100" step="1" value="10">
+            <input id="st-volume-pct" type="number" min="0" max="100" step="1" value="10" class="st-mini st-mono" style="width:4.2rem;" aria-label="%">
+            <span class="st-mono st-muted">%</span>
+          </div>
+          <div class="st-row" style="margin-top:1rem;">
+            <button type="button" class="btn btn-primary" id="st-start" data-i18n="st.start">Démarrer</button>
+            <button type="button" class="btn btn-outline st-hidden" id="st-pause" data-i18n="st.pause">Pause</button>
+            <button type="button" class="btn btn-primary st-hidden" id="st-resume-run" data-i18n="st.resume_run">Reprendre</button>
+            <button type="button" class="btn btn-outline st-hidden" id="st-stop" data-i18n="st.stop">Arrêter</button>
+          </div>
+          <div id="st-alert" aria-live="assertive" style="margin-top:.75rem;"></div>
+        </div>
+      </div>
+      <table class="st-table" id="st-table"></table>
+      <ul class="st-log" id="st-log"></ul>
+    </section>
+
+    <!-- 5 · REVIEW -->
+    <section class="st-box" id="st-review" aria-disabled="true">
+      <h2 class="st-h2" data-i18n="st.s5">5 · Vérification et incorporation</h2>
+      <p class="st-muted" data-i18n="st.review_lead">Rien n'est écrit dans le jeu de données avant l'incorporation.</p>
+      <a class="btn btn-primary btn-sm" id="st-review-link" href="sessions.html" style="margin-top:.75rem;" data-i18n="st.review_btn">Vérifier et incorporer →</a>
+    </section>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/classes.generated.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+<script src="js/stationSchedule.js"></script>
+<script src="js/stationMotion.js"></script>
+<script src="js/stationAudio.js"></script>
+<script src="js/acquisition.js"></script>
+</body>
+</html>
