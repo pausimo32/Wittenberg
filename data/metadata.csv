@@ -1,0 +1,126 @@
+image_id,session_id,freq_hz,split,material,grain_mass_g,distance_mm,lighting,dwell_s,roi_mode,quality,notes
+20261108-03_497_0001,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0002,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0003,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0004,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0005,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0006,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0007,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0008,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0009,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0010,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0012,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0013,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0014,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0015,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0016,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0017,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0018,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0019,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0020,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0021,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0022,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0023,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0024,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0025,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0026,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0027,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0028,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0029,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0030,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0032,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0033,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_497_0034,20261108-03,497,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0001,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0002,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0003,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0004,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0005,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0006,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0007,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0008,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0009,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0010,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0011,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0012,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0013,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0014,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0015,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0016,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0017,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0018,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0019,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0020,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0021,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0022,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0023,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0024,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0025,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0026,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0027,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0028,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0029,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0030,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_863_0031,20261108-03,863,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0001,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0002,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0003,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0004,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0005,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0006,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0007,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0008,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0009,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0010,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0011,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0012,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0013,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0014,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0015,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0016,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0017,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0018,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0019,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0020,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0021,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0022,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0023,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0024,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0025,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0026,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0027,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0028,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0029,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0030,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-03_1218_0031,20261108-03,1218,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,
+20261108-04_2241_0001,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0002,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0003,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0004,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0005,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0006,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0007,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0008,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0009,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0010,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0011,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0012,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0013,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0014,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0015,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0016,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0017,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0018,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0019,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0020,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0021,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0022,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0023,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0024,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0025,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0026,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0027,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0028,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0029,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0030,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+20261108-04_2241_0031,20261108-04,2241,unassigned,sand,10,210,lamp_diffuse,5,homography,ok,"2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."

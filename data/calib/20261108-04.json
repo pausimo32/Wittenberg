@@ -1,0 +1,35 @@
+{
+  "session_id": "20261108-04",
+  "roi_mode": "homography",
+  "corners": [
+    [
+      626.0,
+      924.0
+    ],
+    [
+      630.0,
+      195.0
+    ],
+    [
+      1351.0,
+      202.0
+    ],
+    [
+      1343.0,
+      925.0
+    ]
+  ],
+  "px_per_mm": 4.01401375664605,
+  "n_markers": 4,
+  "marker_ids": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "dictionary": "DICT_4X4_50",
+  "corner_rule": "innermost",
+  "nominal_mismatch": [],
+  "flags": [],
+  "calibration_config_version": "1.2.0"
+}

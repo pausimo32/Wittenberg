@@ -1,0 +1,104 @@
+{
+  "generated_at": "2026-11-08T18:37:51+00:00",
+  "gate": {
+    "version": "1.0.0",
+    "_note": "Ingest quality gate \u2014 docs/02-dataset-spec.md \u00a76. Thresholds live here, not in code, so a gate change is a reviewable diff and is recorded verbatim in every data/ingest_report.json.",
+    "laplacian_variance_min": 100.0,
+    "markers_required": 4,
+    "mean_luminance": {
+      "min": 40.0,
+      "max": 215.0
+    },
+    "edge_density": {
+      "min": 0.005,
+      "max": 0.25,
+      "interior_margin_frac": 0.02,
+      "_note": "Measured on the INTERIOR of the warped ROI only, with interior_margin_frac excluded per side. Counting the full frame lets an image with no pattern at all pass on its border alone."
+    }
+  },
+  "preprocess_version": "1.1.0",
+  "sessions": {
+    "20261108-03": {
+      "total": 94,
+      "accepted": 94,
+      "rejected": {},
+      "rejection_rate": 0.0,
+      "roi_mode": "homography",
+      "flags": [],
+      "conditions": {
+        "material": "sand",
+        "grain_mass_g": 10,
+        "distance_mm": 210,
+        "lighting": "lamp_diffuse",
+        "dwell_s": 5
+      },
+      "session_log": {
+        "session_id": "20261108-03",
+        "date": "2026-11-08",
+        "operator": "PAU",
+        "plate": "1",
+        "material": "sand",
+        "grain_mass_g": 10,
+        "distance_mm": 210,
+        "lighting": "lamp_diffuse",
+        "dwell_s": 5,
+        "notes": ""
+      },
+      "by_class": {
+        "1218": {
+          "total": 31,
+          "accepted": 31
+        },
+        "497": {
+          "total": 32,
+          "accepted": 32
+        },
+        "863": {
+          "total": 31,
+          "accepted": 31
+        }
+      },
+      "rejected_images": []
+    },
+    "20261108-04": {
+      "total": 31,
+      "accepted": 31,
+      "rejected": {},
+      "rejection_rate": 0.0,
+      "roi_mode": "homography",
+      "flags": [],
+      "conditions": {
+        "material": "sand",
+        "grain_mass_g": 10,
+        "distance_mm": 210,
+        "lighting": "lamp_diffuse",
+        "dwell_s": 5
+      },
+      "session_log": {
+        "session_id": "20261108-04",
+        "date": "2026-11-08",
+        "operator": "PAU",
+        "plate": "1",
+        "material": "sand",
+        "grain_mass_g": 10,
+        "distance_mm": 210,
+        "lighting": "lamp_diffuse",
+        "dwell_s": 5,
+        "notes": "2241 Hz run, captured into draft 20261108-03 by mistake (that id was already committed); re-filed as its own session."
+      },
+      "by_class": {
+        "2241": {
+          "total": 31,
+          "accepted": 31
+        }
+      },
+      "rejected_images": []
+    }
+  },
+  "totals": {
+    "total": 125,
+    "accepted": 125,
+    "rejected": {},
+    "rejection_rate": 0.0
+  }
+}
