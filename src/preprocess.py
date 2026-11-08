@@ -327,13 +327,24 @@ def _blur(gray: np.ndarray, params: Mapping[str, Any]) -> np.ndarray:
 
 
 def _canny(gray: np.ndarray, params: Mapping[str, Any]) -> np.ndarray:
-    return cv2.Canny(
+    edges = cv2.Canny(
         gray,
         params["threshold1"],
         params["threshold2"],
         apertureSize=params["aperture_size"],
         L2gradient=params["l2_gradient"],
     )
+    # Spec 1.2.0 (ADR 0011): discard edges within `border_frac` of each side of the ROI —
+    # the plate's rim, the table and the markers, which differ between sessions and taught
+    # the model to recognise a session instead of a mode. Zeroed after Canny, never before:
+    # filling the ROI border first would draw an artificial square edge at the boundary.
+    border = int(round(params["border_frac"] * edges.shape[0]))
+    if border > 0:
+        edges[:border, :] = 0
+        edges[-border:, :] = 0
+        edges[:, :border] = 0
+        edges[:, -border:] = 0
+    return edges
 
 
 def _resize(edges: np.ndarray, params: Mapping[str, Any]) -> np.ndarray:

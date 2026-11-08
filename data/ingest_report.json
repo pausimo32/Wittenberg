@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-08T18:37:51+00:00",
+  "generated_at": "2026-11-08T22:22:58+00:00",
   "gate": {
     "version": "1.0.0",
     "_note": "Ingest quality gate \u2014 docs/02-dataset-spec.md \u00a76. Thresholds live here, not in code, so a gate change is a reviewable diff and is recorded verbatim in every data/ingest_report.json.",
@@ -16,7 +16,7 @@
       "_note": "Measured on the INTERIOR of the warped ROI only, with interior_margin_frac excluded per side. Counting the full frame lets an image with no pattern at all pass on its border alone."
     }
   },
-  "preprocess_version": "1.1.0",
+  "preprocess_version": "1.2.0",
   "sessions": {
     "20261108-03": {
       "total": 94,

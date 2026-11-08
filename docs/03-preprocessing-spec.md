@@ -20,7 +20,7 @@ numeric literals anywhere in the transform path.
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "roi": {
     "mode": "homography",
     "output_size": 512,
@@ -30,7 +30,7 @@ numeric literals anywhere in the transform path.
   "grayscale": { "code": "COLOR_RGBA2GRAY" },
   "clahe": { "enabled": true, "clip_limit": 2.0, "tile_grid_size": [8, 8] },
   "blur": { "ksize": [5, 5], "sigma_x": 1.4, "sigma_y": 1.4, "border": "BORDER_DEFAULT" },
-  "canny": { "threshold1": 50, "threshold2": 150, "aperture_size": 3, "l2_gradient": false },
+  "canny": { "threshold1": 50, "threshold2": 150, "aperture_size": 3, "l2_gradient": false, "border_frac": 0.0625 },
   "resize": { "size": [128, 128], "interpolation": "INTER_AREA" },
   "output": { "dtype": "float32", "scale": 0.00392156862745098, "shape": [128, 128, 1] }
 }
@@ -79,6 +79,12 @@ Ordered. No step may be reordered, skipped or fused.
 6. **Canny** — `cv2.Canny(src, 50, 150, apertureSize=3, L2gradient=False)` → binary `{0,255}`.
    The reference study reports that adding Canny after grayscale raised accuracy materially;
    we replicate it and ablate it in F4.
+   **Border discard (spec 1.2.0, ADR 0011).** Edges within `border_frac` × 512 = 32 px of each
+   side of the ROI (8 px after the resize) are set to 0. Measured on the 2026-11-08 captures,
+   the plate's rim sits 5–6 px (of 128) from each side, with table and markers outside it. A
+   network trained under 1.1.0 lost 2241 Hz (100 % → 39 %) when that band was hidden: it had
+   learned the session from it. Zeroed *after* Canny, so no artificial edge appears at the
+   boundary. Cost: nodal lines are not seen where they meet the plate's edge.
 7. **Resize** — `cv2.resize(src, (128,128), interpolation=cv2.INTER_AREA)`.
    `INTER_AREA` on a binary image produces a **greyscale** anti-aliased result. That is
    intended — it preserves nodal-line density, which is the discriminative signal.
@@ -271,3 +277,10 @@ remembering the amplifier rather than the cause.
 3. Retrain. A preprocessing change invalidates every existing checkpoint, and the startup guard
    in §4 will refuse to serve them — which is the intended behaviour, not an obstacle.
 4. Add an ADR under `docs/adr/` if the change alters the pipeline shape, not just a constant.
+
+## 7. Change log
+
+| Version | Date | Change | Checkpoints |
+|---|---|---|---|
+| 1.1.0 | — | parameters moved from prose into the config (no pixel change) | none existed |
+| 1.2.0 | 2026-11-08 | `canny.border_frac = 0.0625`: edges in the outer 1/16 of the ROI discarded (ADR 0011) | every 1.1.0 run is refused by the gate; retrained |

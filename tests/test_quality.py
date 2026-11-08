@@ -147,7 +147,12 @@ def test_empty_interior_full_border_is_rejected(gate):
     is. The gate must take the second reading.
     """
     img = border_only()
-    r = assess(img, CALIB_CENTER_CROP, n_markers=4, gate=gate)
+    # The gate's own rule, isolated from preprocessing 1.2.0, which already discards the
+    # outer border upstream (ADR 0011) and would hide the frame before the gate sees it.
+    from preprocess import load_config
+    config = load_config()
+    config["canny"]["border_frac"] = 0
+    r = assess(img, CALIB_CENTER_CROP, n_markers=4, config=config, gate=gate)
 
     assert r.quality == "reject"
     assert r.reason == "edge_density"

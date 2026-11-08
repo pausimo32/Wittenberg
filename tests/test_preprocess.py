@@ -211,6 +211,7 @@ TUNABLES = [
     ("canny", "threshold2", 250, "edges"),
     ("canny", "aperture_size", 5, "edges"),
     ("canny", "l2_gradient", True, "edges"),
+    ("canny", "border_frac", 0.25, "edges"),
     ("resize", "interpolation", "INTER_NEAREST", "resized"),
 ]
 
@@ -223,6 +224,10 @@ TUNABLES = [
 def test_every_tunable_is_read_from_the_config(
     section, key, value, stage, plate_photo, calib_homography, config
 ):
+    if section == "canny" and key != "border_frac":
+        # Spec 1.2.0 discards the border band, where the synthetic photo's weak edges live;
+        # isolate the threshold under test from the border discard.
+        config["canny"]["border_frac"] = 0
     reference = getattr(preprocess_stages(plate_photo, calib_homography, config), stage)
     config[section][key] = value
 
@@ -231,6 +236,7 @@ def test_every_tunable_is_read_from_the_config(
 
 
 def test_canny_thresholds_are_driven_by_the_config(plate_photo, calib_homography, config):
+    config["canny"]["border_frac"] = 0  # isolate the thresholds from the 1.2.0 border discard
     reference = preprocess_stages(plate_photo, calib_homography, config).edges
     config["canny"]["threshold1"] = 200
     config["canny"]["threshold2"] = 250
@@ -534,3 +540,14 @@ def test_unknown_roi_mode_raises(plate_photo, config):
 def test_non_rgba_uint8_input_raises(bad, calib_center_crop, config):
     with pytest.raises(ValueError):
         preprocess(bad, calib_center_crop, config)
+
+
+def test_the_border_band_carries_no_edges(plate_photo, calib_homography, config):
+    """Spec 1.2.0: rim, table and markers never reach the model (ADR 0011)."""
+    edges = preprocess_stages(plate_photo, calib_homography, config).edges
+    b = int(round(config["canny"]["border_frac"] * edges.shape[0]))
+    assert b > 0
+    band = np.ones_like(edges, bool); band[b:-b, b:-b] = False
+    assert not edges[band].any()
+    assert edges[~band].any()  # the interior still has its lines
+

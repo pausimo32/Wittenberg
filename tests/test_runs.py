@@ -119,7 +119,7 @@ def test_the_mismatch_message_names_both_versions(tmp_path):
     changed["version"] = "1.2.0"
     with pytest.raises(PreprocessMismatch) as exc:
         check_preprocess_hash(run_dir, changed)
-    assert "1.1.0" in str(exc.value)
+    assert "1.1.0" in str(exc.value)  # the fixture CONFIG, not the live config
     assert "1.2.0" in str(exc.value)
 
 
