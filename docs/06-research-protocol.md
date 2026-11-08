@@ -11,7 +11,7 @@ treball into obligations on the code.
 | P2 | Does the tool make wave concepts intuitive for non-physicists? | pre/post-test deltas per concept |
 | S3 | Which age/education group improves most? | pre/post deltas segmented by group |
 | S4 | Which experimental conditions give the sharpest patterns? | ablation A8 + `data/ingest_report.json` yield by condition |
-| S5 | How accurate is supervised classification by frequency? | per-class F1 + Wilson interval (`docs/04-model-spec.md` §4) |
+| S5 | How accurate is supervised classification by frequency? | group-weighted macro-F1 + per-class F1, group bootstrap and Wilson interval (`docs/04-model-spec.md` §4, §6; `experiments/protocol_v1/decision.md`) |
 | S6 | What are the main error sources and limits? | frequency-distance error analysis, Grad-CAM, ablation A10 (ROI without the markers), `docs/01-domain-physics.md` §3 |
 
 If a change does not serve one of these rows, it is out of scope.

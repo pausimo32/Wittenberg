@@ -1,0 +1,99 @@
+{
+  "model": "wittenberg_v1",
+  "n_classes": 4,
+  "classes": [
+    {
+      "index": 1,
+      "freq_hz": 497
+    },
+    {
+      "index": 2,
+      "freq_hz": 863
+    },
+    {
+      "index": 3,
+      "freq_hz": 1218
+    },
+    {
+      "index": 4,
+      "freq_hz": 2241
+    }
+  ],
+  "hyperparameters": {
+    "id": "W1_v2_A2_b8",
+    "family": "W1",
+    "lr": 0.001,
+    "aug": "A2",
+    "batch": 8,
+    "epochs": 60,
+    "label_smoothing": 0.05,
+    "cosine_to": 1e-05
+  },
+  "augmentation": "A2 = D4 symmetry + A1 (experiments/protocol_v2/preregister.yaml)",
+  "trained_on": "all 125 accepted photos of 20261108-03/04 (protocol p.27 final refit)",
+  "preprocess_version": "1.2.0",
+  "preprocess_sha256": "f0d869ce2245f69cb9b504c0a60f305ee1e4ed3e7753357932333787b99f6247",
+  "preprocess_config": {
+    "version": "1.2.0",
+    "roi": {
+      "mode": "homography",
+      "output_size": 512,
+      "interpolation": "INTER_LINEAR",
+      "border_mode": "BORDER_REPLICATE"
+    },
+    "grayscale": {
+      "code": "COLOR_RGBA2GRAY"
+    },
+    "clahe": {
+      "enabled": true,
+      "clip_limit": 2.0,
+      "tile_grid_size": [
+        8,
+        8
+      ]
+    },
+    "blur": {
+      "ksize": [
+        5,
+        5
+      ],
+      "sigma_x": 1.4,
+      "sigma_y": 1.4,
+      "border": "BORDER_DEFAULT"
+    },
+    "canny": {
+      "threshold1": 50,
+      "threshold2": 150,
+      "aperture_size": 3,
+      "l2_gradient": false,
+      "border_frac": 0.0625
+    },
+    "resize": {
+      "size": [
+        128,
+        128
+      ],
+      "interpolation": "INTER_AREA"
+    },
+    "output": {
+      "dtype": "float32",
+      "scale": 0.00392156862745098,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    }
+  },
+  "opencv_version": "4.12.0",
+  "opencv_package": "opencv-contrib-python",
+  "opencv_wheel_version": "4.12.0.88",
+  "opencv_distributions_installed": [
+    "opencv-contrib-python"
+  ],
+  "seed": 42,
+  "determinism": {
+    "seed": 42,
+    "deterministic_algorithms": true
+  }
+}

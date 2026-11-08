@@ -58,6 +58,17 @@ runs/*
 runs/*/*
 !runs/*/metrics.json
 !runs/*/config.json
+# The SHIPPED run travels with the repo so a clone starts the app offline (ADR 0005, 0011):
+# its checkpoint, its history and the pointer. One run only — update these lines when the
+# shipped run changes, never widen them to every run.
+!runs/latest.txt
+!runs/20261108-232629/model.pt
+!runs/20261108-232629/history.csv
+# Protocol campaigns (ADR 0009–0011): the frozen splits and the out-of-fold predictions are
+# the evidence behind every reported number.
+!runs/protocol_v1/splits.json
+!runs/protocol_v*/oof_predictions.csv
+!runs/protocol_v*/exploratory_*.json
 
 # ── Scratch ──────────────────────────────────────────────────────────────
 scratchpad/

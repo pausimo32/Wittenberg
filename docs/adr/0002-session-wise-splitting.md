@@ -1,7 +1,9 @@
 # ADR 0002 — Split the dataset by capture session, not randomly
 
 - **Date:** 2026-08-16
-- **Status:** accepted
+- **Status:** accepted; **amended by ADR 0009** (2026-11-08). The principle — never random,
+  group by the independent unit — stands. When no class spans ≥ 3 sessions the unit falls back
+  to the preparation block with nested grouped CV and a weaker, stated claim; see ADR 0009.
 
 ## Context
 

@@ -249,7 +249,7 @@ What F3a builds, in dependency order:
 | 1 | `tasks.py modes` | validates `data/modes.csv` → `config/classes.json`; everything downstream needs the class list |
 | 2 | **`src/imageio.py`** | decode, EXIF orientation, Display P3 → sRGB, HEIC **and** PNG. `docs/03-preprocessing-spec.md` §5.1 delegates step 1 here and no phase claimed it — a real gap |
 | 3 | `tasks.py ingest` | ArUco calibration (§1.1), the quality gate (§6, interior margin), `metadata.csv` rows, `ingest_report.json` |
-| 4 | `tasks.py split` | `GroupShuffleSplit` on `session_id` |
+| 4 | `tasks.py split` | `GroupShuffleSplit` on `session_id` (preparation-block fallback: ADR 0009) |
 
 Gate: the four synthetic sessions ingest, split, and the curator returns READY TO TRAIN. Then
 `rm -rf data/raw/SYNTH-*` and the pipeline waits for real photographs.
@@ -457,8 +457,9 @@ Train wittenberg_v1 and baseline_paper on the real captures and produce the full
 evaluation set. The bench is built; this phase produces the numbers.
 
 ## Constraints
-- Split by session (GroupShuffleSplit on session_id). Never random. ADR 0002 is not
-  negotiable.
+- Never random. Group by session (ADR 0002); if no class spans ≥ 3 sessions, by preparation
+  block with nested grouped CV and the claim limited accordingly (ADR 0009). Model choice by
+  the pre-registered rule in experiments/protocol_v1/.
 - Seed 42 for random/numpy/torch + torch.use_deterministic_algorithms(True)
   and CUBLAS_WORKSPACE_CONFIG=:4096:8.
 - runs/<ts>/ contains config.json (with the preprocessing version), metrics.json, history.csv,
@@ -474,7 +475,7 @@ evaluation set. The bench is built; this phase produces the numbers.
 - [ ] session-wise accuracy ≥ 80 %, worst-class recall ≥ 60 % (or a written explanation)
 - [ ] confusion matrix as PNG and CSV
 - [ ] Grad-CAM for 3 correct + 3 incorrect per class, for both models
-- [ ] accuracy reported with a 95 % Wilson interval
+- [ ] group-weighted macro-F1 with a group bootstrap (ADR 0009), plus accuracy with a 95 % Wilson interval
 
 ## Model
 opus — the split logic and the evaluation design are where this phase goes wrong.

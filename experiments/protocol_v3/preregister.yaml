@@ -1,0 +1,29 @@
+# Pre-registration v3 — session independence (team requirement, 2026-11-08):
+# "it need not work on another plate, but it must work on a new session".
+# Written before any v3 fit. Same 125 photos, same splits as v1/v2 -> EXPLORATORY.
+
+experiment_id: chladni_v3_session_independence_20261108
+written: 2026-11-08
+goal: remove session-specific cues so the model reads the nodal pattern only
+input: data/processed under src/preprocess.py 1.2.0 (canny.border_frac = 0.0625, ADR 0011)
+splits: runs/protocol_v1/splits.json
+model: wittenberg_v1, recipe identical to v2 (AdamW 1e-3, cosine, smoothing 0.05, batch 8, A2 = D4 + A1)
+deployed_network: seed 42; variability seeds [17, 29]
+
+measures (out-of-fold, seed 42 unless stated):
+  accuracy (headline) + frame-level Wilson 95 %; group-weighted macro-F1 + group bootstrap
+  per-class recall; seeds 17/29 accuracy
+  robustness: 8 D4 symmetries of the test images; raw photo x0.6 / x1.4 re-preprocessed
+session_cue_controls (outside any ranking):
+  pixel_shuffle: wittenberg_v1 trained on each image's pixels randomly permuted (fixed seed):
+    keeps edge density/brightness statistics, destroys shape. If it still recognises 2241,
+    a session signature survives in the plate interior.
+  reference_hog_lr: HOG + logistic regression (C = 0.1) under 1.2.0, same splits — reference only.
+pass_criteria (stated before results):
+  - accuracy >= 0.80 and every class recall >= 0.60 (docs/00 F4)
+  - pixel_shuffle 2241 recall <= 0.50 (no strong interior session signature)
+  - D4 and lighting accuracy within 0.10 of the headline
+interpretation_limit: >
+  No measurement on this data can show performance on a NEW session; that requires a new
+  session captured after this freeze. v3 removes the session cues that were identified and
+  shows that they are gone; it does not replace the prospective confirmation.

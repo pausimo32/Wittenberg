@@ -1,0 +1,18 @@
+{
+  "run": "20261108-232629",
+  "model": "wittenberg_v1",
+  "seed": 42,
+  "synthetic": false,
+  "do_not_report": null,
+  "out_of_fold_estimate": {
+    "source": "runs/protocol_v3/metrics.json",
+    "accuracy": 0.968,
+    "wilson95_frame_level": [
+      0.9206047331342568,
+      0.9874870633041606
+    ],
+    "macro_f1_group_weighted": 0.9739753130070232,
+    "status": "exploratory \u2014 v2 designed after v1 on the same photos; confirm on a new session"
+  },
+  "preprocess_version": "1.2.0"
+}

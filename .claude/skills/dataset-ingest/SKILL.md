@@ -83,6 +83,10 @@ Splits are per **session**, never per image (`docs/adr/0002`).
 python tasks.py split   # GroupShuffleSplit on session_id, seed 42
 ```
 
+If `split` refuses because a class is in fewer than 3 sessions, do not force it and do not
+fall back to frames. Use the nested grouped CV by preparation block of ADR 0009
+(`experiments/protocol_v1/`) and state the weaker claim.
+
 Never hand-edit `split` in `metadata.csv`. Never move a single image between splits. If a
 session belongs in test, the whole session goes to test.
 

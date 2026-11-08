@@ -1,0 +1,39 @@
+# Pre-registration v2 — wittenberg_v1 only (team decision, 2026-11-08).
+# Written before any v2 fit. SAME 125 photos and SAME splits as v1 (runs/protocol_v1/splits.json):
+# v2 was designed after seeing v1, so its numbers are EXPLORATORY until a new session confirms them.
+
+experiment_id: chladni_v2_wittenberg_v1_20261108
+written: 2026-11-08
+supersedes_choice_of: chladni_v1_20261108   # team chose the project CNN over HOG+LR (ADR 0010)
+classes_hz: {0: 497, 1: 863, 2: 1218, 3: 2241}
+splits: runs/protocol_v1/splits.json        # outer 3 x inner 2, preparation blocks (ADR 0009)
+
+model: wittenberg_v1                          # docs/04 §1 B, architecture unchanged
+recipe:
+  optimizer: AdamW, lr 1e-3, weight_decay 1e-2 (PyTorch default)
+  schedule: CosineAnnealingLR to 1e-5 over 80 epochs
+  loss: CrossEntropy, label_smoothing 0.05
+  batch: 8          # CHANGED from 32: v1 showed best_epoch = 1 and one-class collapse at 2-3 steps/epoch
+  max_epochs: 80
+  early_stopping: inner splits only, patience 12, group-weighted val loss; refit epochs = ceil(median)
+augmentation: A2  # train only
+  A1: {rotation_deg: 5, translate_frac: 0.02, p_geom: 0.5, brightness_contrast: [0.9, 1.1], p_photo: 0.5}
+  d4: "uniform over the 8 symmetries of the square (rotations 0/90/180/270, with/without reflection)"
+  d4_justification: >
+    Square plate, centre-driven: the plate operator is D4-invariant, so the set of nodal patterns
+    at one frequency is closed under D4 (rotated/reflected patterns are degenerate partners).
+    Caveat (protocol R1): anisotropy and imperfect clamping can split degeneracies; this is an
+    assumption made to favour orientation- and rig-independence, and it is stated as such.
+deployed_network: seed 42 (single network, chosen before results)
+variability_seeds: [17, 29]   # reported, never selected
+
+metrics:
+  headline: accuracy (tasa de acierto) of seed 42, out-of-fold, with frame-level Wilson 95 %
+  primary_protocol: macro_f1 group-weighted (1/n_group) + bootstrap of groups (2000, seed 71)
+  also: per-class recall, confusion matrix, seed 17/29 OOF accuracy
+robustness (seed 42, out-of-fold, test side only):
+  d4_test: every test image under all 8 symmetries -> accuracy
+  lighting: raw photo RGB x0.6 and x1.4, re-run through src/preprocess.py -> accuracy
+  corners_control: wittenberg_v1 trained on corners-only inputs (4 x 14px patches) -> macro-F1
+acceptance (stated, not a gate on publishing): accuracy >= 0.80, every class recall >= 0.60
+  (docs/00 F4 definition of done), d4_test and lighting accuracy within 0.10 of headline.

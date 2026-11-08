@@ -16,7 +16,10 @@ own plate. Do not "improve" it. Its numbers are a citation, not a target.
 Say in the TDR what is true: same architecture and training procedure, our own plate, a
 different framework. Do not claim bit-identity with the authors' code.
 
-**B — `wittenberg_v1`.** The model actually shipped.
+**B — `wittenberg_v1`.** The model that ships (ADR 0010), trained with D4 symmetry augmentation
+(§3). ADR 0009's comparison ranked it below HOG + logistic regression; the team chose the
+CNN for the research question and for orientation/rig independence, and the HOG model stays
+as the measured reference (`src/hoglr.py`).
 
 ```
 Input (N,1,128,128)                                     # NCHW — PyTorch order
@@ -52,9 +55,11 @@ in the repository and travels with a `git clone` (`docs/adr/0005`).
   cut of the head, which is a 61 % cut of the whole model (746 094 → 289 134). Quote whichever
   of the two you mean; do not quote a single "~95 %" figure, which matches neither.
 - **BatchNorm before ReLU**, standard ordering; keeps training stable at batch 32 on a small set.
-- **No pretrained backbone.** ImageNet features are tuned for natural-image texture and colour;
-  our input is a binary edge map. A small model trained from scratch is both better here and
-  far easier to justify in a high-school research document.
+- **Pretrained backbones: measured, not assumed.** The argument was that ImageNet features suit
+  natural texture, not a binary edge map. On the 2026-11-08 data, frozen MobileNetV3-Small and
+  EfficientNet-B0 embeddings + a linear head scored 0.988–0.989 macro-F1, ahead of
+  `wittenberg_v1` (0.83). They are not shipped because HOG + logistic regression tied with
+  them at a tenth of the latency (§6), not because they were worse.
 - **Class weights** if any class has < 70 % of the median class count. Prefer collecting more
   images to reweighting.
 
@@ -63,13 +68,14 @@ in the repository and travels with a `git clone` (`docs/adr/0005`).
 | Setting | Value |
 |---|---|
 | Optimizer | `torch.optim.AdamW`, `lr=1e-3`, `CosineAnnealingLR` to `1e-5` |
-| Batch | 32 |
+| Batch | 32 — **8** for the real captures (ADR 0010: at 32 and ~55 images, 2–3 steps/epoch left BatchNorm unsettled) |
+| Augmentation | A2: uniform D4 symmetry of the square + ±5° / ±2 % / brightness-contrast 0.9–1.1, train only (ADR 0010) |
 | Epochs | 80, early stopping patience 12 on `val_loss`, restore best weights |
 | Device | training: the team's RTX 5070, peak ≈ 474 MB of 12 GB (`docs/adr/0005`). Inference: **CPU**, ≈ 12 ms/image measured |
 | AMP | off. Mixed precision costs determinism and buys nothing at this model size |
 | Loss | `nn.CrossEntropyLoss(label_smoothing=0.05)` (takes logits — no softmax in the model) |
 | Seed | 42 for `random`/`numpy`/`torch`, plus `torch.use_deterministic_algorithms(True)` and `CUBLAS_WORKSPACE_CONFIG=:4096:8` |
-| Split | `GroupShuffleSplit` on `session_id` (see `docs/02-dataset-spec.md` §2) |
+| Split | grouped by the independent unit — `session_id`, or the preparation block when sessions are too few; nested CV (`docs/02-dataset-spec.md` §2, ADR 0009) |
 
 Every run writes `runs/<timestamp>/` containing `config.json` (full resolved config incl.
 preprocessing version and the framework/CUDA versions), `metrics.json`, `history.csv`,
@@ -79,8 +85,9 @@ preprocessing version and the framework/CUDA versions), `metrics.json`, `history
 
 ## 4. Evaluation — mandatory outputs
 
-1. Overall accuracy **with a 95 % Wilson interval**, computed on independent captures, not
-   frames. Under leave-one-session-out, the independent unit is the *session*, so with 4
+1. **Primary: macro-F1 weighted by `1 / n_originals_in_group`** over pooled out-of-fold
+   predictions, with a bootstrap of whole groups (ADR 0009). Also overall accuracy **with a
+   95 % Wilson interval**, computed on independent captures, not frames. Under leave-one-session-out, the independent unit is the *session*, so with 4
    sessions a per-class interval is built on 4 observations, not on the frame count. Report the
    frame-level interval too, labelled as such, but do not present it as the headline.
 2. Per-class precision / recall / F1 (`classification_report`).
@@ -161,3 +168,27 @@ Every checkpoint records the resolved `config/preprocess.json` and its SHA-256. 
 asserts the hash at startup and **refuses to start** on mismatch
 (`docs/03-preprocessing-spec.md` §4). This is what stops a checkpoint trained under one
 pipeline from being served under another.
+
+## 6. Model selection — ADR 0009
+
+The model that ships is chosen, not assumed. `experiments/protocol_v1/` holds the procedure:
+`preregister.yaml` (candidates, seeds, metric, thresholds, tie rule — hashed before the first
+fit), `amendments.md`, `run_protocol.py`, and `decision.md`.
+
+- **Candidates (2026-11-08):** dummy baselines; HOG + logistic regression; the protocol's small
+  CNN; `wittenberg_v1` (§1 B, §3 recipe); frozen MobileNetV3-Small / EfficientNet-B0
+  embeddings + logistic regression or linear SVM. 18 configurations; neural ones as 3-seed
+  ensembles.
+- **Rule:** eligible candidates within δ = 0.03 of the best inner score, then lowest measured
+  CPU latency, then smaller artefact, then registry order.
+- **Controls, outside the ranking:** background-only and random-split.
+- **Result v1 (rule's pick):** HOG + logistic regression, macro-F1 0.989 (bootstrap 0.96–1.00).
+- **Result v2 (shipped, ADR 0010):** `wittenberg_v1` + A2, batch 8, seed 42: accuracy 0.944
+  (118/125, Wilson 0.889–0.973), macro-F1 0.954; robust to D4 symmetries (0.955) and
+  ±40 % lighting (0.944 / 0.912). Exploratory: designed after v1 on the same photos.
+- **Result v3 (shipped, ADR 0011):** same recipe on preprocessing 1.2.0 (ROI border discarded):
+  accuracy 0.968 (121/125, Wilson 0.921–0.987), macro-F1 0.974; D4 0.971; light 0.968 / 0.952.
+  Pixel-shuffle control still finds 2241 Hz at 0.83 (edge density: physics or session,
+  unresolved).
+- Both are confirmed only after a new session with every class interleaved is evaluated once
+  with the frozen artefact.

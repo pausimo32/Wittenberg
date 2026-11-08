@@ -10,11 +10,17 @@ Research artefact for a TDR (Catalan high-school research project).
    needs a transform changed, change it there and retrain. Any edit requires updating
    `docs/03-preprocessing-spec.md` in the same commit and bumping the version.
 2. **Never use `cv2.imshow`, `plt.show()` or any blocking call.** Write artefacts to `runs/`.
-3. **Never split the dataset randomly.** Split by `session_id` (see `docs/02-dataset-spec.md`).
-   A random split leaks near-duplicate frames and inflates accuracy — this is a reported
-   finding of the project, not a bug to work around.
+3. **Never split the dataset randomly.** Group by the independent unit: `session_id` when every
+   class is in ≥ 3 sessions (ADR 0002); otherwise the preparation block, with nested grouped CV
+   and the claim limited to "same session" (ADR 0009). A random split leaks near-duplicate
+   frames and inflates accuracy — a reported finding of the project, not a bug to work around.
+   Models are compared under a **pre-registered** rule (ADR 0009); what ships is decided in an
+   ADR. Today: `wittenberg_v1` trained with D4 symmetry augmentation (ADR 0010) on
+   preprocessing 1.2.0, which discards the ROI border so it reads the pattern, not the session (ADR 0011).
 4. **Never commit** `data/raw/`, `data/processed/`, `runs/`, `*.pt`, `*.pth`, `web/dist/`.
-   Commit `data/metadata.csv`, `runs/*/metrics.json` and `runs/*/config.json`.
+   Commit `data/metadata.csv`, `runs/*/metrics.json` and `runs/*/config.json`. One exception:
+   the **shipped** run's `model.pt`, `history.csv` and `runs/latest.txt`, listed by name in
+   `.gitignore`, so a clone starts the app offline (ADR 0005). Never any other checkpoint.
 5. **Deterministic by default.** Seed 42 everywhere (`random`, `np.random`, `torch`), plus
    `torch.use_deterministic_algorithms(True)`. Report the seed in every `metrics.json`.
 6. **The app's UI is French by default** (`docs/adr/0007`), with a `ca`/`es`/`fr` switcher in
@@ -65,6 +71,7 @@ the team picks. Never deployed, never bound to `0.0.0.0`, never calls out to the
 | `python tasks.py setup` | venv, deps, version and device checks |
 | `python tasks.py ingest` | raw captures → `data/processed/` + `data/metadata.csv` |
 | `python tasks.py train` | trains the CNN, writes `runs/<ts>/` (the team's RTX 5070, or slow on CPU) |
+| `python tasks.py train-hoglr` | fits the HOG + logistic-regression reference model (ADR 0009) -> `runs/<ts>/` |
 | `python tasks.py eval` | confusion matrix + per-class report → `runs/<ts>/report/` |
 | `python tasks.py check-model` | **gate.** checkpoint's preprocessing hash == current config |
 | `python tasks.py app` | build if stale, start the local server, open the browser |
@@ -84,6 +91,7 @@ Load a doc **only** when the task touches it. Each is self-contained.
 | `docs/06-research-protocol.md` | producing anything that goes into the TDR document |
 | `docs/07-glossary-ca-en.md` | writing user-facing Catalan strings |
 | `docs/adr/*.md` | about to reverse a past decision — check it was not already litigated |
+| `experiments/protocol_v1/`, `protocol_v2/` | comparing models, or quoting the 2026-11-08 results (ADR 0009, 0010) |
 
 If a task needs more than **two** of these, stop and split the task.
 

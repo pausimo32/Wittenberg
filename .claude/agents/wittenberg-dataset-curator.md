@@ -13,10 +13,13 @@ edit images, and do not write code beyond throwaway analysis scripts in `/tmp`.
 
 ## Checks — run all of them, always
 
-1. **Leakage.** For every split pair, assert `session_id` sets are disjoint. Any overlap is a
-   CRITICAL finding: reported metrics are invalid.
+1. **Leakage.** For every split pair, assert the grouping unit's sets are disjoint —
+   `session_id`, or the preparation block under ADR 0009. Any overlap is a CRITICAL finding:
+   reported metrics are invalid.
 2. **Session coverage.** Every class present in ≥ 3 sessions. ≥ 4 sessions total. List classes
-   that fail.
+   that fail. If they fail, say the session-level claim is unavailable, report G per class at
+   the preparation-block level (ADR 0009), and flag any class alone in its session as
+   confounded with it.
 3. **Balance.** Images per class per split. Flag any class below 70 % of the median.
 4. **Test-set size.** ≥ 30 images per class in test. Below that, report the resulting Wilson
    interval width so the user sees what the number is worth.

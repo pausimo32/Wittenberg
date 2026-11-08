@@ -1,0 +1,15 @@
+{
+  "config": {
+    "id": "W1_v2_A2_b8",
+    "family": "W1",
+    "lr": 0.001,
+    "aug": "A2",
+    "batch": 8
+  },
+  "seeds": [
+    42,
+    17,
+    29
+  ],
+  "preprocess": "1.2.0"
+}

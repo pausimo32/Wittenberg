@@ -151,6 +151,14 @@ Minimum for a defensible result: **≥ 4 sessions**, and every frequency class m
 at least 3 of them. Target split 2 sessions train / 1 val / 1 test, rotated (leave-one-
 session-out CV) so every session is the held-out one once.
 
+**When the sessions cannot carry it** (some class in fewer than 3 sessions — the 2026-11-08
+captures have every class in exactly one), ADR 0009 applies: group by **preparation block**
+(frames between two sand replenishments, `reseed_every` in `session.json`), run nested grouped
+CV sized by the fewest groups any class has, and state the result as "new preparation, same
+session", never "new session". A class alone in its session is confounded with it and must be
+reported so. This is a fallback with a weaker claim, not a substitute: the ≥ 4-session target
+below stands.
+
 Report **both** numbers in the TDR: the naive random-split accuracy and the session-wise
 accuracy. The gap between them is a genuine finding — the reference study does not describe
 its split, and its 5-test-images-per-class protocol cannot rule out this leak.
@@ -267,7 +275,8 @@ Treat a burst as one observation for confidence-interval purposes and say so in 
 
 The capture station's round-robin order (ADR 0008) does not change this. Its 60 frames of a
 class are patterns that re-formed between frames rather than consecutive near-duplicates, which
-buys variety, but they share the session's rig, sand and light. The session is still the unit.
+buys variety, but they share the session's rig, sand and light. The session is still the
+preferred unit; the preparation block is the ADR 0009 fallback when sessions are too few.
 
 ### What ingesting this volume costs, measured before it exists
 

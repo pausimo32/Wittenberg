@@ -1,0 +1,104 @@
+# Pre-registration — protocol "CNN para patrones de Chladni" v1.0 (08/11/2026), adapted.
+# Written BEFORE any model was fitted on the 20261108 captures. Its SHA-256 is recorded in
+# every output of run_protocol.py; editing it after results exist creates a new version
+# that must be logged in amendments.md.
+
+experiment_id: chladni_v1_20261108
+written: 2026-11-08
+task: closed_set_multiclass
+classes_hz: {0: 497, 1: 863, 2: 1218, 3: 2241}   # 165 Hz has no captures -> outside the closed set
+global_class_order: [497, 863, 1218, 2241]
+input: "data/processed (src/preprocess.py v1.1.0, step 7: 128x128 uint8 Canny edge map of the homography ROI)"
+
+deployment_domain: >
+  Same plate (1 mm steel, 180 mm), same rig, same camera/lighting, same day.
+  NOT evaluated: new sessions, new days, other plates, 165 Hz.
+
+# --- grouping (protocol p.6-7) ------------------------------------------------------------
+# session_id cannot be the unit: every class is in exactly one session (G_min = 1).
+# Unit = sand-replenishment block ("preparation"): `reseed_every` accepted rounds.
+#   20261108-03 (497/863/1218, interleaved, shuffled per round): block = rank // 3
+#   20261108-04 (2241 only, back to back):                       block = rank // 10
+# A final block with < 3 frames per class is merged into the previous one.
+group_unit: preparation_block
+group_unit_caveat: >
+  Session-03 blocks are multiclass and each frame is a fresh pattern formation (the
+  frequency changes between consecutive frames of a class). Session-04 blocks are
+  consecutive frames of one frequency: near-burst, weakly independent. 2241 Hz is also
+  fully confounded with session 04 -> background-only control is mandatory.
+
+validation:
+  outer: StratifiedGroupKFold(n_splits=3)      # G_min = 3 (protocol p.7)
+  inner: StratifiedGroupKFold(n_splits=2)      # inside each outer train only
+  require_all_train_classes: true
+  require_all_test_classes: true
+  split_seed: 42
+  train_seeds: [42, 17, 29]                    # 42 first: CLAUDE.md rule 5
+  neural_seed_strategy: probability_mean_ensemble
+  selection_includes_family: true
+  refit_epochs: ceil_median_inner_best
+  inner_epoch_monitor: group_weighted_val_loss
+
+evaluation:
+  primary: macro_f1_group_weighted              # w_i = 1 / n_originals_in_group
+  also: [macro_f1_unweighted, balanced_accuracy, accuracy, per_class_prf]
+  practical_delta: 0.03
+  minimum_recall_each_class: 0.80
+  bootstrap_replicates: 2000
+  bootstrap_seed: 71
+  calibration: none
+  rejection: none
+
+augmentation:            # applied to the edge-map tensor, train only, after the split
+  A0: none
+  A1: {rotation_deg: 5, translate_frac: 0.02, p_geom: 0.5, brightness_contrast: [0.9, 1.1], p_photo: 0.5, padding: zeros}
+  right_angle_rotations: false
+  reflections: false
+  apply_to_validation_or_test: false
+
+candidates:              # finite, fixed before results (protocol p.13, reduced budget)
+  B0_most_frequent:  {family: B0, eligible: false}
+  B0_stratified:     {family: B0, eligible: false}
+  B1_hog_lr_C0.1:    {family: B1, C: 0.1}
+  B1_hog_lr_C1:      {family: B1, C: 1.0}
+  C1_lr1e-3_A0:      {family: C1, lr: 0.001,  aug: A0}
+  C1_lr1e-3_A1:      {family: C1, lr: 0.001,  aug: A1}
+  C1_lr3e-4_A0:      {family: C1, lr: 0.0003, aug: A0}
+  C1_lr3e-4_A1:      {family: C1, lr: 0.0003, aug: A1}
+  W1_A0:             {family: W1, lr: 0.001, aug: A0}   # the project's shipped wittenberg_v1, docs/04 recipe
+  W1_A1:             {family: W1, lr: 0.001, aug: A1}
+  F1_mnv3_lr_C0.1:   {family: F1, backbone: mobilenet_v3_small, head: logreg, C: 0.1}
+  F1_mnv3_lr_C1:     {family: F1, backbone: mobilenet_v3_small, head: logreg, C: 1.0}
+  F1_mnv3_svm_C0.1:  {family: F1, backbone: mobilenet_v3_small, head: linsvc, C: 0.1}
+  F1_mnv3_svm_C1:    {family: F1, backbone: mobilenet_v3_small, head: linsvc, C: 1.0}
+  F2_effb0_lr_C0.1:  {family: F2, backbone: efficientnet_b0, head: logreg, C: 0.1}
+  F2_effb0_lr_C1:    {family: F2, backbone: efficientnet_b0, head: logreg, C: 1.0}
+  F2_effb0_svm_C0.1: {family: F2, backbone: efficientnet_b0, head: linsvc, C: 0.1}
+  F2_effb0_svm_C1:   {family: F2, backbone: efficientnet_b0, head: linsvc, C: 1.0}
+budget_notes: >
+  M1/E1 (trainable head with A1) and M2/E2 (partial fine-tuning) are dropped BEFORE results:
+  with A0 a trainable linear head on a frozen backbone is what F1/F2 already measure, and
+  docs/04 §2 argues against pretrained backbones for edge maps; F1/F2 test that claim.
+  C1 recipe: protocol p.15 (AdamW wd 1e-3, batch 4, <=100 epochs, patience 12, (x-0.5)/0.5).
+  W1 recipe: docs/04 §3 (AdamW, cosine to 1e-5, batch 32, label smoothing 0.05, <=80 epochs,
+  patience 12). Sampling: plain shuffle — classes balanced (31-32) and groups ~equal size.
+
+selection:
+  rule: >
+    Eligible candidates whose inner group-weighted macro-F1 is within practical_delta of the
+    best inner score form the tie set; pick the lowest measured CPU latency (batch=1, model
+    only, measured before any fitting), then the smaller artifact, then the earlier entry
+    in `candidates`.
+  partial_finetuning_enabled: false
+
+controls:                 # outside the ranking, never selectable
+  background_only: "B1 HOG+LR (C=1) on the edge map keeping only the outer 8 px ring (central 112x112 zeroed): rim, markers, background"
+  random_split: "B1 HOG+LR (C=1) under StratifiedKFold(3) ignoring groups — leakage diagnostic"
+
+insufficient_evidence_if: >
+  any class has recall < 0.80 in the selector OOF, OR the background-only control reaches
+  macro-F1 >= 0.60 (well above the 0.25 chance level), OR fewer than 3 groups per class.
+
+prospective_confirmation:
+  manifest: PENDIENTE      # a NEW session with all 4 classes interleaved, captured after this freeze
+  frozen_model_hash: PENDIENTE
