@@ -41,7 +41,13 @@ the data the first real checkpoint is trained on, so they cannot wait for one. I
 no run is resolved and neither gate runs — there is no checkpoint for them to compare — and
 `/api/predict` answers 503 rather than anything that could be read as a prediction.
 `/api/health` says `"mode": "capture"` with `model_run: null`, which the analyser already
-renders as "no model". Without the flag nothing changes: a missing or mismatched run is still
+renders as "no model".
+
+**Two kinds of run (ADR 0009).** `config.json`'s `model` key says which loader serves it.
+`hog_lr` — the model the pre-registered selection picked — is numpy only (`src/hoglr.py`):
+no torch on the request path, stages 9-11 become the HOG map, the exact per-block
+contribution to the answer, and the probabilities. A CNN run (`wittenberg_v1`,
+`baseline_paper`) is served exactly as before, block activations and Grad-CAM included. Without the flag nothing changes: a missing or mismatched run is still
 `StartupRefused`, never a silent fall-back into capture mode, because a field session that
 quietly started without its model is the failure this gate exists to make loud.
 """
@@ -61,6 +67,7 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.staticfiles import StaticFiles
 from torch import nn
 
+import hoglr
 import preprocess as preprocess_module
 import runs as runs_module
 from calibrate import (
@@ -154,7 +161,8 @@ class Serving(NamedTuple):
     calibration_config: dict[str, Any]
     classes: list[dict[str, Any]]
     frequencies: list[int]
-    model: nn.Module
+    #: The CNN, or None for a `hog_lr` run.
+    model: nn.Module | None
     model_name: str
     device: torch.device
     preprocess_sha256: str
@@ -164,6 +172,8 @@ class Serving(NamedTuple):
     #: `config/quality_gate.json`, read once. §6's thresholds, applied to an upload as a
     #: warning rather than a rejection — see `_predict`.
     gate: dict[str, Any]
+    #: The ADR 0009 model, or None for a CNN run.
+    hog: hoglr.HogLogReg | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -190,6 +200,9 @@ def load_serving(
         raise StartupRefused(f"REFUSING TO START — {exc}") from exc
 
     checked = _gate(run_dir, config)
+
+    if runs_module.run_model_name(run_dir) == hoglr.MODEL_NAME:
+        return _load_hog_serving(run_dir, config, checked, classes_path)
 
     checkpoint = torch.load(run_dir / "model.pt", map_location="cpu", weights_only=False)
     classes = _classes(checkpoint, run_dir, classes_path)
@@ -222,6 +235,35 @@ def load_serving(
         synthetic=bool(metrics.get("synthetic", False)),
         do_not_report=metrics.get("do_not_report"),
         gate=load_gate(),
+    )
+
+
+def _load_hog_serving(
+    run_dir: Path, config: dict[str, Any], checked: dict[str, str],
+    classes_path: Path | str | None,
+) -> Serving:
+    """A `hog_lr` run: same gates, numpy model, CPU by construction (ADR 0005, 0009)."""
+    try:
+        hog = hoglr.HogLogReg.load(run_dir)
+    except hoglr.HogLRError as exc:
+        raise StartupRefused(f"REFUSING TO START — {exc}") from exc
+    classes = _classes({"classes": hog.classes}, run_dir, classes_path)
+    metrics = _metrics(run_dir)
+    return Serving(
+        run_dir=run_dir,
+        config=config,
+        calibration_config=load_calibration_config(),
+        classes=classes,
+        frequencies=[int(c["freq_hz"]) for c in classes],
+        model=None,
+        model_name=hoglr.MODEL_NAME,
+        device=torch.device("cpu"),
+        preprocess_sha256=checked["sha256"],
+        opencv={"package": checked["opencv_package"], "version": checked["opencv_version"]},
+        synthetic=bool(metrics.get("synthetic", False)),
+        do_not_report=metrics.get("do_not_report"),
+        gate=load_gate(),
+        hog=hog,
     )
 
 
@@ -297,7 +339,9 @@ def _classes(
     """The checkpoint's class list, cross-checked against `config/classes.json`.
 
     The checkpoint is the authority — its head is sized for that list and it stores a class
-    *index*, not a frequency. `config/classes.json` is checked against it and never merged
+    *index*, not a frequency. It may cover a **subset** of the list (a class with no
+    captures yet, like 165 Hz on 2026-11-08, cannot be trained), but every index it stores
+    must still mean the same frequency. `config/classes.json` is checked against it and never merged
     into it: a list that has been regenerated since training renumbers the classes, and the
     app would then answer a different frequency at full confidence, which is precisely the
     failure `src/model.py` describes. Same treatment as the preprocessing hash — refuse.
@@ -319,7 +363,8 @@ def _classes(
         {"index": int(c["index"]), "freq_hz": int(c["freq_hz"])}
         for c in (payload.get("classes") or [])
     ]
-    if live != stored:
+    live_by_index = {c["index"]: c["freq_hz"] for c in live}
+    if not stored or any(live_by_index.get(c["index"]) != c["freq_hz"] for c in stored):
         raise StartupRefused(
             "REFUSING TO START — the class list has changed since the checkpoint was "
             "trained.\n"
@@ -516,6 +561,10 @@ def _predict(
             decoded.pixels, calib, markers, serving.config, serving.gate, stages=pipeline
         )
 
+    if serving.hog is not None:
+        return _predict_hog(serving, pipeline, calib, markers, verdict, timings, started,
+                            with_stages)
+
     with _timed(timings, "inference"):
         # Step 8 + the NHWC->NCHW permute by `dataset.to_model_input`, from `stages.resized`
         # (step 7) — the identical path `train.predict` and `evaluate` take, so the tensor
@@ -538,7 +587,7 @@ def _predict(
     body: dict[str, Any] = {
         "top3": [
             {
-                "class_index": i,
+                "class_index": serving.classes[i]["index"],
                 "freq_hz": serving.frequencies[i],
                 "p": float(probabilities[i]),
             }
@@ -573,6 +622,56 @@ def _predict(
         with _timed(timings, "encode"):
             body["stages"] = [_edge_stage(serving, pipeline)]
 
+    body["timings_ms"] = timings
+    body["elapsed_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
+    return body
+
+
+def _predict_hog(serving, pipeline, calib, markers, verdict, timings, started, with_stages):
+    """The `hog_lr` path: HOG of step 7 -> numpy logistic regression. Same response shape."""
+    with _timed(timings, "inference"):
+        hog_started = time.perf_counter()
+        features = hoglr.hog_features(pipeline.resized)  # step 7, the array training used
+        hog_ms = (time.perf_counter() - hog_started) * 1000.0
+        probabilities = serving.hog.predict_proba(features)[0]
+    top = [int(i) for i in np.argsort(-probabilities)[:TOP_K]]
+    body: dict[str, Any] = {
+        "top3": [
+            {"class_index": serving.classes[i]["index"], "freq_hz": serving.frequencies[i],
+             "p": float(probabilities[i])}
+            for i in top
+        ],
+        "roi_mode": str(calib["roi_mode"]),
+        "markers_found": markers,
+        "quality": {"quality": verdict.quality, "reason": verdict.reason,
+                    "metrics": verdict.metrics},
+    }
+    if with_stages:
+        with _timed(timings, "explain"):
+            explain_started = time.perf_counter()
+            heat = hoglr.contribution_map(serving.hog, features, top[0], pipeline.roi.shape[0])
+            explain_ms = (time.perf_counter() - explain_started) * 1000.0
+        with _timed(timings, "encode"):
+            stages = _pipeline_stages(serving, pipeline, timings["decode"])
+            stages.append({
+                "n": 9, "key": "hog", "title": "HOG", "kind": "image",
+                "call": "hoglr.hog_features", "params": hoglr.HOG_PARAMS,
+                "shape": [int(features.shape[1])], "dtype": "float32", "display_shape": None,
+                "ms": round(hog_ms, 3), "png_base64": _png(hoglr.hog_glyphs(pipeline.resized)),
+            })
+            stages.append({
+                "n": 10, "key": "contribution", "title": "Contribució", "kind": "image",
+                "call": "HogLogReg.block_contributions",
+                "params": {"class_hz": serving.frequencies[top[0]], "alpha": CAM_ALPHA},
+                "shape": [hoglr.BLOCKS_PER_SIDE, hoglr.BLOCKS_PER_SIDE], "dtype": "float64",
+                "display_shape": None, "ms": round(explain_ms, 3),
+                "png_base64": _png(_cam_overlay(pipeline.roi, heat)),
+            })
+            stages.append(_probability_stage(serving, probabilities, 11, "softmax (numpy)"))
+            body["stages"] = stages
+    else:
+        with _timed(timings, "encode"):
+            body["stages"] = [_edge_stage(serving, pipeline)]
     body["timings_ms"] = timings
     body["elapsed_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
     return body
@@ -655,26 +754,7 @@ def _stages(
     decode_ms: float,
     gradcam_ms: float,
 ) -> list[dict[str, Any]]:
-    cfg = serving.config
-    step = pipeline.timings_ms or {}
-    stages = [
-        _stage(1, "capture", "Captura", pipeline.source, "imageio.decode_bytes", {},
-               display=_downscaled(pipeline.source), ms=decode_ms),
-        _stage(2, "roi", "ROI", pipeline.roi, "cv2.warpPerspective", cfg["roi"],
-               ms=step.get("roi")),
-        _stage(3, "gray", "Escala de grisos", pipeline.gray, "cv2.cvtColor",
-               cfg["grayscale"], ms=step.get("gray")),
-        _stage(4, "clahe", "CLAHE", pipeline.clahe, "cv2.createCLAHE().apply", cfg["clahe"],
-               ms=step.get("clahe")),
-        _stage(5, "blur", "Difuminat", pipeline.blur, "cv2.GaussianBlur", cfg["blur"],
-               ms=step.get("blur")),
-        _stage(6, "edges", "Canny", pipeline.edges, "cv2.Canny", cfg["canny"],
-               ms=step.get("edges")),
-        _stage(7, "resized", "Redimensionat", pipeline.resized, "cv2.resize", cfg["resize"],
-               ms=step.get("resized")),
-        _stage(8, "tensor", "Tensor", pipeline.tensor, "astype * scale", cfg["output"],
-               display=_from_float(pipeline.tensor), ms=step.get("tensor")),
-    ]
+    stages = _pipeline_stages(serving, pipeline, decode_ms)
 
     previous = forward_started
     for n, (activation, finished) in zip(range(9, 12), blocks):
@@ -694,22 +774,48 @@ def _stages(
             "png_base64": _png(_cam_overlay(pipeline.roi, cam)),
         }
     )
-    stages.append(
-        {
-            "n": 13,
-            "key": "probabilities",
-            "title": "Probabilitats",
-            "kind": "bars",
-            "call": "torch.softmax",
-            "params": {"dim": 1},
-            "ms": None,
-            "bars": [
-                {"class_index": i, "freq_hz": hz, "p": float(probabilities[i])}
-                for i, hz in enumerate(serving.frequencies)
-            ],
-        }
-    )
+    stages.append(_probability_stage(serving, probabilities, 13, "torch.softmax"))
     return stages
+
+
+def _pipeline_stages(serving: Serving, pipeline: Any, decode_ms: float) -> list[dict[str, Any]]:
+    """Stages 1-8: the decode and `src/preprocess.py`, identical for every kind of model."""
+    cfg = serving.config
+    step = pipeline.timings_ms or {}
+    return [
+        _stage(1, "capture", "Captura", pipeline.source, "imageio.decode_bytes", {},
+               display=_downscaled(pipeline.source), ms=decode_ms),
+        _stage(2, "roi", "ROI", pipeline.roi, "cv2.warpPerspective", cfg["roi"],
+               ms=step.get("roi")),
+        _stage(3, "gray", "Escala de grisos", pipeline.gray, "cv2.cvtColor",
+               cfg["grayscale"], ms=step.get("gray")),
+        _stage(4, "clahe", "CLAHE", pipeline.clahe, "cv2.createCLAHE().apply", cfg["clahe"],
+               ms=step.get("clahe")),
+        _stage(5, "blur", "Difuminat", pipeline.blur, "cv2.GaussianBlur", cfg["blur"],
+               ms=step.get("blur")),
+        _stage(6, "edges", "Canny", pipeline.edges, "cv2.Canny", cfg["canny"],
+               ms=step.get("edges")),
+        _stage(7, "resized", "Redimensionat", pipeline.resized, "cv2.resize", cfg["resize"],
+               ms=step.get("resized")),
+        _stage(8, "tensor", "Tensor", pipeline.tensor, "astype * scale", cfg["output"],
+               display=_from_float(pipeline.tensor), ms=step.get("tensor")),
+    ]
+
+
+def _probability_stage(serving: Serving, probabilities: np.ndarray, n: int, call: str):
+    return {
+        "n": n,
+        "key": "probabilities",
+        "title": "Probabilitats",
+        "kind": "bars",
+        "call": call,
+        "params": {"dim": 1},
+        "ms": None,
+        "bars": [
+            {"class_index": serving.classes[i]["index"], "freq_hz": hz, "p": float(probabilities[i])}
+            for i, hz in enumerate(serving.frequencies)
+        ],
+    }
 
 
 def _edge_stage(serving: Serving, pipeline: Any) -> dict[str, Any]:

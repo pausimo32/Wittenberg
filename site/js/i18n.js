@@ -261,6 +261,8 @@
       'viewer.stage.features_3':    'Cartes de caractéristiques 3',
       'viewer.stage.gradcam':       'Grad-CAM',
       'viewer.stage.probabilities': 'Probabilités',
+      'viewer.stage.hog':          'Histogramme de gradients orientés',
+      'viewer.stage.contribution': 'Contribution par bloc',
 
       'viewer.caption.capture': 'Votre photo, de biais et éclairée inégalement.',
       'viewer.caption.roi': 'La plaque devient un carré, toujours à la même échelle.',
@@ -275,6 +277,8 @@
       'viewer.caption.features_3': 'Troisième bloc : un résumé, plus une image.',
       'viewer.caption.gradcam': 'Où le réseau a regardé pour répondre.',
       'viewer.caption.probabilities': 'La sortie est une distribution, pas un verdict.',
+      'viewer.caption.hog': 'Pour chaque case, dans quelles directions vont les lignes nodales.',
+      'viewer.caption.contribution': 'Les zones de la plaque qui ont poussé vers la réponse, calculées exactement.',
 
       'analyser.footer_title':  'Analyseur',
       'analyser.foot_link1':    'Importer une image',
@@ -1089,6 +1093,8 @@
       'viewer.stage.features_3':    'Mapas de características 3',
       'viewer.stage.gradcam':       'Grad-CAM',
       'viewer.stage.probabilities': 'Probabilidades',
+      'viewer.stage.hog':          'Histograma de gradientes orientados',
+      'viewer.stage.contribution': 'Contribución por bloque',
 
       'viewer.caption.capture': 'Tu foto, torcida y con luz desigual.',
       'viewer.caption.roi': 'La placa pasa a ser un cuadrado, siempre a la misma escala.',
@@ -1103,6 +1109,8 @@
       'viewer.caption.features_3': 'Tercer bloque: un resumen, ya no una imagen.',
       'viewer.caption.gradcam': 'Dónde miró la red para responder.',
       'viewer.caption.probabilities': 'La salida es una distribución, no un veredicto.',
+      'viewer.caption.hog': 'En cada casilla, hacia dónde van las líneas nodales.',
+      'viewer.caption.contribution': 'Las zonas de la placa que empujaron hacia la respuesta, calculadas de forma exacta.',
 
       'analyser.footer_title':  'Analizador',
       'analyser.foot_link1':    'Importar una imagen',
@@ -1918,6 +1926,8 @@
       'viewer.stage.features_3':    'Mapes de característiques 3',
       'viewer.stage.gradcam':       'Grad-CAM',
       'viewer.stage.probabilities': 'Probabilitats',
+      'viewer.stage.hog':          'Histograma de gradients orientats',
+      'viewer.stage.contribution': 'Contribució per bloc',
 
       'viewer.caption.capture': 'La teva foto, torçada i amb llum desigual.',
       'viewer.caption.roi': 'La placa esdevé un quadrat, sempre a la mateixa escala.',
@@ -1932,6 +1942,8 @@
       'viewer.caption.features_3': 'Tercer bloc: un resum, ja no una imatge.',
       'viewer.caption.gradcam': 'On ha mirat la xarxa per respondre.',
       'viewer.caption.probabilities': 'La sortida és una distribució, no un veredicte.',
+      'viewer.caption.hog': 'A cada casella, cap on van les línies nodals.',
+      'viewer.caption.contribution': 'Les zones de la placa que han empès cap a la resposta, calculades exactament.',
 
       'analyser.footer_title':  'Analitzador',
       'analyser.foot_link1':    'Importar una imatge',

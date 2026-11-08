@@ -36,6 +36,9 @@ Never invent a Catalan physics term — if it is missing here, add it here first
 | edge detection | detecció de contorns | detección de bordes | |
 | threshold | llindar | umbral | |
 | convolutional neural network | xarxa neuronal convolucional | red neuronal convolucional | XNC / CNN |
+| histogram of oriented gradients (HOG) | histograma de gradients orientats | histograma de gradientes orientados | the `hog_lr` model's features (ADR 0009) |
+| logistic regression | regressió logística | regresión logística | |
+| (per-block) contribution | contribució (per bloc) | contribución (por bloque) | the `hog_lr` explanation stage |
 | layer | capa | capa | |
 | supervised learning | aprenentatge supervisat | aprendizaje supervisado | |
 | overfitting | sobreajust | sobreajuste | |

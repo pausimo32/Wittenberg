@@ -39,6 +39,9 @@ LATEST = "latest.txt"
 #: `docs/04` §3. A run directory without these is not a run.
 REQUIRED_ARTEFACTS = ("config.json", "metrics.json", "history.csv", "model.pt")
 
+#: ADR 0009: a `hog_lr` run has no epochs and no torch checkpoint — its model is `model.npz`.
+REQUIRED_BY_MODEL = {"hog_lr": ("config.json", "metrics.json", "model.npz")}
+
 
 class RunsError(RuntimeError):
     """`runs/` is missing, malformed, or points at something that is not there."""
@@ -197,5 +200,17 @@ def check_run(run_dir: Path, config: dict[str, Any]) -> dict[str, str]:
     return result
 
 
+def run_model_name(run_dir: Path) -> str | None:
+    """The `model` key of `config.json`, or None when it cannot be read."""
+    try:
+        return json.loads((run_dir / "config.json").read_text("utf-8")).get("model")
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def required_artefacts(run_dir: Path) -> tuple[str, ...]:
+    return REQUIRED_BY_MODEL.get(run_model_name(run_dir) or "", REQUIRED_ARTEFACTS)
+
+
 def missing_artefacts(run_dir: Path) -> list[str]:
-    return [name for name in REQUIRED_ARTEFACTS if not (run_dir / name).exists()]
+    return [name for name in required_artefacts(run_dir) if not (run_dir / name).exists()]

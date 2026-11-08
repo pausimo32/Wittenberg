@@ -418,6 +418,28 @@ def train(argv):
     print("  next: `python tasks.py eval`")
 
 
+@target("train-hoglr", "fit HOG + logistic regression on every accepted image -> runs/<ts>/  [ADR 0009]")
+def train_hoglr(argv):
+    """`python tasks.py train-hoglr`. The model ADR 0009's selection rule picked; the app
+    serves whatever `runs/latest.txt` points at, so this run becomes the app's model."""
+    from groups import GroupsError
+    from hoglr import HogLRError
+    from runs import RunsError
+    from train_hoglr import TrainHogLRError, train_run
+
+    try:
+        run_dir = train_run(DATA)
+    except (TrainHogLRError, HogLRError, GroupsError, RunsError) as exc:
+        die(str(exc))
+    metrics = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
+    print(f"  hog_lr on {metrics['n_images']} images, {metrics['n_groups']} preparation blocks")
+    est = metrics.get("out_of_fold_estimate")
+    if est:
+        print(f"  out-of-fold macro-F1 {est['macro_f1_group_weighted_oof']:.3f}  ({est['status']})")
+    print(f"  run -> {run_dir.relative_to(ROOT)}  (runs/latest.txt updated)")
+    print("  next: `python tasks.py check-model`, then `python tasks.py app`")
+
+
 @target("eval", "confusion matrix, per-class report, Grad-CAM  [F4a]")
 def eval_(argv):
     """`python tasks.py eval [--run <name>] [--split test]`."""
