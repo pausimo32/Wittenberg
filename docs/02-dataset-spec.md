@@ -171,7 +171,8 @@ Classes are determined empirically in phase F1:
 3. Record the resonance width; the class label is the centre frequency.
 4. Keep only modes whose neighbours are ≥ 40 Hz away, so classes are physically separable.
 
-Expect 10–18 usable modes. Record all of them in `data/modes.csv`, keep the used subset in
+The plan expected 10–18 usable modes; F1 fixed **five: 165, 497, 863, 1218, 2241 Hz**
+(2026-11-08). Fewer than 5 fails the phase gate. Record all of them in `data/modes.csv`, keep the used subset in
 `config/classes.json`.
 
 ## 4. Layout and naming

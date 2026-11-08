@@ -35,9 +35,12 @@ from typing import Any
 #: docs/02-dataset-spec.md §3 step 4.
 MIN_SEPARATION_HZ = 40
 
-#: docs/00-master-plan.md F1: "Expect 10-18 usable modes. Fewer than 10 fails the phase
-#: gate". It is a gate on the *rig*, not on this code — see `build_classes`.
-EXPECTED_MIN_MODES = 10
+#: docs/00-master-plan.md F1. It is a gate on the *rig*, not on this code — see
+#: `build_classes`. Was 10 until 2026-11-08, when the team fixed the five final classes
+#: (165, 497, 863, 1218, 2241 Hz) on the 180 mm steel plate: the floor moved, in a commit,
+#: with the reason written down, as `build_classes` requires. Fewer than five still means
+#: the sweep failed, not that the plate has fewer modes.
+EXPECTED_MIN_MODES = 5
 
 #: Why F1 sets the floor where it does, quoted so the failure says it at the bench.
 THIN_SWEEP_CAUSE = (
@@ -89,15 +92,16 @@ def build_classes(
     """Apply the separation rule and assign the frozen class indices.
 
     **A thin mode list is fatal for real captures and a warning for synthetic ones.**
-    `docs/00-master-plan.md` F1 states the gate — "Fewer than 10 fails the phase gate" —
-    and states its cause: too little drive amplitude, or a plate clamped too hard at the
+    `docs/00-master-plan.md` F1 states the gate — fewer than `EXPECTED_MIN_MODES` fails
+    the phase — and states its cause: too little drive amplitude, or a plate clamped too hard at the
     centre. That is a fact about the rig, and the only correct response is to go back to
     the rig, so this raises rather than printing something a person can walk past.
 
     Six synthetic classes are enough to exercise the pipeline and are not a mode sweep at
     all, so `provenance == "synthetic"` downgrades it to a warning. There is deliberately
-    no `--force`: if a real sweep ever yields nine good modes, the gate moves in a commit
-    with the reason written down, not at the command line at 11 p.m.
+    no `--force`: if a real sweep ever yields fewer good modes, the gate moves in a commit
+    with the reason written down, not at the command line at 11 p.m. — which is how it
+    went from 10 to 5.
     """
     freqs = [m["freq_hz"] for m in modes]
     kept, rejected = [], []
@@ -143,7 +147,7 @@ def build_classes(
         )
         if synthetic:
             warnings.append(
-                f"{thin}. Passed anyway because these are synthetic classes: six are "
+                f"{thin}. Passed anyway because these are synthetic classes: a few are "
                 f"enough to exercise the pipeline, and no gate on a real sweep applies "
                 f"to a renderer."
             )

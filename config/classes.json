@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "provenance": "capture",
+  "_note": "Generated from data/modes.csv by `python tasks.py modes`. The class index is FROZEN: it is the position in ascending frequency order and it is what a trained checkpoint stores instead of a frequency. Re-generating this file after adding or removing a mode renumbers the classes and voids every checkpoint trained against the previous version. Do not hand-edit it.",
+  "min_separation_hz": 40,
+  "n_classes": 5,
+  "classes": [
+    {
+      "index": 0,
+      "freq_hz": 165,
+      "width_hz": "",
+      "n_nodal_lines": "",
+      "symmetry": ""
+    },
+    {
+      "index": 1,
+      "freq_hz": 497,
+      "width_hz": "",
+      "n_nodal_lines": "",
+      "symmetry": ""
+    },
+    {
+      "index": 2,
+      "freq_hz": 863,
+      "width_hz": "",
+      "n_nodal_lines": "",
+      "symmetry": ""
+    },
+    {
+      "index": 3,
+      "freq_hz": 1218,
+      "width_hz": "",
+      "n_nodal_lines": "",
+      "symmetry": ""
+    },
+    {
+      "index": 4,
+      "freq_hz": 2241,
+      "width_hz": "",
+      "n_nodal_lines": "",
+      "symmetry": ""
+    }
+  ],
+  "rejected": []
+}

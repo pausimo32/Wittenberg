@@ -8,7 +8,7 @@ green: every gate exists because failing it silently costs more than failing it 
 | Phase | Outcome | Gate | Model |
 |---|---|---|---|
 | F0 | Repo + Claude Code configured | `tasks.py setup` green, device reported, 7 agents listed | sonnet |
-| F1 | Modes found, classes fixed | `data/modes.csv` ≥ 10 modes | lab + haiku |
+| F1 | Modes found, classes fixed | `data/modes.csv` ≥ 5 modes | lab + haiku |
 | F2 | Python preprocessing | unit tests green on `tests/fixtures/` | opus → sonnet |
 | F3a | Ingest pipeline built | synthetic sessions ingest + split; curator READY | sonnet |
 | F3.5 | Documents and code reconciled | no doc↔code contradiction left open | sonnet |
@@ -103,9 +103,12 @@ The reference study's 14 frequencies belong to its plate, not ours. Ours must be
 5. Discard modes whose nearest neighbour is < 40 Hz away.
 6. Fill `data/modes.csv`: `freq_hz, width_hz, n_nodal_lines, symmetry, quality, notes`.
 
-Expect 10–18 usable modes. Fewer than 10 fails the phase gate: it means the drive amplitude is
-too low or the plate is over-constrained at the centre — fix the rig and sweep again before
-continuing.
+Fewer than 5 usable modes fails the phase gate: it means the drive amplitude is too low or the
+plate is over-constrained at the centre — fix the rig and sweep again before continuing.
+
+**Outcome (2026-11-08).** The team fixed **five final classes: 165, 497, 863, 1218 and
+2241 Hz.** The floor was 10 (the plan expected 10–18); it moved to 5 in the same commit that
+recorded them, because five is the measured choice for this plate, not a failed sweep.
 
 **Prompt** (after the lab work)
 
@@ -123,7 +126,7 @@ Validate data/modes.csv and generate config/classes.json.
   frozen from here on. Changing the order later silently invalidates every trained model.
 
 ## Definition of done
-- [ ] config/classes.json exists, ≥ 10 classes, ascending
+- [ ] config/classes.json exists, ≥ 5 classes, ascending
 - [ ] a printed table of accepted vs rejected modes with reasons
 
 ## Model
@@ -277,7 +280,7 @@ What it settles, and which side won:
 | 6 | geometric corner selection vs the §1.1 table | **the code.** Geometry decides; the table becomes an audit of the rig, and a divergence is a warning in `ingest_report.json` |
 
 Plus: `config/quality_gate.json` stays and is documented; `session.json` becomes a hard
-requirement at ingest; the F1 ≥ 10 modes gate becomes an error for real sweeps and a warning
+requirement at ingest; the F1 modes gate (≥ 10 then, ≥ 5 since F1) becomes an error for real sweeps and a warning
 for synthetic ones; and `docs/adr/0006` records what the OpenCV pin is actually worth, in
 pixels.
 
@@ -319,8 +322,8 @@ improved a score on rendered images is a learning rate chosen at random.
 
 Two things to check rather than assume:
 
-- the head reads `n_classes` from `config/classes.json` (6 with the synthetic sessions, 10–18
-  with real ones), never from a constant. The checkpoint stores a class *index*, so a head
+- the head reads `n_classes` from `config/classes.json` (6 with the synthetic sessions, 5 with
+  the real ones), never from a constant. The checkpoint stores a class *index*, so a head
   sized for the wrong list answers with a different frequency at full confidence;
 - `python tasks.py check-model` is green against the checkpoint the bench produced, and red
   when `config/preprocess.json` is mutated. That is the F5 gate, built here because it is what

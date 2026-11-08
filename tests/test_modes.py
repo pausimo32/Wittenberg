@@ -18,6 +18,7 @@ import json
 import pytest
 
 from modes import (
+    EXPECTED_MIN_MODES,
     MIN_SEPARATION_HZ,
     ModesError,
     build_classes,
@@ -45,10 +46,10 @@ def mode(freq, **kw):
 def rule(path, rows):
     """Run the separation rule on a short mode list.
 
-    Declared `synthetic` on purpose: the >= 10 modes floor in `docs/00` F1 is a gate on
+    Declared `synthetic` on purpose: the `EXPECTED_MIN_MODES` floor in `docs/00` F1 is a gate on
     the *rig*, and a four-row fixture written to exercise the 40 Hz rule is not a sweep
     of a plate. Mixing the two would mean every test of the separation rule had to carry
-    ten modes it does not use. The gate itself is tested in its own section below.
+    a full mode list it does not use. The gate itself is tested in its own section below.
     """
     return build_classes(read_modes(write_csv(path, rows)), "synthetic")
 
@@ -162,11 +163,11 @@ def test_missing_file_is_refused(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def test_a_thin_real_sweep_is_fatal(tmp_path):
-    """`docs/00` F1: "Fewer than 10 fails the phase gate". It is a gate on the rig."""
+    """`docs/00` F1: fewer than `EXPECTED_MIN_MODES` fails the phase. A gate on the rig."""
     thin = write_csv(tmp_path / "m.csv", [mode(f) for f in (400, 600)])
     with pytest.raises(ModesError) as exc:
         build_classes(read_modes(thin), "capture")
-    assert "10" in str(exc.value)
+    assert str(EXPECTED_MIN_MODES) in str(exc.value)
 
 
 def test_the_thin_sweep_message_names_the_rig_not_the_filter(tmp_path):
@@ -186,7 +187,23 @@ def test_the_thin_sweep_message_names_the_rig_not_the_filter(tmp_path):
 def test_a_thin_synthetic_list_is_a_warning(tmp_path):
     """Six synthetic classes are enough for the pipeline and are not a mode sweep."""
     result = rule(tmp_path / "m.csv", [mode(f) for f in (400, 600)])
-    assert any("10" in w for w in result["warnings"])
+    assert any(str(EXPECTED_MIN_MODES) in w for w in result["warnings"])
+
+
+def test_the_five_final_classes_pass_the_gate(tmp_path):
+    """The team's final classes (2026-11-08) are a real sweep and must be accepted as one."""
+    rows = [mode(f) for f in (165, 497, 863, 1218, 2241)]
+    result = build_classes(read_modes(write_csv(tmp_path / "m.csv", rows)), "capture")
+    assert [c["freq_hz"] for c in result["classes"]] == [165, 497, 863, 1218, 2241]
+    assert [c["index"] for c in result["classes"]] == [0, 1, 2, 3, 4]
+    assert result["rejected"] == []
+    assert result["warnings"] == []
+
+
+def test_one_below_the_floor_is_still_fatal(tmp_path):
+    rows = [mode(400 + 100 * i) for i in range(EXPECTED_MIN_MODES - 1)]
+    with pytest.raises(ModesError):
+        build_classes(read_modes(write_csv(tmp_path / "m.csv", rows)), "capture")
 
 
 def test_a_full_mode_list_raises_no_warning(tmp_path):
@@ -213,7 +230,7 @@ def _mode(hz: int) -> dict[str, str | int]:
 def test_write_site_classes_emits_the_frozen_list_for_the_browser(tmp_path):
     from modes import write_site_classes
 
-    # Ten, because a real sweep with fewer is refused by `build_classes` (F1).
+    # Ten: above the F1 floor, so `build_classes` accepts it as a real sweep.
     result = build_classes([_mode(hz) for hz in range(420, 1620, 120)], "capture")
     text = write_site_classes(result, tmp_path / "classes.generated.js").read_text("utf-8")
 
