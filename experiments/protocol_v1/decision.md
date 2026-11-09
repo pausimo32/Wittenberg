@@ -13,8 +13,9 @@ model: status is **provisional** until the prospective session below exists.
 **a new sand preparation in the same session, same rig**. Not evaluated: new sessions, new
 days, other plates, 165 Hz (no captures).
 
-Independent unit: sand-replenishment block. 33 groups (10 per class for 497/863/1218, all
-multiclass and interleaved in session 20261108-03; 3 for 2241, alone in 20261108-04).
+Independent unit: sand-replenishment block. 13 groups (`runs/protocol_v1/metrics.json`
+`n_groups`): 10 in session 20261108-03, each one multiclass, shared by 497/863/1218, which
+were interleaved; 3 for 2241, alone in 20261108-04.
 Nested CV: outer 3 folds, inner 2 folds, round-robin blocks (amendment A1).
 
 ## Results (OOF, group-weighted macro-F1; bootstrap of groups, 1 939/2 000 valid replicates)
